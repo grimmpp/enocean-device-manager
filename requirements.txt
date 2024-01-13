@@ -1,0 +1,8 @@
+aiocoap
+pyserial-asyncio
+eltako14bus
+enocean
+homeassistant
+termcolor
+StrEnum
+tkinter
