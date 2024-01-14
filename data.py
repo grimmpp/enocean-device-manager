@@ -15,6 +15,7 @@ from homeassistant.const import CONF_ID, CONF_DEVICE, CONF_DEVICES, CONF_NAME, C
 from eltakobus.device import BusObject, FAM14, SensorInfo, KeyFunction
 from eltakobus.message import *
 from eltakobus.eep import *
+from eltakobus.device import SensorInfo, KeyFunction
 from eltakobus.util import b2s, AddressExpression
 
 
@@ -172,8 +173,9 @@ class DataManager():
         return b2s( address.to_bytes(4, byteorder = 'big') )
 
 
-    def add_sensors(self, sensors: [SensorInfo], base_id:int=None) -> None:
+    def add_sensors(self, sensors: [SensorInfo], base_id:int=None) -> [dict]:
         self.collected_sensor_list.extend( sensors )
+        result = []
 
         for s in sensors:
             # if self.filter_out_base_address(s.sensor_id):
@@ -190,10 +192,17 @@ class DataManager():
 
             # configured in device
             if CONF_CONFIGURED_IN_DEVICES not in _s:
-                _s[CONF_CONFIGURED_IN_DEVICES] = []
+                _s[CONF_CONFIGURED_IN_DEVICES] = {}
             ext_device_id = self.a2s(s.dev_id + s.channel-1 + base_id)
-            if ext_device_id not in _s[CONF_CONFIGURED_IN_DEVICES]:
-                _s[CONF_CONFIGURED_IN_DEVICES].append( ext_device_id )
+            memory_line_key = f"{ext_device_id}_{s.memory_line}"
+            if memory_line_key not in _s[CONF_CONFIGURED_IN_DEVICES]:
+                _s[CONF_CONFIGURED_IN_DEVICES][memory_line_key] = {
+                        CONF_DEVICE_ID: s.sensor_id_str,
+                        CONF_ID: s.sensor_id_str, 
+                        CONF_MEMORY_LINE: s.memory_line,
+                        CONF_SENSOR_KEY: s.key,
+                        CONF_SENSOR_KEY_FUNCTION: s.key_func
+                    }
 
             if s.key_func in KeyFunction.get_switch_sensor_list():
                 _s[CONF_PLATFORM] = Platform.BINARY_SENSOR
@@ -205,8 +214,11 @@ class DataManager():
                 _s[CONF_DEVICE_CLASS] = "Window"
                 _s[CONF_NAME] = "Contact"
                 _s[CONF_INVERT_SIGNAL] = False
+            result.append(_s)
 
             self.controller.fire_event(ControllerEventType.UPDATE_SENSOR_REPRESENTATION, _s)
+        
+        return result
                     
 
     def filter_out_base_address(self, sensor_id:bytes) -> bool:
@@ -220,6 +232,13 @@ class DataManager():
             return substr
         return CONF_UNKNOWN
 
+    async def filter_memory_entities_by_dev_id(self, sensors:[SensorInfo], dev_id:int) -> [SensorInfo]:
+        result = []
+        for s in sensors:
+            s_dev_id = s.dev_id + s.channel-1
+            if s_dev_id == dev_id:
+                result.append(s)
+        return result
 
     async def add_device(self, device: BusObject, fam14: FAM14):
         device_type = type(device).__name__
@@ -247,7 +266,9 @@ class DataManager():
         # add actuators
         if info != None:
             base_id:int = int.from_bytes(AddressExpression.parse( fam14_base_id_str )[0], "big") 
-
+            
+            memory_entries = await device.get_all_sensors()
+            
             for i in range(0,info['address_count']):
 
                 dev_id_str:str = self.a2s( device.address+i )
@@ -286,6 +307,8 @@ class DataManager():
                         sensor[CONF_EEP] = A5_10_06.eep_string
                         sensor[CONF_NAME] = "Temperature Sensor and Controller"
                     # #TODO: cooling_mode
+                        
+                dev_obj[CONF_MEMORY_ENTRIES] = await self.filter_memory_entities_by_dev_id(memory_entries, device.address+i)
 
                 self.eltako[info[CONF_TYPE]].append(dev_obj)
                 fam14_base_id = await fam14.get_base_id()
@@ -297,9 +320,7 @@ class DataManager():
 
                 self.controller.fire_event(ControllerEventType.UPDATE_DEVICE_REPRESENTATION, {'fam14_base_id': fam14_base_id, CONF_DEVICE: dev_obj})
 
-            # add sensors after devices are created. Important for having reference
-            self.add_sensors(( await device.get_all_sensors() ), base_id )
-
+            self.add_sensors(memory_entries, base_id )
     
 
     def guess_sensor_type_by_address(self, msg:ESP2Message)->str:

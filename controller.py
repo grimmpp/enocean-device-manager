@@ -27,6 +27,8 @@ class ControllerEventType(Enum):
     ASYNC_DEVICE_DETECTED = 5           # BusObject
     UPDATE_DEVICE_REPRESENTATION = 6    # dict with keys: fam14_base_id:str, device:dict
     UPDATE_SENSOR_REPRESENTATION = 7    # sensor:dict
+    WINDOW_CLOSED = 8
+    WINDOW_LOADED = 9
 
 class ControllerEvent():
     def __init__(self, event_type:ControllerEventType, data):
@@ -35,7 +37,7 @@ class ControllerEvent():
 
 class AppController():
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._bus = None
         self._serial_mutex = threading.Lock()
 
@@ -43,15 +45,22 @@ class AppController():
             if event_type not in self._controller_event_handlers.keys():
                 self._controller_event_handlers[event_type] = []
 
+        self.add_event_handler(ControllerEventType.WINDOW_CLOSED, self.on_window_closed)
+
     _controller_event_handlers={}
-    def add_event_handler(self, event:ControllerEventType, handler):
+    def add_event_handler(self, event:ControllerEventType, handler) -> None:
         self._controller_event_handlers[event].append(handler)
 
-    def fire_event(self, event:ControllerEventType, data):
+    def fire_event(self, event:ControllerEventType, data) -> None:
+        # print(f"[Controller] Fire event {event}")
         for h in self._controller_event_handlers[event]: h(data)
 
-    async def async_fire_event(self, event:ControllerEventType, data):
+    async def async_fire_event(self, event:ControllerEventType, data) -> None:
+        # print(f"[Controller] Fire async event {event}")
         for h in self._controller_event_handlers[event]: await h(data)
+
+    def on_window_closed(self, data) -> None:
+        self.kill_serial_connection_before_exit()
 
     def get_serial_ports(self, device_type:str) ->[str]:
         if device_type == 'FAM14':
@@ -131,16 +140,16 @@ class AppController():
                 pass
         return result
     
-    def is_serial_connection_active(self):
+    def is_serial_connection_active(self) -> None:
         return self._bus is not None and self._bus.is_active()
     
-    def is_fam14_connection_active(self):
+    def is_fam14_connection_active(self) -> None:
         return self.is_serial_connection_active() and self._bus.suppress_echo
 
-    def _send_serial_event(self, message):
+    def _send_serial_event(self, message) -> None:
         self.fire_event(ControllerEventType.SERIAL_CALLBACK, message)
 
-    def establish_serial_connection(self, serial_port:str, device_type:str):
+    def establish_serial_connection(self, serial_port:str, device_type:str) -> None:
         baudrate:int=57600
         if device_type == 'FAM-USB':
             baudrate = 9600
@@ -169,7 +178,7 @@ class AppController():
 
             
 
-    def stop_serial_connection(self):
+    def stop_serial_connection(self) -> None:
         if self.is_serial_connection_active():
             self._bus.stop()
             self._bus._stop_flag.wait()
@@ -181,11 +190,11 @@ class AppController():
                 self.fire_event(ControllerEventType.LOG_MESSAGE, {'msg': f"Serial connection stopped.", 'color':'green'})
             self._bus = None
 
-    def kill_serial_connection_before_exit(self):
+    def kill_serial_connection_before_exit(self) -> None:
         if self.is_serial_connection_active():
             self._bus.stop()
 
-    def scan_for_devices(self):
+    def scan_for_devices(self) -> None:
         # if connected to FAM14
         if self.is_fam14_connection_active():
             
