@@ -25,10 +25,11 @@ class ControllerEventType(Enum):
     DEVICE_SCAN_PROGRESS = 3            # percentage 0..100 in float
     DEVICE_SCAN_STATUS = 4              # str: STARTED, FINISHED, DEVICE_DETECTED
     ASYNC_DEVICE_DETECTED = 5           # BusObject
-    UPDATE_DEVICE_REPRESENTATION = 6    # dict with keys: fam14_base_id:str, device:dict
-    UPDATE_SENSOR_REPRESENTATION = 7    # sensor:dict
+    UPDATE_DEVICE_REPRESENTATION = 6    # busdevice
+    UPDATE_SENSOR_REPRESENTATION = 7    # esp2  eltakomessage
     WINDOW_CLOSED = 8
     WINDOW_LOADED = 9
+    SELECTED_DEVICE = 10                # device
 
 class ControllerEvent():
     def __init__(self, event_type:ControllerEventType, data):

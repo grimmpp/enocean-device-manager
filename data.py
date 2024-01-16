@@ -54,30 +54,75 @@ ORG_MAPPING = {
 
 SENSOR_MESSAGE_TYPES = [EltakoWrappedRPS, EltakoWrapped4BS, RPSMessage, Regular4BSMessage, Regular1BSMessage, EltakoMessage]
 
+def a2s(address:int):
+    """address to string"""
+    if address is None:
+        return ""
+    
+    return b2s( address.to_bytes(4, byteorder = 'big') )
+
+def find_device_info_by_device_type(device_type:str) -> str:
+    for i in EEP_MAPPING:
+        if i['hw-type'] == device_type:
+            return i
+    return None
 
 class Device():
     """Data representation of a device"""
-    id:AddressExpression = None
+    static_info:dict={}
+    address:str = None
+    external_id:str=None
     device_type:str=None
-    eep:EEP=None
-    ha_platform:Platform=None
+    version:str=None
+    name:str=None
+    comment:str = ""
+    # ha_platform:Platform=None
+    base_id:str=None
+    memory_entries:[SensorInfo]=[]  # only used for bus devices
 
-    def __init__(self, id:AddressExpression, device_type, eep, ha_platform):
-        self.id = id
-        self.id_string = b2s(self.id[0])
-        self.device_type = device_type
-        self.eep = eep
-        self.ha_platform = ha_platform
+    def __init__(self):
+        pass
+
+    @property
+    def eep(self) -> str:
+        return self.static_info.get(CONF_EEP, None)
+
+    def is_fam14(self) -> bool:
+        return self.external_id == self.base_id
+    
+    def is_bus_device(self) -> bool:
+        return self.address.startswith('00-00-00-')            
 
     @classmethod
-    def get_device_by_message(cls, msg:EltakoMessage):
-        adr = msg.address
-        if isinstance(msg.address, int):
-            adr = (msg.address.to_bytes(4, 'big'), None)
-        if isinstance(msg.address, bytes):
-            adr = (msg.address, None)
+    async def async_get_bus_device_by_natvice_bus_object(cls, device: BusObject, fam14: FAM14):
 
-        return Device(adr, None, None, None)
+        bd = Device()
+        bd.address = a2s( device.address )
+        bd.base_id = await fam14.get_base_id()
+        bd.device_type = type(device).__name__
+        bd.version = '.'.join(map(str,device.version))
+        if isinstance(device, FAM14):
+            bd.external_id = bd.base_id
+        else:
+            bd.external_id = a2s( (await fam14.get_base_id_in_int()) + device.address)
+        bd.memory_entries = device.get_all_sensors()
+        bd.name = f"{bd.device_type} {bd.address} v({bd.version})"
+
+        return bd
+    
+    @classmethod
+    def get_decentralized_device_by_telegram(cls, msg: RPSMessage):
+        bd = Device()
+        bd.address = b2s( msg.address )
+        bd.base_id = '00-00-00-00'
+        bd.device_type = 'unknown'
+        bd.version = 'unknown'
+        if int.from_bytes( msg.address, "big") > 0x0000FFFF:
+            bd.external_id = bd.address
+        else:
+            bd.external_id = 'unknown'
+        bd.name = 'unknown'
+        return bd
 
 
 class DataManager():
@@ -88,7 +133,7 @@ class DataManager():
     def __init__(self, controller:AppController):
         self.controller = controller
         self.controller.add_event_handler(ControllerEventType.SERIAL_CALLBACK, self._serial_callback_handler)
-        self.controller.add_event_handler(ControllerEventType.ASYNC_DEVICE_DETECTED, self._device_detected_handler)
+        self.controller.add_event_handler(ControllerEventType.ASYNC_DEVICE_DETECTED, self._async_device_detected_handler)
 
         self.eltako = {}
         for p in [CONF_UNKNOWN, Platform.BINARY_SENSOR, Platform.LIGHT, Platform.SENSOR, Platform.SWITCH, Platform.COVER, Platform.CLIMATE]:
@@ -101,12 +146,30 @@ class DataManager():
         self.fam14_base_id = '00-00-00-00'
 
         self.collected_sensor_list:[SensorInfo] = []
+        self.devices:dict = {}
 
     def _serial_callback_handler(self, message:EltakoMessage):
-        self.add_sensor_from_wireless_telegram(message)
+        # self.add_sensor_from_wireless_telegram(message)
+        if type(message) in [RPSMessage, Regular1BSMessage, Regular4BSMessage]:
+            if int.from_bytes(message.address, "big") > 0X0000FFFF:
+                a = b2s(message.address)
+                if a not in self.devices:
+                    decentralized_device = Device.get_decentralized_device_by_telegram(message)
+                    self.devices[a] = decentralized_device
+                    self.controller.fire_event(ControllerEventType.UPDATE_SENSOR_REPRESENTATION, decentralized_device)
 
-    async def _device_detected_handler(self, data):
-        await self.add_device(data['device'], data['fam14'])
+
+    async def _async_device_detected_handler(self, data):
+        # await self.add_device(data['device'], data['fam14'])
+        await self.async_register_bus_device(data['device'], data['fam14'])
+
+
+    def get_device_by_id(self, device_id:str):
+        for d in self.devices.values():
+            if d.external_id == device_id:
+                return d
+            
+        return None
 
 
     def get_detected_sensor_by_id(self, id:str) -> dict:
@@ -163,14 +226,6 @@ class DataManager():
     def add_detected_sensors_to_eltako_config(self):
         for s in self.detected_sensors.values():
             self.eltako[ s[CONF_PLATFORM] ].append( s )
-
-    
-    def a2s(self, address:int):
-        """address to string"""
-        if address is None:
-            return ""
-        
-        return b2s( address.to_bytes(4, byteorder = 'big') )
 
 
     def add_sensors(self, sensors: [SensorInfo], base_id:int=None) -> [dict]:
@@ -240,6 +295,27 @@ class DataManager():
                 result.append(s)
         return result
 
+    async def async_register_bus_device(self, device: BusObject, fam14: FAM14) -> None:
+        bd = await Device.async_get_bus_device_by_natvice_bus_object(device, fam14)
+        # if bd.base_id not in self.devices:
+        #     if device == fam14:
+        #         self.devices[bd.base_id] = bd
+        #     else:
+        #         await self.async_register_bus_device(fam14, fam14)
+        # else:
+        #     self.devices[bd.external_id] = bd
+        self.devices[bd.external_id] = bd
+
+        self.controller.fire_event(ControllerEventType.UPDATE_DEVICE_REPRESENTATION, bd)
+
+    def update_device(self, device: Device) -> None:
+        self.devices[device.external_id] = device
+
+        if device.is_bus_device():
+            self.controller.fire_event(ControllerEventType.UPDATE_DEVICE_REPRESENTATION, device)
+        else:
+            self.controller.fire_event(ControllerEventType.UPDATE_SENSOR_REPRESENTATION, device)
+
     async def add_device(self, device: BusObject, fam14: FAM14):
         device_type = type(device).__name__
         info = self.find_device_info(device_type)
@@ -271,8 +347,8 @@ class DataManager():
             
             for i in range(0,info['address_count']):
 
-                dev_id_str:str = self.a2s( device.address+i )
-                dev_ext_id_str:str = self.a2s( base_id + device.address+i )
+                dev_id_str:str = a2s( device.address+i )
+                dev_ext_id_str:str = a2s( base_id + device.address+i )
                 dev_obj = {
                     CONF_ID: dev_id_str,
                     CONF_EXTERNAL_ID: dev_ext_id_str,
