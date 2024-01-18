@@ -3,7 +3,7 @@ from tkinter import *
 from tkinter import ttk
 import tkinter.scrolledtext as ScrolledText
 
-from eltakobus.message import EltakoPoll, EltakoDiscoveryReply, EltakoDiscoveryRequest, EltakoMessage
+from eltakobus.message import EltakoPoll, EltakoDiscoveryReply, EltakoDiscoveryRequest, EltakoMessage, prettify, Regular1BSMessage, EltakoWrapped1BS
 
 from controller import AppController, ControllerEventType
 
@@ -26,7 +26,7 @@ class LogOutputPanel():
 
     def serial_callback(self, data):
         if type(data) not in [EltakoPoll, EltakoDiscoveryReply, EltakoDiscoveryRequest]:
-            self.receive_log_message({'msg': str(data), 'color': 'darkgrey'})
+            self.receive_log_message({'msg': str(prettify(data)), 'color': 'darkgrey'})
 
     def receive_log_message(self, data):
         msg = data.get('msg', False)

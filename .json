@@ -1,0 +1,83 @@
+{
+    "devices": {
+        "FF-A2-24-00": {
+            "address": "00-00-00-FF",
+            "external_id": "FF-A2-24-00",
+            "device_type": "FAM14",
+            "version": "1.9.0.0",
+            "name": "FAM14 00-00-00-FF v(1.9.0.0) test2",
+            "comment": "",
+            "base_id": "FF-A2-24-00",
+            "memory_entries": []
+        },
+        "05-1E-83-15": {
+            "address": "05-1E-83-15",
+            "external_id": "05-1E-83-15",
+            "device_type": "unknown",
+            "version": "unknown",
+            "name": "unknown",
+            "comment": null,
+            "base_id": "00-00-00-00",
+            "memory_entries": []
+        },
+        "FE-DB-0A-10": {
+            "address": "FE-DB-0A-10",
+            "external_id": "FE-DB-0A-10",
+            "device_type": "unknown",
+            "version": "unknown",
+            "name": "unknown",
+            "comment": null,
+            "base_id": "00-00-00-00",
+            "memory_entries": []
+        },
+        "FF-CD-60-8A": {
+            "address": "FF-CD-60-8A",
+            "external_id": "FF-CD-60-8A",
+            "device_type": "unknown",
+            "version": "unknown",
+            "name": "unknown",
+            "comment": null,
+            "base_id": "00-00-00-00",
+            "memory_entries": []
+        },
+        "FF-CD-60-87": {
+            "address": "FF-CD-60-87",
+            "external_id": "FF-CD-60-87",
+            "device_type": "unknown",
+            "version": "unknown",
+            "name": "unknown",
+            "comment": null,
+            "base_id": "00-00-00-00",
+            "memory_entries": []
+        },
+        "FF-CD-60-88": {
+            "address": "FF-CD-60-88",
+            "external_id": "FF-CD-60-88",
+            "device_type": "unknown",
+            "version": "unknown",
+            "name": "unknown",
+            "comment": null,
+            "base_id": "00-00-00-00",
+            "memory_entries": []
+        },
+        "FF-CD-60-89": {
+            "address": "FF-CD-60-89",
+            "external_id": "FF-CD-60-89",
+            "device_type": "unknown",
+            "version": "unknown",
+            "name": "unknown",
+            "comment": null,
+            "base_id": "00-00-00-00",
+            "memory_entries": []
+        },
+        "FF-A2-24-01": {
+            "address": "00-00-00-01",
+            "external_id": "FF-A2-24-01",
+            "device_type": "FSR14_4x",
+            "version": "7.2.0.0",
+            "name": "FSR14_4x 00-00-00-01 v(7.2.0.0)",
+            "comment": null,
+            "base_id": "FF-A2-24-00",
+            "memory_entries": [
+                {
+                    "sensor_id": 

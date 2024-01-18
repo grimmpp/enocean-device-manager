@@ -1,3 +1,6 @@
+import json
+
+import yaml
 from controller import AppController, ControllerEventType
 from termcolor import colored
 import asyncio
@@ -67,10 +70,13 @@ def find_device_info_by_device_type(device_type:str) -> str:
             return i
     return None
 
+
 class Device():
     """Data representation of a device"""
     static_info:dict={}
     address:str = None
+    channel:int=None
+    channels:int=None
     external_id:str=None
     device_type:str=None
     version:str=None
@@ -80,8 +86,28 @@ class Device():
     base_id:str=None
     memory_entries:[SensorInfo]=[]  # only used for bus devices
 
-    def __init__(self):
-        pass
+    def __init__(self, 
+                 address:str=None, 
+                 channels:int=1,
+                 channel:int=1, 
+                 external_id:str=None, 
+                 device_type:str=None, 
+                 version:str=None, 
+                 name:str=None, 
+                 comment:str=None, 
+                 base_id:str=None, 
+                 memory_entries:[SensorInfo]=[]):
+        
+        self.address = address
+        self.channel = channel
+        self.channels = channels
+        self.external_id = external_id
+        self.device_type = device_type
+        self.version = version
+        self.name = name
+        self.comment = comment
+        self.base_id = base_id
+        self.memory_entries = memory_entries
 
     @property
     def eep(self) -> str:
@@ -94,19 +120,23 @@ class Device():
         return self.address.startswith('00-00-00-')            
 
     @classmethod
-    async def async_get_bus_device_by_natvice_bus_object(cls, device: BusObject, fam14: FAM14):
+    async def async_get_bus_device_by_natvice_bus_object(cls, device: BusObject, fam14: FAM14, channel:int=1):
 
         bd = Device()
-        bd.address = a2s( device.address )
+        bd.address = a2s( device.address + channel -1 )
+        bd.channel = channel
+        bd.channels = device.size
         bd.base_id = await fam14.get_base_id()
         bd.device_type = type(device).__name__
         bd.version = '.'.join(map(str,device.version))
         if isinstance(device, FAM14):
             bd.external_id = bd.base_id
         else:
-            bd.external_id = a2s( (await fam14.get_base_id_in_int()) + device.address)
-        bd.memory_entries = device.get_all_sensors()
-        bd.name = f"{bd.device_type} {bd.address} v({bd.version})"
+            bd.external_id = a2s( (await fam14.get_base_id_in_int()) + device.address + channel -1 )
+        bd.memory_entries = await device.get_all_sensors()
+        bd.name = f"{bd.device_type} {bd.address}"
+        if bd.channels > 1:
+            bd.name += f" ({bd.channel}/{bd.channels})"
 
         return bd
     
@@ -118,12 +148,15 @@ class Device():
         bd.device_type = 'unknown'
         bd.version = 'unknown'
         if int.from_bytes( msg.address, "big") > 0x0000FFFF:
-            bd.external_id = bd.address
+            bd.external_id = b2s( msg.address )
         else:
             bd.external_id = 'unknown'
         bd.name = 'unknown'
         return bd
 
+class DeviceEncoder(json.JSONEncoder):
+    def default(self, o):
+        return o.__dict__   
 
 class DataManager():
     """"""
@@ -134,6 +167,7 @@ class DataManager():
         self.controller = controller
         self.controller.add_event_handler(ControllerEventType.SERIAL_CALLBACK, self._serial_callback_handler)
         self.controller.add_event_handler(ControllerEventType.ASYNC_DEVICE_DETECTED, self._async_device_detected_handler)
+        self.controller.add_event_handler(ControllerEventType.LOAD_FILE, self._reset)
 
         self.eltako = {}
         for p in [CONF_UNKNOWN, Platform.BINARY_SENSOR, Platform.LIGHT, Platform.SENSOR, Platform.SWITCH, Platform.COVER, Platform.CLIMATE]:
@@ -148,6 +182,36 @@ class DataManager():
         self.collected_sensor_list:[SensorInfo] = []
         self.devices:dict = {}
 
+    def _reset(self, data):
+        self.devices = {}
+
+    # def export_cached_objects(self, filename:str):
+    #     data = {'devices': self.devices}
+
+    #     with open(filename, 'w') as file:
+    #         if filename.lower().endswith('.yaml') or filename.lower().endswith('.yml'):
+    #             file.write( yaml.safe_dump(data) )
+    #         elif filename.lower().endswith('.json'): 
+    #             json.dump(data, file, indent=4, sort_keys=True, cls=DeviceEncoder)
+                
+    # def load_from_file(self, filename:str):
+    #     data = {}
+    #     with open(filename) as file:
+    #         if filename.lower().endswith('.yaml') or filename.lower().endswith('.yml'):
+    #             data = yaml.safe_load( file.read() )
+    #         elif filename.lower().endswith('.json'): 
+    #             data = json.load(file)
+    #     self.load_devices(data['devices'])
+
+    def load_devices(self, devices:dict):
+        for key in devices.keys():
+            device:Device = devices[key]
+            self.devices[key] = device
+            if device.is_bus_device():
+                self.controller.fire_event(ControllerEventType.UPDATE_DEVICE_REPRESENTATION, device)
+            else:
+                self.controller.fire_event(ControllerEventType.UPDATE_SENSOR_REPRESENTATION, device)
+
     def _serial_callback_handler(self, message:EltakoMessage):
         # self.add_sensor_from_wireless_telegram(message)
         if type(message) in [RPSMessage, Regular1BSMessage, Regular4BSMessage]:
@@ -160,8 +224,18 @@ class DataManager():
 
 
     async def _async_device_detected_handler(self, data):
-        # await self.add_device(data['device'], data['fam14'])
-        await self.async_register_bus_device(data['device'], data['fam14'])
+        for channel in range(1, data['device'].size+1):
+            bd = await Device.async_get_bus_device_by_natvice_bus_object(data['device'], data['fam14'], channel)
+            
+            update = data['force_overwrite']
+            update |= bd.external_id not in self.devices
+            update |= bd.external_id in self.devices and self.devices[bd.external_id].device_type is None 
+            update |= bd.external_id in self.devices and self.devices[bd.external_id].device_type == ''
+            update |= bd.external_id in self.devices and self.devices[bd.external_id].device_type == 'unknown'
+
+            if update:
+                self.devices[bd.external_id] = bd
+                self.controller.fire_event(ControllerEventType.UPDATE_DEVICE_REPRESENTATION, bd)
 
 
     def get_device_by_id(self, device_id:str):
@@ -294,19 +368,6 @@ class DataManager():
             if s_dev_id == dev_id:
                 result.append(s)
         return result
-
-    async def async_register_bus_device(self, device: BusObject, fam14: FAM14) -> None:
-        bd = await Device.async_get_bus_device_by_natvice_bus_object(device, fam14)
-        # if bd.base_id not in self.devices:
-        #     if device == fam14:
-        #         self.devices[bd.base_id] = bd
-        #     else:
-        #         await self.async_register_bus_device(fam14, fam14)
-        # else:
-        #     self.devices[bd.external_id] = bd
-        self.devices[bd.external_id] = bd
-
-        self.controller.fire_event(ControllerEventType.UPDATE_DEVICE_REPRESENTATION, bd)
 
     def update_device(self, device: Device) -> None:
         self.devices[device.external_id] = device

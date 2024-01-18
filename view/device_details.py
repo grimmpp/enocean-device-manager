@@ -103,10 +103,17 @@ class DeviceDetails():
             self.data_manager.update_device(self.current_device)
 
     def _update_text_field(self, text_field:Entry, value:str, state:str=DISABLED):
-        text_field.config(state=NORMAL)
-        text_field.delete(0, END)
-        text_field.insert(END, value)
-        text_field.config(state=state)
+        try:
+            text_field.config(state=NORMAL)
+            text_field.delete(0, END)
+            if value is None:
+                value = ""
+            text_field.insert(END, value)
+        except Exception as e:
+            pass
+        else:
+            text_field.config(state=state)
+
 
     def selected_device_handler(self, device:Device) -> None:
         self.current_device = device

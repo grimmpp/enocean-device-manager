@@ -36,6 +36,10 @@ class SerialConnectionBar():
         self.b_scan = Button(f, text="Scan for devices", state=DISABLED, command=self.scan_for_devices)
         self.b_scan.pack(side=tk.LEFT, padx=(0, 5), pady=5)
 
+        self.overwrite = tk.BooleanVar()
+        self.cb_overwrite = Checkbutton(f, text="Overwrite existing values", variable=self.overwrite)
+        self.cb_overwrite.pack(side=tk.LEFT, padx=(0, 5), pady=5)
+
         self.controller.add_event_handler(ControllerEventType.CONNECTION_STATUS_CHANGE, self.is_connected_handler)
         self.controller.add_event_handler(ControllerEventType.DEVICE_SCAN_STATUS, self.device_scan_status_handler)
         self.controller.add_event_handler(ControllerEventType.WINDOW_LOADED, self.on_window_loaded)
@@ -47,7 +51,7 @@ class SerialConnectionBar():
     def scan_for_devices(self):
         self.b_scan.config(state=DISABLED)
         self.b_connect.config(state=DISABLED)
-        self.controller.scan_for_devices()
+        self.controller.scan_for_devices( self.overwrite.get() )
 
     def device_scan_status_handler(self, status:str):
         if status == 'FINISHED':

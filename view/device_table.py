@@ -71,8 +71,14 @@ class DeviceTable():
         self.controller.add_event_handler(ControllerEventType.DEVICE_SCAN_STATUS, self.device_scan_status_handler)
         self.controller.add_event_handler(ControllerEventType.UPDATE_DEVICE_REPRESENTATION, self.update_device_representation_handler)
         self.controller.add_event_handler(ControllerEventType.UPDATE_SENSOR_REPRESENTATION, self.update_sensor_representation_handler)
+        self.controller.add_event_handler(ControllerEventType.LOAD_FILE, self._reset)
 
         self.data_manager = data_manager
+
+    def _reset(self, data):
+        for item in self.treeview.get_children():
+            self.treeview.delete(item)
+        self.check_if_wireless_network_exists()
 
     def on_selected(self, event):
         device_id = self.treeview.focus()
@@ -127,8 +133,14 @@ class DeviceTable():
     def update_device_representation_handler(self, d:Device):
         self.check_if_bus_element_exists(d)
 
-        if not d.is_fam14() and not self.treeview.exists(d.external_id):
-            self.treeview.insert(parent=d.base_id, index="end", iid=d.external_id, text=d.name, values=(d.address, d.external_id, d.device_type, d.comment), open=True)
+        if not d.is_fam14():
+            if not self.treeview.exists(d.external_id):
+                self.treeview.insert(parent=d.base_id, index="end", iid=d.external_id, text=d.name, values=(d.address, d.external_id, d.device_type, d.comment), open=True)
+            else:
+                # update device
+                self.treeview.item(d.external_id, text=d.name, values=(d.address, d.external_id, d.device_type, d.comment), open=True)
+                if self.treeview.parent(d.external_id) != d.base_id:
+                    self.treeview.move(d.external_id, d.base_id, 0)
 
 
         # fam14_base_id:str = data['fam14_base_id']

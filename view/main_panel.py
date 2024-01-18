@@ -47,8 +47,8 @@ class MainPanel():
         main.columnconfigure(0, weight=1, minsize=100)
 
         ## init presenters
-        MenuPresenter(main, controller)
-        ToolBar(main, controller, data_manager, row=0)
+        mp = MenuPresenter(main, controller, data_manager)
+        ToolBar(main, mp, row=0)
         SerialConnectionBar(main, controller, row=1)
         # main area
         main_split_area = ttk.PanedWindow(main, orient="vertical")

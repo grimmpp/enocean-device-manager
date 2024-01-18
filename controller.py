@@ -11,7 +11,7 @@ from termcolor import colored
 import logging
 
 from eltakobus import *
-from eltakobus.locking import buslocked
+from eltakobus.locking import buslocked, UNLOCKED
 from eltakobus.message import Regular4BSMessage
 import threading
 
@@ -30,6 +30,7 @@ class ControllerEventType(Enum):
     WINDOW_CLOSED = 8
     WINDOW_LOADED = 9
     SELECTED_DEVICE = 10                # device
+    LOAD_FILE = 11
 
 class ControllerEvent():
     def __init__(self, event_type:ControllerEventType, data):
@@ -195,11 +196,11 @@ class AppController():
         if self.is_serial_connection_active():
             self._bus.stop()
 
-    def scan_for_devices(self) -> None:
+    def scan_for_devices(self, force_overwrite:bool=False) -> None:
         # if connected to FAM14
         if self.is_fam14_connection_active():
             
-            t = threading.Thread(target=lambda: asyncio.run( self._scan_for_devices_on_bus()) )
+            t = threading.Thread(target=lambda: asyncio.run( self._scan_for_devices_on_bus(force_overwrite) )  )
             t.start()
 
     async def create_busobject(self, id: int) -> BusObject:
@@ -223,7 +224,7 @@ class AppController():
             except TimeoutError:
                 continue
 
-    async def _get_fam14_device_on_bus(self) -> None:
+    async def _get_fam14_device_on_bus(self, force_overwrite:bool=False) -> None:
         try:
             self._bus.set_callback( None )
 
@@ -235,18 +236,18 @@ class AppController():
             # first get fam14 and make it know to data manager
             fam14 = await self.create_busobject(255)
             logging.info(colored(f"Found device: {fam14}",'grey'))
-            await self.async_fire_event(ControllerEventType.ASYNC_DEVICE_DETECTED, {'device': fam14, 'fam14': fam14})
+            await self.async_fire_event(ControllerEventType.ASYNC_DEVICE_DETECTED, {'device': fam14, 'fam14': fam14, 'force_overwrite': force_overwrite})
 
         except Exception as e:
             raise e
         finally:
-            await locking.unlock_bus(self._bus)
+            resp = await locking.unlock_bus(self._bus)
 
             self.fire_event(ControllerEventType.DEVICE_SCAN_STATUS, 'FINISHED')
             self._bus.set_callback( self._send_serial_event )
 
 
-    async def _scan_for_devices_on_bus(self) -> None:
+    async def _scan_for_devices_on_bus(self, force_overwrite:bool=False) -> None:
         try:
             self.fire_event(ControllerEventType.DEVICE_SCAN_STATUS, 'STARTED')
             self._bus.set_callback( None )
@@ -261,7 +262,7 @@ class AppController():
             # first get fam14 and make it know to data manager
             fam14 = await self.create_busobject(255)
             logging.info(colored(f"Found device: {fam14}",'grey'))
-            await self.async_fire_event(ControllerEventType.ASYNC_DEVICE_DETECTED, {'device': fam14, 'fam14': fam14})
+            await self.async_fire_event(ControllerEventType.ASYNC_DEVICE_DETECTED, {'device': fam14, 'fam14': fam14, 'force_overwrite': force_overwrite})
 
             # iterate through all devices
             async for dev in self.enumerate_bus():
@@ -269,7 +270,7 @@ class AppController():
                     logging.info(colored(f"Found device: {dev}",'grey'))
                     self.fire_event(ControllerEventType.LOG_MESSAGE, {'msg': f"Found device: {dev}", 'color':'grey'})
                     self.fire_event(ControllerEventType.DEVICE_SCAN_STATUS, 'DEVICE_DETECTED')
-                    await self.async_fire_event(ControllerEventType.ASYNC_DEVICE_DETECTED, {'device': dev, 'fam14': fam14})
+                    await self.async_fire_event(ControllerEventType.ASYNC_DEVICE_DETECTED, {'device': dev, 'fam14': fam14, 'force_overwrite': force_overwrite})
 
                 except TimeoutError:
                     logging.error("Read error, skipping: Device %s announces %d memory but produces timeouts at reading" % (dev, dev.discovery_response.memory_size))
