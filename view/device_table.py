@@ -12,6 +12,7 @@ from const import *
 from homeassistant.const import CONF_ID, CONF_NAME
 
 from eltakobus.util import b2s
+from eltakobus.eep import EEP
 from data import DataManager, Device
 
 
@@ -30,12 +31,12 @@ class DeviceTable():
         self.scrollbar.pack(side="right", fill="y")
 
         # Treeview
-        columns = ("Address", "External Address", "Device Type", "Comment")
+        columns = ("Address", "External Address", "Device Type", "Comment", "Export to HA Config", "HA Platform", "Module EEP", "Sender EEP")
         self.treeview = ttk.Treeview(
             self.pane,
             selectmode="browse",
             yscrollcommand=self.scrollbar.set,
-            columns=(0,1,2,3,4),
+            columns=(0,1,2,3,4,5,6,7,8),
             height=10,
         )
         self.treeview.pack(expand=True, fill="both")
@@ -106,17 +107,16 @@ class DeviceTable():
             # self.treeview.config(state=NORMAL)
             pass
 
-    def check_if_bus_element_exists(self, d:Device):
-        if not self.treeview.exists(d.base_id):
-            text = ""
-            comment = ""
-            if d.is_fam14():
+    def add_fam14(self, d:Device):
+        if d.is_fam14():
+            if not self.treeview.exists(d.base_id):
+                text = ""
+                comment = ""
                 text = d.name
-                comment = d.comment
-            self.treeview.insert(parent="", index=0, iid=d.external_id, text=text, values=("", "", "", comment), open=True)
-        
-        elif d.is_fam14():
-            self.treeview.item(d.base_id, text=d.name, values=("", "", "", d.comment) )
+                comment = d.comment if d.comment is not None else "" 
+                self.treeview.insert(parent="", index=0, iid=d.external_id, text=text, values=("", "", "", comment, "", "", ""), open=True)
+            else:
+                self.treeview.item(d.base_id, text=d.name, values=("", "", "", d.comment) )
 
     def check_if_wireless_network_exists(self):
         id = self.NON_BUS_DEVICE_LABEL
@@ -131,17 +131,25 @@ class DeviceTable():
         return fg_id
 
     def update_device_representation_handler(self, d:Device):
-        self.check_if_bus_element_exists(d)
+        self.update_device_handler(d)
+
+    def update_device_handler(self, d:Device, parent:str=None):
 
         if not d.is_fam14():
+            in_ha = d.use_in_ha
+            ha_pl = "" if d.ha_platform is None else d.ha_platform
+            eep = "" if d.eep is None else d.eep.eep_string
+            comment = "" if d.comment is None else d.comment
+            _parent = d.base_id if parent is None else parent
             if not self.treeview.exists(d.external_id):
-                self.treeview.insert(parent=d.base_id, index="end", iid=d.external_id, text=d.name, values=(d.address, d.external_id, d.device_type, d.comment), open=True)
+                self.treeview.insert(parent=_parent, index="end", iid=d.external_id, text=d.name, values=(d.address, d.external_id, d.device_type, comment, in_ha, ha_pl, eep), open=True)
             else:
                 # update device
-                self.treeview.item(d.external_id, text=d.name, values=(d.address, d.external_id, d.device_type, d.comment), open=True)
-                if self.treeview.parent(d.external_id) != d.base_id:
-                    self.treeview.move(d.external_id, d.base_id, 0)
-
+                self.treeview.item(d.external_id, text=d.name, values=(d.address, d.external_id, d.device_type, comment, in_ha, ha_pl, eep), open=True)
+                if self.treeview.parent(_parent) != _parent:
+                    self.treeview.move(d.external_id, _parent, 0)
+        else:
+            self.add_fam14(d)
 
         # fam14_base_id:str = data['fam14_base_id']
         # device:dict = data['device']
@@ -167,11 +175,14 @@ class DeviceTable():
         
 
     def update_sensor_representation_handler(self, d:Device):
-
-        if not self.treeview.exists(d.external_id):
-            self.treeview.insert(parent=self.NON_BUS_DEVICE_LABEL, index="end", iid=d.external_id, text=d.name, values=("", d.external_id, d.device_type, d.comment), open=True)
-        else:
-            self.treeview.item(d.external_id, text=d.name, values=("", d.external_id, d.device_type, d.comment) )
+        self.update_device_handler(d, parent=self.NON_BUS_DEVICE_LABEL)
+        # in_ha = d.use_in_ha
+        # ha_pl = "" if d.ha_platform is None else d.ha_platform
+        # eep = "" if d.eep is None else d.eep.eep_string
+        # if not self.treeview.exists(d.external_id):
+        #     self.treeview.insert(parent=self.NON_BUS_DEVICE_LABEL, index="end", iid=d.external_id, text=d.name, values=("", d.external_id, d.device_type, d.comment, in_ha, ha_pl, eep), open=True)
+        # else:
+        #     self.treeview.item(d.external_id, text=d.name, values=("", d.external_id, d.device_type, d.comment, in_ha, ha_pl, eep) )
 
         # id = sensor[CONF_ID]
         # ext_id = sensor.get(CONF_EXTERNAL_ID, id)

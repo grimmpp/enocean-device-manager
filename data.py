@@ -70,7 +70,19 @@ def find_device_info_by_device_type(device_type:str) -> str:
             return i
     return None
 
+def get_eep_from_key_function_name(kf: KeyFunction) -> str:
+    pos = KeyFunction(kf).name.find('EEP_')
+    if pos > -1:
+        substr = KeyFunction(kf).name[pos+4:pos+4+8].replace('_', '-')
+        return EEP.find(substr)
+    return None
 
+def get_name_from_key_function_name(kf: KeyFunction) -> str:
+    pos = KeyFunction(kf).name.find('_ACCORDING_')
+    if pos > -1:
+        substr = KeyFunction(kf).name[0:pos].replace('_', ' ').lower().title()
+        return substr
+    return ""
 class Device():
     """Data representation of a device"""
     static_info:dict={}
@@ -82,9 +94,13 @@ class Device():
     version:str=None
     name:str=None
     comment:str = ""
-    # ha_platform:Platform=None
     base_id:str=None
     memory_entries:[SensorInfo]=[]  # only used for bus devices
+
+    use_in_ha:bool=False
+    ha_platform:Platform=None
+    eep:EEP=None
+
 
     def __init__(self, 
                  address:str=None, 
@@ -108,10 +124,6 @@ class Device():
         self.comment = comment
         self.base_id = base_id
         self.memory_entries = memory_entries
-
-    @property
-    def eep(self) -> str:
-        return self.static_info.get(CONF_EEP, None)
 
     def is_fam14(self) -> bool:
         return self.external_id == self.base_id
@@ -138,6 +150,12 @@ class Device():
         if bd.channels > 1:
             bd.name += f" ({bd.channel}/{bd.channels})"
 
+        info = find_device_info_by_device_type(bd.device_type)
+        if info is not None:
+            bd.use_in_ha = True
+            bd.ha_platform = info[CONF_TYPE]
+            bd.eep = EEP.find(info['sender_eep'])
+
         return bd
     
     @classmethod
@@ -152,6 +170,24 @@ class Device():
         else:
             bd.external_id = 'unknown'
         bd.name = 'unknown'
+        return bd
+    
+    @classmethod
+    def get_decentralized_device_by_sensor_info(cls, sensor_info:SensorInfo):
+        bd = Device()
+        bd.address = sensor_info.sensor_id_str
+        bd.base_id = '00-00-00-00'
+        bd.comment = KeyFunction(sensor_info.key_func).name
+        bd.eep = get_eep_from_key_function_name(sensor_info.key_func)
+        bd.name = f"{get_name_from_key_function_name(sensor_info.key_func)} {sensor_info.sensor_id_str}"
+        if 'PUSH_BUTTON' in KeyFunction(sensor_info.key_func).name:
+            bd.use_in_ha = True
+            bd.device_type = 'Button'
+            bd.ha_platform = Platform.BINARY_SENSOR
+            bd.eep = F6_02_01
+            bd.name = 'Button ' + sensor_info.sensor_id_str
+        bd.external_id = sensor_info.sensor_id_str
+        bd.version = 'unknown'
         return bd
 
 class DeviceEncoder(json.JSONEncoder):
@@ -225,7 +261,7 @@ class DataManager():
 
     async def _async_device_detected_handler(self, data):
         for channel in range(1, data['device'].size+1):
-            bd = await Device.async_get_bus_device_by_natvice_bus_object(data['device'], data['fam14'], channel)
+            bd:Device = await Device.async_get_bus_device_by_natvice_bus_object(data['device'], data['fam14'], channel)
             
             update = data['force_overwrite']
             update |= bd.external_id not in self.devices
@@ -236,6 +272,11 @@ class DataManager():
             if update:
                 self.devices[bd.external_id] = bd
                 self.controller.fire_event(ControllerEventType.UPDATE_DEVICE_REPRESENTATION, bd)
+
+                for si in bd.memory_entries:
+                    _bd:Device = Device.get_decentralized_device_by_sensor_info(si)
+                    self.devices[_bd.external_id] = _bd
+                    self.controller.fire_event(ControllerEventType.UPDATE_SENSOR_REPRESENTATION, _bd)
 
 
     def get_device_by_id(self, device_id:str):

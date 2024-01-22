@@ -63,6 +63,9 @@ class SerialConnectionBar():
 
     def toggle_serial_connection_command(self):
         if not self.controller.is_serial_connection_active():
+            self.b_detect.config(state=DISABLED)
+            self.b_connect.config(state=DISABLED)
+            self.b_scan.config(state=DISABLED)
             self.controller.establish_serial_connection(self.cb_serial_ports.get(), self.cb_device_type.get())
         else:
             self.controller.stop_serial_connection()
