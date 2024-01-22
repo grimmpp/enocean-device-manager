@@ -197,17 +197,17 @@ class Device():
             bd.device_type = 'Button'
             bd.ha_platform = Platform.BINARY_SENSOR
             bd.eep = F6_02_01.eep_string
-            bd.name = 'Button ' + sensor_info.sensor_id_str
+            bd.name = f"Button {sensor_info.sensor_id_str}"
         # is from FTS14EM
         elif int.from_bytes(sensor_info.sensor_id, "big") < 0x1500:
             bd.use_in_ha = True
-            bd.device_type = 'Button'
+            bd.device_type = 'FTS14EM Button'
             bd.ha_platform = Platform.BINARY_SENSOR
             bd.eep = F6_02_01.eep_string
-            bd.name = 'Button ' + sensor_info.sensor_id_str
+            bd.name = 'FTS14EM Button ' + sensor_info.sensor_id_str
 
         if sensor_info.sensor_id_str.startswith('00-00-'):
-            bd.external_id = a2s( int.from_bytes(sensor_info.sensor_id, "big") + (await fam14.get_base_id_in_int()) + channel -1 )
+            bd.external_id = a2s( int.from_bytes(sensor_info.sensor_id, "big") + (await fam14.get_base_id_in_int()) )
         else:
             bd.external_id = sensor_info.sensor_id_str
         bd.version = 'unknown'

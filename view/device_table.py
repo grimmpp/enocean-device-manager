@@ -42,20 +42,26 @@ class DeviceTable():
         self.treeview.pack(expand=True, fill="both")
         self.scrollbar.config(command=self.treeview.yview)
 
-        self.treeview.get_children()
-        def sort_treeview(tree, col, descending):
-            i = columns.index(col)
-            data = [(tree.set(item, i), item) for item in tree.get_children('')]
+        def sort_rows_in_treeview(tree:ttk.Treeview, col_i:int, descending:bool, partent:str=''):
+            data = [(tree.set(item, col_i), item) for item in tree.get_children(partent)]
             data.sort(reverse=descending)
             for index, (val, item) in enumerate(data):
-                tree.move(item, '', index)
-            tree.heading(i, command=lambda: sort_treeview(tree, col, not descending))
+                tree.move(item, partent, index)
+            
+            for item in tree.get_children(partent):
+                sort_rows_in_treeview(tree, col_i, descending, item)
+
+        def sort_treeview(tree:ttk.Treeview, col:int, descending:bool):
+            i = columns.index(col)
+            for item in tree.get_children(''):
+                sort_rows_in_treeview(tree, i, descending, item)
+            tree.heading(i, command=lambda c=col, d=(not descending): sort_treeview(tree, c, d))
 
         for col in columns:
             # Treeview headings
             i = columns.index(col)
             self.treeview.column(i, anchor="w", width=100)
-            self.treeview.heading(i, text=col, anchor="center", command=lambda c=col: sort_treeview(self.treeview, c, False))
+            self.treeview.heading(i, text=col, anchor="center", command=lambda c=col, d=False: sort_treeview(self.treeview, c, d))
         
         self.menu = Menu(main, tearoff=0)
         self.menu.add_command(label="Cut")
@@ -139,13 +145,14 @@ class DeviceTable():
             in_ha = d.use_in_ha
             ha_pl = "" if d.ha_platform is None else d.ha_platform
             eep = "" if d.eep is None else d.eep
+            device_type = "" if d.device_type is None else d.device_type
             comment = "" if d.comment is None else d.comment
             _parent = d.base_id if parent is None else parent
             if not self.treeview.exists(d.external_id):
-                self.treeview.insert(parent=_parent, index="end", iid=d.external_id, text=d.name, values=(d.address, d.external_id, d.device_type, comment, in_ha, ha_pl, eep), open=True)
+                self.treeview.insert(parent=_parent, index="end", iid=d.external_id, text=d.name, values=(d.address, d.external_id, device_type, comment, in_ha, ha_pl, eep), open=True)
             else:
                 # update device
-                self.treeview.item(d.external_id, text=d.name, values=(d.address, d.external_id, d.device_type, comment, in_ha, ha_pl, eep), open=True)
+                self.treeview.item(d.external_id, text=d.name, values=(d.address, d.external_id, device_type, comment, in_ha, ha_pl, eep), open=True)
                 if self.treeview.parent(_parent) != _parent:
                     self.treeview.move(d.external_id, _parent, 0)
         else:
