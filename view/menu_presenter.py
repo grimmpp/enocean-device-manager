@@ -98,10 +98,10 @@ class MenuPresenter():
 
             filename = filedialog.asksaveasfilename(initialdir=self.remember_latest_filename, 
                                                 title="Save Home Assistant Configuration",
-                                                filetypes=[("Home Assistant Configuration", "*.conf")],
-                                                defaultextension=".conf")
-            if not filename.endswith('.conf'):
-                filename += '.conf'
+                                                filetypes=[("Home Assistant Configuration", "*.yaml")],
+                                                defaultextension=".yaml")
+            if not filename.endswith('.yaml'):
+                filename += '.yaml'
             self.remember_latest_ha_config_filename = filename
 
         file_content = self.data_manager.generate_ha_config()

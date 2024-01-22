@@ -42,12 +42,14 @@ class DeviceTable():
         self.treeview.pack(expand=True, fill="both")
         self.scrollbar.config(command=self.treeview.yview)
 
+        self.treeview.get_children()
         def sort_treeview(tree, col, descending):
-            data = [(tree.set(item, col), item) for item in tree.get_children('')]
+            i = columns.index(col)
+            data = [(tree.set(item, i), item) for item in tree.get_children('')]
             data.sort(reverse=descending)
             for index, (val, item) in enumerate(data):
                 tree.move(item, '', index)
-            tree.heading(col, command=lambda: sort_treeview(tree, col, not descending))
+            tree.heading(i, command=lambda: sort_treeview(tree, col, not descending))
 
         for col in columns:
             # Treeview headings
@@ -115,23 +117,16 @@ class DeviceTable():
                 comment = ""
                 text = d.name
                 comment = d.comment if d.comment is not None else "" 
-                self.treeview.insert(parent="", index=0, iid=d.external_id, text=text, values=("", "", "", comment, "", "", ""), open=True)
+                in_ha = d.use_in_ha
+                self.treeview.insert(parent="", index=0, iid=d.external_id, text=text, values=("", "", "", comment, in_ha, "", ""), open=True)
             else:
-                self.treeview.item(d.base_id, text=d.name, values=("", "", "", d.comment) )
+                self.treeview.item(d.base_id, text=d.name, values=("", "", "", d.comment, d.use_in_ha, "", "") )
 
 
     def check_if_wireless_network_exists(self):
         id = self.NON_BUS_DEVICE_LABEL
         if not self.treeview.exists(id):
-            self.treeview.insert(parent="", index="end", iid=id, text=self.NON_BUS_DEVICE_LABEL, values=("", "", ""), open=True)
-
-
-    def add_function_group(self, external_dev_id:str, func_group_id:str) -> str:
-        fg_id = f"{external_dev_id}_{func_group_id}"
-        if not self.treeview.exists(fg_id):
-            text = "Function Group: "+str(func_group_id)
-            self.treeview.insert(parent=external_dev_id, index="end", iid=fg_id, text=text, values=("", "", ""), open=True)
-        return fg_id
+            self.treeview.insert(parent="", index="end", iid=id, text=self.NON_BUS_DEVICE_LABEL, values=("", "", "", "", "", "", ""), open=True)
 
 
     def update_device_representation_handler(self, d:Device):

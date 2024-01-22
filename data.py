@@ -36,6 +36,9 @@ EEP_MAPPING = [
     {'hw-type': 'F3Z14D', CONF_EEP: 'A5-12-03', CONF_TYPE: Platform.SENSOR, 'description': 'Automated meter reading - water', 'address_count': 1},
 
     {'hw-type': 'FUD14', CONF_EEP: 'A5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Central command - gateway', 'address_count': 1},
+    {'hw-type': 'FUD14_800W', CONF_EEP: 'A5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Central command - gateway', 'address_count': 1},
+
+    {'hw-type': 'FMZ14', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Eltako relay', 'address_count': 1},
     {'hw-type': 'FSR14_1x', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Eltako relay', 'address_count': 1},
     {'hw-type': 'FSR14_x2', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Eltako relay', 'address_count': 2},
     {'hw-type': 'FSR14_4x', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Eltako relay', 'address_count': 4},
@@ -100,7 +103,7 @@ class Device():
     # vars for ha
     use_in_ha:bool=False
     ha_platform:Platform=None
-    eep:EEP=None
+    eep:str=None
     additional_fields:dict={}
 
 
@@ -145,6 +148,7 @@ class Device():
         bd.version = '.'.join(map(str,device.version))
         if isinstance(device, FAM14):
             bd.external_id = bd.base_id
+            bd.use_in_ha = True
         else:
             bd.external_id = a2s( (await fam14.get_base_id_in_int()) + device.address + channel -1 )
         bd.memory_entries = await device.get_all_sensors()
@@ -175,20 +179,37 @@ class Device():
         return bd
     
     @classmethod
-    def get_decentralized_device_by_sensor_info(cls, sensor_info:SensorInfo):
+    async def async_get_decentralized_device_by_sensor_info(cls, sensor_info:SensorInfo, device: BusObject, fam14: FAM14, channel:int=1):
         bd = Device()
         bd.address = sensor_info.sensor_id_str
-        bd.base_id = '00-00-00-00'
+        bd.base_id = await fam14.get_base_id()
         bd.comment = KeyFunction(sensor_info.key_func).name
         bd.eep = get_eep_from_key_function_name(sensor_info.key_func)
         bd.name = f"{get_name_from_key_function_name(sensor_info.key_func)} {sensor_info.sensor_id_str}"
-        if 'PUSH_BUTTON' in KeyFunction(sensor_info.key_func).name:
+        # found sensor by EEP in KeyFunction
+        if bd.eep and bd.name:
+            bd.use_in_ha = True
+            bd.device_type = 'Sensor'
+            bd.ha_platform = Platform.SENSOR
+        # buttons but ignore virtual buttons from HA
+        elif 'PUSH_BUTTON' in KeyFunction(sensor_info.key_func).name and not sensor_info.sensor_id_str.startswith('00-00-'):
             bd.use_in_ha = True
             bd.device_type = 'Button'
             bd.ha_platform = Platform.BINARY_SENSOR
             bd.eep = F6_02_01.eep_string
             bd.name = 'Button ' + sensor_info.sensor_id_str
-        bd.external_id = sensor_info.sensor_id_str
+        # is from FTS14EM
+        elif int.from_bytes(sensor_info.sensor_id, "big") < 0x1500:
+            bd.use_in_ha = True
+            bd.device_type = 'Button'
+            bd.ha_platform = Platform.BINARY_SENSOR
+            bd.eep = F6_02_01.eep_string
+            bd.name = 'Button ' + sensor_info.sensor_id_str
+
+        if sensor_info.sensor_id_str.startswith('00-00-'):
+            bd.external_id = a2s( int.from_bytes(sensor_info.sensor_id, "big") + (await fam14.get_base_id_in_int()) + channel -1 )
+        else:
+            bd.external_id = sensor_info.sensor_id_str
         bd.version = 'unknown'
         return bd
 
@@ -222,24 +243,6 @@ class DataManager():
 
     def _reset(self, data):
         self.devices = {}
-
-    # def export_cached_objects(self, filename:str):
-    #     data = {'devices': self.devices}
-
-    #     with open(filename, 'w') as file:
-    #         if filename.lower().endswith('.yaml') or filename.lower().endswith('.yml'):
-    #             file.write( yaml.safe_dump(data) )
-    #         elif filename.lower().endswith('.json'): 
-    #             json.dump(data, file, indent=4, sort_keys=True, cls=DeviceEncoder)
-                
-    # def load_from_file(self, filename:str):
-    #     data = {}
-    #     with open(filename) as file:
-    #         if filename.lower().endswith('.yaml') or filename.lower().endswith('.yml'):
-    #             data = yaml.safe_load( file.read() )
-    #         elif filename.lower().endswith('.json'): 
-    #             data = json.load(file)
-    #     self.load_devices(data['devices'])
 
     def load_devices(self, devices:dict):
         for key in devices.keys():
@@ -276,7 +279,7 @@ class DataManager():
                 self.controller.fire_event(ControllerEventType.UPDATE_DEVICE_REPRESENTATION, bd)
 
                 for si in bd.memory_entries:
-                    _bd:Device = Device.get_decentralized_device_by_sensor_info(si)
+                    _bd:Device = await Device.async_get_decentralized_device_by_sensor_info(si, data['device'], data['fam14'], channel)
                     self.devices[_bd.external_id] = _bd
                     self.controller.fire_event(ControllerEventType.UPDATE_SENSOR_REPRESENTATION, _bd)
 
@@ -556,6 +559,8 @@ class DataManager():
 
     def generate_ha_config(self) -> str:
         ha_platforms = set([str(d.ha_platform) for d in self.devices.values() if d.ha_platform is not None])
+        fam14s = [d for d in self.devices.values() if d.is_fam14() and d.use_in_ha]
+        devices = [d for d in self.devices.values() if not d.is_fam14() and d.use_in_ha]
 
         out = f"{DOMAIN}:\n"
         out += f"  {CONF_GERNERAL_SETTINGS}:\n"
@@ -565,29 +570,27 @@ class DataManager():
         
         fam14_id = 0
         # add fam14 gateways
-        for d in self.devices.values():
+        for d in fam14s:
             fam14:Device = d
-            if fam14.is_fam14():
-                fam14_id += 1
-                out += f"  {CONF_GATEWAY}:\n"
-                out += f"  - {CONF_ID}: {fam14_id}\n"
-                gw_fam14 = GatewayDeviceType.GatewayEltakoFAM14.value
-                gw_fgw14usb = GatewayDeviceType.GatewayEltakoFGW14USB.value
-                out += f"    {CONF_DEVICE_TYPE}: {gw_fam14}   # you can simply change {gw_fam14} to {gw_fgw14usb}\n"
-                out += f"    {CONF_BASE_ID}: {fam14.external_id}\n"
-                out += f"    # {CONF_COMMENT}: {fam14.comment}\n"
-                out += f"    {CONF_DEVICES}:\n"
+            fam14_id += 1
+            out += f"  {CONF_GATEWAY}:\n"
+            out += f"  - {CONF_ID}: {fam14_id}\n"
+            gw_fam14 = GatewayDeviceType.GatewayEltakoFAM14.value
+            gw_fgw14usb = GatewayDeviceType.GatewayEltakoFGW14USB.value
+            out += f"    {CONF_DEVICE_TYPE}: {gw_fam14}   # you can simply change {gw_fam14} to {gw_fgw14usb}\n"
+            out += f"    {CONF_BASE_ID}: {fam14.external_id}\n"
+            out += f"    # {CONF_COMMENT}: {fam14.comment}\n"
+            out += f"    {CONF_DEVICES}:\n"
 
-                for platform in ha_platforms:
-                    out += f"      {platform}:\n"
-                    for _d in self.devices.values():
-                        device:Device = _d
-                        # devices
-                        if not device.is_fam14() and device.ha_platform == platform and device.base_id == fam14.external_id:
-                            # print devices and sensors recursively
-                            out += self.config_section_from_device_to_string(device, True, 0) + "\n\n"
-                        elif 'sensor' in platform and device.ha_platform == platform:
-                            out += self.config_section_from_device_to_string(device, True, 0) + "\n\n"
+            for platform in ha_platforms:
+                out += f"      {platform}:\n"
+                for _d in [d for d in devices if d.ha_platform == platform]:
+                    device:Device = _d
+                    # devices
+                    if device.base_id == fam14.external_id:
+                        out += self.config_section_from_device_to_string(device, True, 0) + "\n\n"
+                    elif 'sensor' in platform:
+                        out += self.config_section_from_device_to_string(device, True, 0) + "\n\n"
         # logs
         out += "logger:\n"
         out += "  default: info\n"
@@ -597,38 +600,6 @@ class DataManager():
         return out
 
 
-
-    def generate_config(self) -> str:
-        e = self.eltako
-
-        out = f"{DOMAIN}:\n"
-        out += f"  {CONF_GERNERAL_SETTINGS}:\n"
-        out += f"    {CONF_FAST_STATUS_CHANGE}: False\n"
-        out += f"    {CONF_SHOW_DEV_ID_IN_DEV_NAME}: False\n"
-        out += f"\n"
-        out += f"  {CONF_GATEWAY}:\n"
-        out += f"  - {CONF_ID}: 1\n"
-        fam14 = GatewayDeviceType.GatewayEltakoFAM14.value
-        fgw14usb = GatewayDeviceType.GatewayEltakoFGW14USB.value
-        out += f"    {CONF_DEVICE_TYPE}: {fam14}   # you can simply change {fam14} to {fgw14usb}\n"
-        out += f"    {CONF_BASE_ID}: {self.fam14_base_id}\n"
-        out += f"    {CONF_DEVICES}:\n"
-        # go through platforms
-        for type_key in e.keys():
-            if len(e[type_key]) > 0:
-                if type_key == CONF_UNKNOWN:
-                    out += f"      # SECTION '{CONF_UNKNOWN}' NEEDS TO BE REMOVED!!!\n"
-                out += f"      {type_key}:\n"
-                for item in e[type_key]:
-                    # print devices and sensors recursively
-                    out += self.config_section_to_string(item, True, 0) + "\n\n"
-        # logs
-        out += "logger:\n"
-        out += "  default: info\n"
-        out += "  logs:\n"
-        out += f"    {DOMAIN}: debug\n"
-
-        return out
 
     def config_section_from_device_to_string(self, device:Device, is_list:bool, space_count:int=0) -> str:
         out = ""
@@ -648,32 +619,6 @@ class DataManager():
 
         for key in device.additional_fields.keys():
             value = device.additional_fields[key]
-            if isinstance(value, str) or isinstance(value, int):
-                if key not in [CONF_ID, CONF_COMMENT, CONF_REGISTERED_IN, CONF_PLATFORM]:
-                    if isinstance(value, str) and '?' in value:
-                        value += " # <= NEED TO BE COMPLETED!!!"
-                    out += spaces + f"{key}: {value}\n"
-            elif isinstance(value, dict):
-                out += spaces + f"{key}: \n"
-                out += self.config_section_to_string(value, False, space_count+2)
-        
-        return out
-
-    def config_section_to_string(self, config, is_list:bool, space_count:int=0) -> str:
-        out = ""
-        spaces = space_count*" " + "        "
-        S = '-' if is_list else ' '
-
-        if CONF_COMMENT in config:
-            out += spaces + f"# {config[CONF_COMMENT]}\n"
-        if CONF_REGISTERED_IN in config:
-            dev_id_list = list(set(config[CONF_REGISTERED_IN]))
-            dev_id_list.sort()
-            out += spaces + f"# REGISTERD IN DEVICE: {dev_id_list}\n"
-        out += spaces[:-2] + f"{S} {CONF_ID}: {config[CONF_ID]}\n"
-
-        for key in config.keys():
-            value = config[key]
             if isinstance(value, str) or isinstance(value, int):
                 if key not in [CONF_ID, CONF_COMMENT, CONF_REGISTERED_IN, CONF_PLATFORM]:
                     if isinstance(value, str) and '?' in value:
