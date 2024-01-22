@@ -22,15 +22,10 @@ class ToolBar():
         f = Frame(main, bd=1)#, relief=SUNKEN)
         f.grid(row=row, column=0, columnspan=1, sticky=W+E+N+S)
 
-        b = self._create_img_button(f, "Save to current file", "icons/Oxygen480-actions-document-save.png", menu_presenter._save_file )
-        b = self._create_img_button(f, "Save as file", "icons/Oxygen480-actions-document-save-as.png", lambda: menu_presenter._save_file(True) )
-        b = self._create_img_button(f, "Open file", "icons/Oxygen480-status-folder-open.png", menu_presenter._load_file)
-        b = self._create_img_button(f, "Export Home Assistant Configuration", "icons/Home_Assistant_Logo.png", None)
-        b.config(command=self._export_home_assistant_configuration)
-
-    def _export_home_assistant_configuration(self) -> None:
-        pass
-        
+        b = self._create_img_button(f, "Save to current file", "icons/Oxygen480-actions-document-save.png", menu_presenter.save_file )
+        b = self._create_img_button(f, "Save as file", "icons/Oxygen480-actions-document-save-as.png", lambda: menu_presenter.save_file(save_as=True) )
+        b = self._create_img_button(f, "Open file", "icons/Oxygen480-status-folder-open.png", menu_presenter.load_file)
+        b = self._create_img_button(f, "Export Home Assistant Configuration", "icons/Home_Assistant_Logo.png", menu_presenter.export_ha_config)
 
     def _create_img_button(self, f:Frame, tooltip:str, img_filename:str, command) -> Button:
         img = Image.open(img_filename)

@@ -16,6 +16,7 @@ from eltakobus.message import EltakoPoll, EltakoDiscoveryReply, EltakoDiscoveryR
 from eltakobus.util import b2s
 from eltakobus.device import KeyFunction, SensorInfo
 from data import DataManager, Device
+from view import DEFAULT_WINDOW_TITLE
 from view.device_details import DeviceDetails
 
 from view.device_table import DeviceTable
@@ -24,11 +25,6 @@ from view.menu_presenter import MenuPresenter
 from view.serial_communication_bar import SerialConnectionBar
 from view.status_bar import StatusBar
 from view.tool_bar import ToolBar
-
-
-
-
-
 
 class MainPanel():
 
@@ -78,7 +74,7 @@ class MainPanel():
 
 
     def _init_window(self):
-        self.main.title("Device Manager")
+        self.main.title(DEFAULT_WINDOW_TITLE)
         # main.geometry("500x300")  # set starting size of window
         self.main.config(bg="lightgrey")
         self.main.protocol("WM_DELETE_WINDOW", self.on_closing)

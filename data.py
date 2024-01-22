@@ -74,7 +74,7 @@ def get_eep_from_key_function_name(kf: KeyFunction) -> str:
     pos = KeyFunction(kf).name.find('EEP_')
     if pos > -1:
         substr = KeyFunction(kf).name[pos+4:pos+4+8].replace('_', '-')
-        return EEP.find(substr)
+        return substr
     return None
 
 def get_name_from_key_function_name(kf: KeyFunction) -> str:
@@ -97,9 +97,11 @@ class Device():
     base_id:str=None
     memory_entries:[SensorInfo]=[]  # only used for bus devices
 
+    # vars for ha
     use_in_ha:bool=False
     ha_platform:Platform=None
     eep:EEP=None
+    additional_fields:dict={}
 
 
     def __init__(self, 
@@ -154,7 +156,7 @@ class Device():
         if info is not None:
             bd.use_in_ha = True
             bd.ha_platform = info[CONF_TYPE]
-            bd.eep = EEP.find(info['sender_eep'])
+            bd.eep = info['sender_eep']
 
         return bd
     
@@ -184,7 +186,7 @@ class Device():
             bd.use_in_ha = True
             bd.device_type = 'Button'
             bd.ha_platform = Platform.BINARY_SENSOR
-            bd.eep = F6_02_01
+            bd.eep = F6_02_01.eep_string
             bd.name = 'Button ' + sensor_info.sensor_id_str
         bd.external_id = sensor_info.sensor_id_str
         bd.version = 'unknown'
@@ -552,6 +554,48 @@ class DataManager():
                     pass
                     # unknow actuator on bus
 
+    def generate_ha_config(self) -> str:
+        ha_platforms = set([str(d.ha_platform) for d in self.devices.values() if d.ha_platform is not None])
+
+        out = f"{DOMAIN}:\n"
+        out += f"  {CONF_GERNERAL_SETTINGS}:\n"
+        out += f"    {CONF_FAST_STATUS_CHANGE}: False\n"
+        out += f"    {CONF_SHOW_DEV_ID_IN_DEV_NAME}: False\n"
+        out += f"\n"
+        
+        fam14_id = 0
+        # add fam14 gateways
+        for d in self.devices.values():
+            fam14:Device = d
+            if fam14.is_fam14():
+                fam14_id += 1
+                out += f"  {CONF_GATEWAY}:\n"
+                out += f"  - {CONF_ID}: {fam14_id}\n"
+                gw_fam14 = GatewayDeviceType.GatewayEltakoFAM14.value
+                gw_fgw14usb = GatewayDeviceType.GatewayEltakoFGW14USB.value
+                out += f"    {CONF_DEVICE_TYPE}: {gw_fam14}   # you can simply change {gw_fam14} to {gw_fgw14usb}\n"
+                out += f"    {CONF_BASE_ID}: {fam14.external_id}\n"
+                out += f"    # {CONF_COMMENT}: {fam14.comment}\n"
+                out += f"    {CONF_DEVICES}:\n"
+
+                for platform in ha_platforms:
+                    out += f"      {platform}:\n"
+                    for _d in self.devices.values():
+                        device:Device = _d
+                        # devices
+                        if not device.is_fam14() and device.ha_platform == platform and device.base_id == fam14.external_id:
+                            # print devices and sensors recursively
+                            out += self.config_section_from_device_to_string(device, True, 0) + "\n\n"
+                        elif 'sensor' in platform and device.ha_platform == platform:
+                            out += self.config_section_from_device_to_string(device, True, 0) + "\n\n"
+        # logs
+        out += "logger:\n"
+        out += "  default: info\n"
+        out += "  logs:\n"
+        out += f"    {DOMAIN}: info\n"
+
+        return out
+
 
 
     def generate_config(self) -> str:
@@ -584,6 +628,35 @@ class DataManager():
         out += "  logs:\n"
         out += f"    {DOMAIN}: debug\n"
 
+        return out
+
+    def config_section_from_device_to_string(self, device:Device, is_list:bool, space_count:int=0) -> str:
+        out = ""
+        spaces = space_count*" " + "        "
+        S = '-' if is_list else ' '
+
+        if device.comment:
+            out += spaces + f"# {device.comment}\n"
+        # parent relation
+        # if CONF_REGISTERED_IN in config:
+        #     dev_id_list = list(set(config[CONF_REGISTERED_IN]))
+        #     dev_id_list.sort()
+        #     out += spaces + f"# REGISTERD IN DEVICE: {dev_id_list}\n"
+        out += spaces[:-2] + f"{S} {CONF_ID}: {device.address}\n"
+        out += spaces[:-2] + f"{S} {CONF_NAME}: {device.name}\n"
+        out += spaces[:-2] + f"{S} {CONF_EEP}: {device.eep}\n"
+
+        for key in device.additional_fields.keys():
+            value = device.additional_fields[key]
+            if isinstance(value, str) or isinstance(value, int):
+                if key not in [CONF_ID, CONF_COMMENT, CONF_REGISTERED_IN, CONF_PLATFORM]:
+                    if isinstance(value, str) and '?' in value:
+                        value += " # <= NEED TO BE COMPLETED!!!"
+                    out += spaces + f"{key}: {value}\n"
+            elif isinstance(value, dict):
+                out += spaces + f"{key}: \n"
+                out += self.config_section_to_string(value, False, space_count+2)
+        
         return out
 
     def config_section_to_string(self, config, is_list:bool, space_count:int=0) -> str:

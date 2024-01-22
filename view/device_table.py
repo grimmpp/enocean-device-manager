@@ -107,6 +107,7 @@ class DeviceTable():
             # self.treeview.config(state=NORMAL)
             pass
 
+
     def add_fam14(self, d:Device):
         if d.is_fam14():
             if not self.treeview.exists(d.base_id):
@@ -118,10 +119,12 @@ class DeviceTable():
             else:
                 self.treeview.item(d.base_id, text=d.name, values=("", "", "", d.comment) )
 
+
     def check_if_wireless_network_exists(self):
         id = self.NON_BUS_DEVICE_LABEL
         if not self.treeview.exists(id):
             self.treeview.insert(parent="", index="end", iid=id, text=self.NON_BUS_DEVICE_LABEL, values=("", "", ""), open=True)
+
 
     def add_function_group(self, external_dev_id:str, func_group_id:str) -> str:
         fg_id = f"{external_dev_id}_{func_group_id}"
@@ -130,15 +133,17 @@ class DeviceTable():
             self.treeview.insert(parent=external_dev_id, index="end", iid=fg_id, text=text, values=("", "", ""), open=True)
         return fg_id
 
+
     def update_device_representation_handler(self, d:Device):
         self.update_device_handler(d)
+
 
     def update_device_handler(self, d:Device, parent:str=None):
 
         if not d.is_fam14():
             in_ha = d.use_in_ha
             ha_pl = "" if d.ha_platform is None else d.ha_platform
-            eep = "" if d.eep is None else d.eep.eep_string
+            eep = "" if d.eep is None else d.eep
             comment = "" if d.comment is None else d.comment
             _parent = d.base_id if parent is None else parent
             if not self.treeview.exists(d.external_id):
@@ -150,54 +155,7 @@ class DeviceTable():
                     self.treeview.move(d.external_id, _parent, 0)
         else:
             self.add_fam14(d)
-
-        # fam14_base_id:str = data['fam14_base_id']
-        # device:dict = data['device']
-        # is_fam14 = device[CONF_ID] == '00-00-00-FF'
-        # external_id = device[CONF_EXTERNAL_ID]
-        
-        # self.check_if_bus_element_exists(fam14_base_id)
-        
-        # if not is_fam14 and not self.treeview.exists(external_id):
-        #     id = device[CONF_ID]
-        #     name = device[CONF_NAME]
-        #     text = f"{name}<{id}>"
-        #     comment = device.get(CONF_COMMENT, '')
-        #     self.treeview.insert(parent=fam14_base_id, index="end", iid=external_id, text=text, values=(id, external_id, name, comment), open=True)
-
-        #     for ml in device[CONF_MEMORY_ENTRIES]:
-        #         fg_id = self.add_function_group(external_id, ml.in_func_group)
-        #         ml_id = f"mem_line_{external_id}_{ml.memory_line}"
-        #         text = "Mem Entry: "+str(ml.memory_line)
-        #         name = KeyFunction(ml.key_func).name
-        #         comment = ""
-        #         self.treeview.insert(parent=fg_id, index="end", iid=ml_id, text=text, values=(ml.sensor_id_str, ml.sensor_id_str, name, comment), open=True)
         
 
     def update_sensor_representation_handler(self, d:Device):
         self.update_device_handler(d, parent=self.NON_BUS_DEVICE_LABEL)
-        # in_ha = d.use_in_ha
-        # ha_pl = "" if d.ha_platform is None else d.ha_platform
-        # eep = "" if d.eep is None else d.eep.eep_string
-        # if not self.treeview.exists(d.external_id):
-        #     self.treeview.insert(parent=self.NON_BUS_DEVICE_LABEL, index="end", iid=d.external_id, text=d.name, values=("", d.external_id, d.device_type, d.comment, in_ha, ha_pl, eep), open=True)
-        # else:
-        #     self.treeview.item(d.external_id, text=d.name, values=("", d.external_id, d.device_type, d.comment, in_ha, ha_pl, eep) )
-
-        # id = sensor[CONF_ID]
-        # ext_id = sensor.get(CONF_EXTERNAL_ID, id)
-        # base_id = sensor.get(CONF_BASE_ID, None)
-        # if base_id is None and not self.treeview.exists(ext_id):
-        #     name = sensor.get(CONF_NAME, '')
-        #     text = f"{name}<{id}>"
-        #     comment = sensor.get(CONF_COMMENT, '')
-        #     self.treeview.insert(parent=self.NON_BUS_DEVICE_LABEL, index="end", iid=ext_id, text=text, values=(id, ext_id, name, comment))
-        
-        # ext_dev_ids = sensor.get(CONF_CONFIGURED_IN_DEVICES, [])
-        # for ext_dev_id in ext_dev_ids:
-        #     unique_id = f"{ext_id}_{ext_dev_id}"
-        #     if not self.treeview.exists(unique_id):
-        #         name = sensor.get(CONF_NAME, '')
-        #         text = f"{name}<{id}>"
-        #         comment = sensor.get(CONF_COMMENT, '')
-        #         self.treeview.insert(parent=ext_dev_id, index="end", iid=unique_id, text=text, values=(id, ext_id, name, comment))
