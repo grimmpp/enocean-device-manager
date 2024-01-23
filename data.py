@@ -21,6 +21,7 @@ from eltakobus.eep import *
 from eltakobus.device import SensorInfo, KeyFunction
 from eltakobus.util import b2s, AddressExpression
 
+SENDER_BASE_ID = 0x0000B000
 
 EEP_MAPPING = [
     {'hw-type': 'FTS14EM', CONF_EEP: 'F6-02-01', CONF_TYPE: Platform.BINARY_SENSOR, 'description': 'Rocker switch', 'address_count': 1},
@@ -29,7 +30,7 @@ EEP_MAPPING = [
     {'hw-type': 'FTS14EM', CONF_EEP: 'D5-00-01', CONF_TYPE: Platform.BINARY_SENSOR, 'description': 'Contact sensor', 'address_count': 1},
     {'hw-type': 'FTS14EM', CONF_EEP: 'A5-08-01', CONF_TYPE: Platform.BINARY_SENSOR, 'description': 'Occupancy sensor', 'address_count': 1},
 
-    {'hw-type': 'FWG14', CONF_EEP: 'A5-13-01', CONF_TYPE: Platform.SENSOR, 'description': 'Weather station', 'address_count': 1},
+    # {'hw-type': 'FWG14', CONF_EEP: 'A5-13-01', CONF_TYPE: Platform.SENSOR, 'description': 'Weather station', 'address_count': 1},
     {'hw-type': 'FTS14EM', CONF_EEP: 'A5-12-01', CONF_TYPE: Platform.SENSOR, 'description': 'Window handle', 'address_count': 1},
     {'hw-type': 'FSDG14', CONF_EEP: 'A5-12-02', CONF_TYPE: Platform.SENSOR, 'description': 'Automated meter reading - electricity', 'address_count': 1},
     {'hw-type': 'F3Z14D', CONF_EEP: 'A5-13-01', CONF_TYPE: Platform.SENSOR, 'description': 'Automated meter reading - gas', 'address_count': 1},
@@ -67,7 +68,7 @@ def a2s(address:int):
     
     return b2s( address.to_bytes(4, byteorder = 'big') )
 
-def find_device_info_by_device_type(device_type:str) -> str:
+def find_device_info_by_device_type(device_type:str) -> dict:
     for i in EEP_MAPPING:
         if i['hw-type'] == device_type:
             return i
@@ -86,6 +87,26 @@ def get_name_from_key_function_name(kf: KeyFunction) -> str:
         substr = KeyFunction(kf).name[0:pos].replace('_', ' ').lower().title()
         return substr
     return ""
+
+class BusObjectHelper():
+
+    @classmethod
+    def find_sensors(cls, sensors:[SensorInfo], dev_id: int, channel:int, in_func_group: int) -> [SensorInfo]:
+        result = []
+        for s in sensors: 
+            if s.dev_id == dev_id and s.channel == channel and s.in_func_group == in_func_group:
+                result.append(s)
+        return result
+
+    @classmethod
+    def find_sensor(cls, sensors:[SensorInfo], dev_id: int, channel:int, in_func_group: int) -> SensorInfo:
+        l = cls.find_sensors(sensors, dev_id, channel, in_func_group)
+        if len(l) > 0:
+            return l[0]
+        return None
+    
+    
+    
 class Device():
     """Data representation of a device"""
     static_info:dict={}
@@ -140,7 +161,9 @@ class Device():
     async def async_get_bus_device_by_natvice_bus_object(cls, device: BusObject, fam14: FAM14, channel:int=1):
 
         bd = Device()
-        bd.address = a2s( device.address + channel -1 )
+        bd.additional_fields = {}
+        id = device.address + channel -1
+        bd.address = a2s( id )
         bd.channel = channel
         bd.channels = device.size
         bd.base_id = await fam14.get_base_id()
@@ -150,17 +173,39 @@ class Device():
             bd.external_id = bd.base_id
             bd.use_in_ha = True
         else:
-            bd.external_id = a2s( (await fam14.get_base_id_in_int()) + device.address + channel -1 )
+            bd.external_id = a2s( (await fam14.get_base_id_in_int()) + id )
         bd.memory_entries = await device.get_all_sensors()
         bd.name = f"{bd.device_type} {bd.address}"
         if bd.channels > 1:
             bd.name += f" ({bd.channel}/{bd.channels})"
 
-        info = find_device_info_by_device_type(bd.device_type)
+        info:dict = find_device_info_by_device_type(bd.device_type)
         if info is not None:
             bd.use_in_ha = True
             bd.ha_platform = info[CONF_TYPE]
-            bd.eep = info['sender_eep']
+            bd.eep = info.get(CONF_EEP, None)
+
+            if info.get('sender_eep', None):
+                bd.additional_fields['sender'] = {
+                    CONF_ID: a2s( SENDER_BASE_ID + id ),
+                    CONF_EEP: info.get('sender_eep')
+                }
+
+            if info[CONF_TYPE] == Platform.COVER:
+                bd.additional_fields[CONF_DEVICE_CLASS] = 'shutter'
+                bd.additional_fields[CONF_TIME_CLOSES] = 25
+                bd.additional_fields[CONF_TIME_OPENS] = 25
+
+            if info[CONF_TYPE] == Platform.CLIMATE:
+                bd.additional_fields[CONF_TEMPERATURE_UNIT] = f"'{UnitOfTemperature.KELVIN}'"
+                bd.additional_fields[CONF_MIN_TARGET_TEMPERATURE] = 16
+                bd.additional_fields[CONF_MAX_TARGET_TEMPERATURE] = 25
+                thermostat = BusObjectHelper.find_sensor(bd.memory_entries, device.address, channel, in_func_group=1)
+                if thermostat:
+                    bd.additional_fields[CONF_ROOM_THERMOSTAT] = {}
+                    bd.additional_fields[CONF_ROOM_THERMOSTAT][CONF_ID] = b2s(thermostat.sensor_id)
+                    bd.additional_fields[CONF_ROOM_THERMOSTAT][CONF_EEP] = A5_10_06.eep_string   #TODO: derive EEP from switch/sensor function
+                #TODO: cooling_mode
 
         return bd
     
@@ -604,7 +649,6 @@ class DataManager():
     def config_section_from_device_to_string(self, device:Device, is_list:bool, space_count:int=0) -> str:
         out = ""
         spaces = space_count*" " + "        "
-        S = '-' if is_list else ' '
 
         if device.comment:
             out += spaces + f"# {device.comment}\n"
@@ -613,21 +657,27 @@ class DataManager():
         #     dev_id_list = list(set(config[CONF_REGISTERED_IN]))
         #     dev_id_list.sort()
         #     out += spaces + f"# REGISTERD IN DEVICE: {dev_id_list}\n"
-        out += spaces[:-2] + f"{S} {CONF_ID}: {device.address}\n"
-        out += spaces[:-2] + f"{S} {CONF_NAME}: {device.name}\n"
-        out += spaces[:-2] + f"{S} {CONF_EEP}: {device.eep}\n"
+        out += spaces[:-2] + f"- {CONF_ID}: {device.address}\n"
+        out += spaces[:-2] + f"  {CONF_NAME}: {device.name}\n"
+        out += spaces[:-2] + f"  {CONF_EEP}: {device.eep}\n"
 
-        for key in device.additional_fields.keys():
-            value = device.additional_fields[key]
+        out += self.export_additional_fields(device.additional_fields, space_count)
+        
+        return out
+    
+    def export_additional_fields(self, additional_fields:dict, space_count:int=0) -> str:
+        out = ""
+        spaces = space_count*" " + "        "
+        for key in additional_fields.keys():
+            value = additional_fields[key]
             if isinstance(value, str) or isinstance(value, int):
-                if key not in [CONF_ID, CONF_COMMENT, CONF_REGISTERED_IN, CONF_PLATFORM]:
+                if key not in [CONF_COMMENT, CONF_REGISTERED_IN]:
                     if isinstance(value, str) and '?' in value:
                         value += " # <= NEED TO BE COMPLETED!!!"
-                    out += spaces + f"{key}: {value}\n"
+                    out += f"{spaces}{key}: {value}\n"
             elif isinstance(value, dict):
-                out += spaces + f"{key}: \n"
-                out += self.config_section_to_string(value, False, space_count+2)
-        
+                out += f"{spaces}{key}: \n"
+                out += self.export_additional_fields(value, space_count+2)
         return out
     
     def save_as_yaml_to_flie(self, filename:str):

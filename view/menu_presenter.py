@@ -50,13 +50,16 @@ class MenuPresenter():
 
 
     def save_file(self, save_as:bool=False):
-        if save_as or not self.remember_latest_filename:
+        if save_as or not os.path.isfile(self.remember_latest_filename):
         # initial_dir = os.path.dirname(self.remember_latest_filename)
 
             filename = filedialog.asksaveasfilename(initialdir=self.remember_latest_filename, 
                                                 title="Save Application State",
                                                 filetypes=[("EnOcean Device Manager", "*.eodm")],
                                                 defaultextension=".eodm")
+            if not filename:
+                return
+            
             if not filename.endswith('.eodm'):
                 filename += '.eodm'
             self.remember_latest_filename = filename
@@ -78,17 +81,23 @@ class MenuPresenter():
                                                 filetypes=[("EnOcean Device Manager", "*.eodm")],
                                                 defaultextension=".eodm") #, ("configuration", "*.yaml"), ("all files", "*.*")))
         
+        if not filename:
+            return None
+        
         with open(filename, 'rb') as file:
             self.data_manager.load_devices( pickle.load(file) )
 
         return filename
         
     def load_file(self):
-        self.controller.fire_event(ControllerEventType.LOAD_FILE, {})
-        self.remember_latest_filename = self.import_from_file()
+        filename = self.import_from_file()
 
-        self.main.title(f"{DEFAULT_WINDOW_TITLE} ({os.path.basename(self.remember_latest_filename)})")
-        self.controller.fire_event(ControllerEventType.LOG_MESSAGE, {'msg': f"Load File: '{self.remember_latest_filename}'", 'color': 'red'})
+        if filename:
+            self.controller.fire_event(ControllerEventType.LOAD_FILE, {})
+            self.remember_latest_filename = filename
+
+            self.main.title(f"{DEFAULT_WINDOW_TITLE} ({os.path.basename(self.remember_latest_filename)})")
+            self.controller.fire_event(ControllerEventType.LOG_MESSAGE, {'msg': f"Load File: '{self.remember_latest_filename}'", 'color': 'red'})
 
     
     remember_latest_ha_config_filename:str=None
@@ -100,6 +109,9 @@ class MenuPresenter():
                                                 title="Save Home Assistant Configuration",
                                                 filetypes=[("Home Assistant Configuration", "*.yaml")],
                                                 defaultextension=".yaml")
+            if not filename:
+                return
+
             if not filename.endswith('.yaml'):
                 filename += '.yaml'
             self.remember_latest_ha_config_filename = filename
