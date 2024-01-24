@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+import threading
 from tkinter import *
 from tkinter import filedialog
 from controller import AppController, ControllerEventType
@@ -84,8 +85,12 @@ class MenuPresenter():
         if not filename:
             return None
         
-        with open(filename, 'rb') as file:
-            self.data_manager.load_devices( pickle.load(file) )
+        def load():
+            with open(filename, 'rb') as file:
+                self.data_manager.load_devices( pickle.load(file) )
+
+        t = threading.Thread(target=load)
+        t.start()
 
         return filename
         

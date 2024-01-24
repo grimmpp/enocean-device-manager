@@ -62,7 +62,7 @@ class MainPanel():
         data_split_area.add(dt.root, weight=5)
         data_split_area.add(dd.root, weight=2)
 
-        StatusBar(main, controller, row=3)
+        StatusBar(main, controller, data_manager, row=3)
 
         
         main.after(1000, self.on_loaded)

@@ -12,7 +12,7 @@ from const import *
 from homeassistant.const import CONF_ID, CONF_NAME
 
 from eltakobus.util import b2s
-from data import DataManager, Device
+from data import DataManager, Device, EEP_MAPPING
 
 
 class DeviceDetails():
@@ -31,7 +31,7 @@ class DeviceDetails():
 
         # name
         l = Label(f, text="Name")
-        l.grid(row=0, column=0, sticky=W)
+        l.grid(row=0, column=0, sticky=W, padx=3)
 
         self.text_name = Entry(f)
         self.text_name.grid(row=c_row, column=1)
@@ -40,7 +40,7 @@ class DeviceDetails():
         # address
         c_row += 1
         l = Label(f, text="Address")
-        l.grid(row=c_row, column=0, sticky=W)
+        l.grid(row=c_row, column=0, sticky=W, padx=3)
 
         self.text_address = Entry(f)
         self.text_address.insert(END, "00-00-00-00")
@@ -51,7 +51,7 @@ class DeviceDetails():
         # version
         c_row += 1
         l = Label(f, text="Version")
-        l.grid(row=c_row, column=0, sticky=W)
+        l.grid(row=c_row, column=0, sticky=W, padx=3)
 
         self.text_version = Entry(f)
         self.text_version.config(state=DISABLED)
@@ -60,18 +60,58 @@ class DeviceDetails():
         # device type
         c_row += 1
         l = Label(f, text="Device Type")
-        l.grid(row=c_row, column=0, sticky=W)
+        l.grid(row=c_row, column=0, sticky=W, padx=3)
 
-
+        self.cb_device_type = ttk.Combobox(f, width="20") 
+        self.cb_device_type['values'] = list(set([t['hw-type'] for t in EEP_MAPPING]))
+        self.cb_device_type.grid(row=c_row, sticky=W, column=1)
 
         # comment
         c_row += 1
         l = Label(f, text="Comment")
-        l.grid(row=c_row, column=0, sticky=W)
+        l.grid(row=c_row, column=0, sticky=W, padx=3)
 
         self.text_comment = Entry(f)
         self.text_comment.grid(row=c_row, column=1)
 
+        # comment
+        c_row += 1
+        l = Label(f, text="Device EEP")
+        l.grid(row=c_row, column=0, sticky=W, padx=3)
+
+        self.cb_device_eep = ttk.Combobox(f, width="20") 
+        self.cb_device_eep['values'] = list(set([t[CONF_EEP] for t in EEP_MAPPING]))
+        self.cb_device_eep.grid(row=c_row, sticky=W, column=1)
+
+        # in HA
+        c_row += 1
+        self.text_comment = Checkbutton(f, text="Export to HA Config")
+        self.text_comment.grid(row=c_row, sticky=W, column=0, columnspan=2, padx=3)
+
+        # HA platform
+        c_row += 1
+        l = Label(f, text="HA Platform")
+        l.grid(row=c_row, column=0, sticky=W, padx=3)
+
+        self.cb_device_eep = ttk.Combobox(f, width="20", state="readonly") 
+        self.cb_device_eep['values'] = [p.value for p in Platform]
+        self.cb_device_eep.grid(row=c_row, sticky=W, column=1)
+
+        # sender
+        c_row += 1
+        lf = LabelFrame(f, padx=3, pady=3, text="Sender")
+        lf.grid(row=c_row, column=0, sticky=W, columnspan=2)
+        l = Label(lf, text="Address")
+        l.grid(row=0, column=0, sticky=W, padx=3)
+
+        self.text_sender_id = Entry(lf)
+        self.text_sender_id.grid(row=0, column=1)
+
+        l = Label(lf, text="EEP")
+        l.grid(row=1, column=0, sticky=W, padx=3)
+
+        self.text_sender_eep = Entry(lf)
+        self.text_sender_eep.grid(row=1, column=1)
 
         # buttons
         c_row += 1
@@ -82,6 +122,7 @@ class DeviceDetails():
         self.btn_cancel.grid(row=0, column=0, padx=4, pady=4)
         self.btn_apply = Button(f_btn, text="Apply", anchor=CENTER, command=self.update_current_device)
         self.btn_apply.grid(row=0, column=1, padx=4, pady=4)
+        
         
         # self.clean_and_disable()
 

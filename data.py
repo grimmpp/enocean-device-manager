@@ -119,6 +119,7 @@ class Device():
     name:str=None
     comment:str = ""
     base_id:str=None
+    bus_device:bool=False
     memory_entries:[SensorInfo]=[]  # only used for bus devices
 
     # vars for ha
@@ -155,7 +156,8 @@ class Device():
         return self.external_id == self.base_id
     
     def is_bus_device(self) -> bool:
-        return self.address.startswith('00-00-00-')            
+        return self.bus_device
+        # return self.address.startswith('00-00-00-')            
 
     @classmethod
     async def async_get_bus_device_by_natvice_bus_object(cls, device: BusObject, fam14: FAM14, channel:int=1):
@@ -169,6 +171,7 @@ class Device():
         bd.base_id = await fam14.get_base_id()
         bd.device_type = type(device).__name__
         bd.version = '.'.join(map(str,device.version))
+        bd.bus_device = True
         if isinstance(device, FAM14):
             bd.external_id = bd.base_id
             bd.use_in_ha = True

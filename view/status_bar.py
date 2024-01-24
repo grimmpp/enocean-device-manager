@@ -3,11 +3,14 @@ from tkinter import *
 from tkinter import ttk
 
 from controller import AppController, ControllerEventType
+from data import DataManager
 
 class StatusBar():
 
-    def __init__(self, main: Tk, controller:AppController, row:int):
+    
+    def __init__(self, main: Tk, controller:AppController, data_manager:DataManager, row:int):
         self.controller = controller
+        self.data_manager = data_manager
         
         f = Frame(main, bd=1, relief=SUNKEN)
         f.grid(row=row, column=0, columnspan=1, sticky=W+E+N+S)
@@ -23,9 +26,25 @@ class StatusBar():
         l = Label(f, text="Device Scan:")
         l.pack(side=tk.RIGHT, padx=(5, 0), pady=2)
 
+        self.l_devices = Label(f, text=self.get_device_count_str())
+        self.l_devices.pack(side=tk.LEFT, padx=(5, 0), pady=2)
+
         self.controller.add_event_handler(ControllerEventType.CONNECTION_STATUS_CHANGE, self.is_connected_handler)
         self.controller.add_event_handler(ControllerEventType.DEVICE_SCAN_PROGRESS, self.device_scan_progress_handler)
+        self.controller.add_event_handler(ControllerEventType.UPDATE_DEVICE_REPRESENTATION, self.update_device_count)
+        self.controller.add_event_handler(ControllerEventType.UPDATE_SENSOR_REPRESENTATION, self.update_device_count)
         self.controller.add_event_handler(ControllerEventType.DEVICE_SCAN_STATUS, self.device_scan_status_handler)
+
+    def get_device_count_str(self) -> str:
+        count:int = len(self.data_manager.devices)
+        fam14s:int = len([d for d in self.data_manager.devices.values() if d.is_fam14()])
+        bus_device:int = len([d for d in self.data_manager.devices.values() if d.bus_device])
+        decentralized:int = count-bus_device
+
+        return f"Devices: {count}, FAM14s: {fam14s}, Bus Devices: {bus_device}, Decentralized Devices: {decentralized}"
+
+    def update_device_count(self, data):
+        self.l_devices.config(text=self.get_device_count_str())
 
     def device_scan_status_handler(self, status:str):
         if status in ['STARTED', 'FINISHED']:
