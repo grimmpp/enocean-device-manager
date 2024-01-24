@@ -3,7 +3,6 @@ import os
 from pathlib import Path
 from tkinter import *
 from tkinter import ttk
-from tkinter import filedialog
 from tkinter.tix import IMAGETEXT
 from PIL import Image, ImageTk
 from idlelib.tooltip import Hovertip
@@ -113,6 +112,10 @@ class DeviceDetails():
         self.text_sender_eep = Entry(lf)
         self.text_sender_eep.grid(row=1, column=1)
 
+        # memory entries
+
+        # list of references
+
         # buttons
         c_row += 1
         f_btn = Frame(f)
@@ -123,11 +126,29 @@ class DeviceDetails():
         self.btn_apply = Button(f_btn, text="Apply", anchor=CENTER, command=self.update_current_device)
         self.btn_apply.grid(row=0, column=1, padx=4, pady=4)
         
-        
+        self.last_row = c_row+1
         # self.clean_and_disable()
 
         self.controller.add_event_handler(ControllerEventType.SELECTED_DEVICE, self.selected_device_handler)
 
+    def add_additional_fields(self, add_fields:dict, f:Frame, _row:int=0):
+        for key in add_fields:
+            value = add_fields[key]
+            if not isinstance(value, dict):
+                l = Label(f, text=key.title())
+                l.grid(row=_row, column=0, sticky=W, padx=3)
+
+                t = Entry(f, text=str(value) )
+                t.grid(row=_row, column=1)
+            _row += 1
+
+        for key in add_fields:
+            value = add_fields[key]
+            if isinstance(value, dict):
+                lf = LabelFrame(f, text=key.title())
+                lf.grid(row=_row, column=0, sticky=W, padx=3, columnspan=2)
+                self.add_additional_fields(value, lf)
+            _row += 1 
 
     def clean_and_disable(self) -> None:
         for t in [self.text_name, self.text_address, self.text_version, self.text_comment]:
@@ -162,5 +183,9 @@ class DeviceDetails():
         self._update_text_field(self.text_version, device.version)
         self._update_text_field(self.text_address, device.address)
         self._update_text_field(self.text_comment, device.comment, NORMAL)
+        
+        f = Frame(self.root)
+        f.grid(row=self.last_row, column=0, sticky=W, padx=3, columnspan=2)
+        self.add_additional_fields(device.additional_fields, f)
 
         
