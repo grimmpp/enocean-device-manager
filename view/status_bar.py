@@ -30,7 +30,7 @@ class StatusBar():
         self.l_devices.pack(side=tk.LEFT, padx=(5, 0), pady=2)
 
         self.controller.add_event_handler(ControllerEventType.CONNECTION_STATUS_CHANGE, self.is_connected_handler)
-        self.controller.add_event_handler(ControllerEventType.DEVICE_SCAN_PROGRESS, self.device_scan_progress_handler)
+        self.controller.add_event_handler(ControllerEventType.DEVICE_ITERATION_PROGRESS, self.device_scan_progress_handler)
         self.controller.add_event_handler(ControllerEventType.UPDATE_DEVICE_REPRESENTATION, self.update_device_count)
         self.controller.add_event_handler(ControllerEventType.UPDATE_SENSOR_REPRESENTATION, self.update_device_count)
         self.controller.add_event_handler(ControllerEventType.DEVICE_SCAN_STATUS, self.device_scan_status_handler)

@@ -22,7 +22,7 @@ class ControllerEventType(Enum):
     LOG_MESSAGE = 0                     # dict with keys: msg:str, color:str
     SERIAL_CALLBACK = 1                 # EltakoMessage
     CONNECTION_STATUS_CHANGE = 2        # dict with keys: serial_port:str, baudrate:int, connected:bool
-    DEVICE_SCAN_PROGRESS = 3            # percentage 0..100 in float
+    DEVICE_ITERATION_PROGRESS = 3            # percentage 0..100 in float
     DEVICE_SCAN_STATUS = 4              # str: STARTED, FINISHED, DEVICE_DETECTED
     ASYNC_DEVICE_DETECTED = 5           # BusObject
     UPDATE_DEVICE_REPRESENTATION = 6    # busdevice
@@ -31,6 +31,7 @@ class ControllerEventType(Enum):
     WINDOW_LOADED = 9
     SELECTED_DEVICE = 10                # device
     LOAD_FILE = 11
+    WRITE_SENDER_IDS_TO_DEVICES_STATUS = 12
 
 class ControllerEvent():
     def __init__(self, event_type:ControllerEventType, data):
@@ -142,10 +143,10 @@ class AppController():
                 pass
         return result
     
-    def is_serial_connection_active(self) -> None:
+    def is_serial_connection_active(self) -> bool:
         return self._bus is not None and self._bus.is_active()
     
-    def is_fam14_connection_active(self) -> None:
+    def is_fam14_connection_active(self) -> bool:
         return self.is_serial_connection_active() and self._bus.suppress_echo
 
     def _send_serial_event(self, message) -> None:
@@ -219,7 +220,7 @@ class AppController():
 
         for i in range(1, 256):
             try:
-                self.fire_event(ControllerEventType.DEVICE_SCAN_PROGRESS, i/256.0*100.0)
+                self.fire_event(ControllerEventType.DEVICE_ITERATION_PROGRESS, i/256.0*100.0)
                 yield await self.create_busobject(i)
             except TimeoutError:
                 continue
@@ -255,12 +256,12 @@ class AppController():
             # print("Sending a lock command onto the bus; its reply should tell us whether there's a FAM in the game.")
             time.sleep(0.2)
             await locking.lock_bus(self._bus)
-                
+            
             logging.info(colored("Start scanning for devices", 'red'))
             self.fire_event(ControllerEventType.LOG_MESSAGE, {'msg': "Start scanning for devices", 'color':'red'})
 
             # first get fam14 and make it know to data manager
-            fam14 = await self.create_busobject(255)
+            fam14:FAM14 = await self.create_busobject(255)
             logging.info(colored(f"Found device: {fam14}",'grey'))
             await self.async_fire_event(ControllerEventType.ASYNC_DEVICE_DETECTED, {'device': fam14, 'fam14': fam14, 'force_overwrite': force_overwrite})
 
@@ -284,3 +285,77 @@ class AppController():
 
             self.fire_event(ControllerEventType.DEVICE_SCAN_STATUS, 'FINISHED')
             self._bus.set_callback( self._send_serial_event )
+
+    def write_sender_id_to_devices(self, sender_base_id:int=45056, sender_id_list:dict={}):
+        t = threading.Thread(target=lambda: asyncio.run( self.async_write_sender_id_to_devices(sender_base_id, sender_id_list) )  )
+        t.start()
+
+
+    async def async_ensure_programmed(self, fam14_base_id_int:int, dev:BusObject, sender_id_list:dict):
+        HEATING = [FAE14SSR]
+        if isinstance(dev, HasProgrammableRPS) or isinstance(dev, DimmerStyle) or type(dev) in HEATING:
+            for i in range(0,dev.size):
+                device_ext_id_str = b2s( (fam14_base_id_int + dev.address+i).to_bytes(4,'big'))
+
+                if device_ext_id_str in sender_id_list:
+                    if 'sender' in sender_id_list[device_ext_id_str]:
+                        sender_id_str = sender_id_list[device_ext_id_str]['sender']['id']
+                        sender_eep_str = sender_id_list[device_ext_id_str]['sender']['eep']
+                        sender_address = AddressExpression.parse(sender_id_str)
+                        eep_profile = EEP.find(sender_eep_str)
+
+                        if type(dev) in HEATING:
+                            # need to be at a special position 12 and 13
+                            continue
+                            mem_line:bytes = sender_address[0] + bytes((0, 65, 1, 0))
+                            #TODO: NOT PROPERLY WORKING
+                            await dev.write_mem_line(12 + i, mem_line)
+                        else:
+                            await dev.ensure_programmed(i, sender_address, eep_profile)
+                
+                        msg = f"Updated Home Assistant sender id ({sender_id_str}) in device {type(dev).__name__} ({device_ext_id_str})"
+                        logging.info(colored(msg,'grey'))
+                        self.fire_event(ControllerEventType.LOG_MESSAGE, {'msg': msg, 'color':'grey'})
+                        self.fire_event(ControllerEventType.WRITE_SENDER_IDS_TO_DEVICES_STATUS, 'DEVICE_UPDATED')
+
+
+    async def async_write_sender_id_to_devices(self, sender_base_id:int=45056, sender_id_list:dict={}): # 45056 = 0x00 00 B0 00
+        if not self.is_fam14_connection_active():
+            self.fire_event(ControllerEventType.LOG_MESSAGE, {'msg': "Cannot write HA sender ids to devices because you are not connected to FAM14.", 'color':'red'})
+        else:
+            try:
+                self.fire_event(ControllerEventType.WRITE_SENDER_IDS_TO_DEVICES_STATUS, 'STARTED')
+                self._bus.set_callback( None )
+
+                # print("Sending a lock command onto the bus; its reply should tell us whether there's a FAM in the game.")
+                time.sleep(0.2)
+                await locking.lock_bus(self._bus)
+                    
+                logging.info(colored("Start writing Home Assistant sender ids to devices", 'red'))
+                self.fire_event(ControllerEventType.LOG_MESSAGE, {'msg': "Start writing Home Assistant sender ids to devices", 'color':'red'})
+
+                # first get fam14 and make it know to data manager
+                fam14:FAM14 = await self.create_busobject(255)
+                fam14_base_id_int = await fam14.get_base_id_in_int()
+                fam14_base_id = b2s(await fam14.get_base_id_in_bytes())
+                msg = f"Update devices on Bus (fam14 base id: {fam14_base_id})"
+                logging.info(colored(msg,'grey'))
+                self.fire_event(ControllerEventType.LOG_MESSAGE, {'msg': msg, 'color':'grey'})
+
+                # iterate through all devices
+                async for dev in self.enumerate_bus():
+                    try:
+                        await self.async_ensure_programmed(fam14_base_id_int, dev, sender_id_list)
+                    except TimeoutError:
+                        logging.error("Read error, skipping: Device %s announces %d memory but produces timeouts at reading" % (dev, dev.discovery_response.memory_size))
+
+                logging.info(colored("Device scan finished.", 'red'))
+                self.fire_event(ControllerEventType.LOG_MESSAGE, {'msg': "Device scan finished.", 'color':'red'})
+            except Exception as e:
+                raise e
+            finally:
+                # print("Unlocking the bus again")
+                await locking.unlock_bus(self._bus)
+
+                self.fire_event(ControllerEventType.WRITE_SENDER_IDS_TO_DEVICES_STATUS, 'FINISHED')
+                self._bus.set_callback( self._send_serial_event )
