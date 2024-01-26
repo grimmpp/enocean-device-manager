@@ -12,5 +12,12 @@ This client application allows you to **inventory all EnOcean devices**. It can 
 Furthermore, it automatically can detect default settings for Home Assistant configuration which can be adjust as well and it allows you to **generate and export the configuration for Home Assistant**. 
 (The exported Home Assistant configuration is intended for the [Eltako Home Assistant Integration](https://github.com/grimmpp/home-assistant-eltako/))
 
+## Install dependencies and run the App
+1. Clone/Download the repo.
+2. Change into the repo directory.
+3. Create virtual environment for python: `python.exe -m venv .venv`
+4. Install dependencies: `.\.venv\Scripts\pip.exe install -r .\requirements.txt` (This step takes a bit.)
+5. Start the app: `.\.venv\Scripts\python.exe main.py`
+
 ## Bugs and Features 
 Please open [issues](/issues) if you encounter bugs or if you have ideas for new features.
