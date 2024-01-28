@@ -84,6 +84,7 @@ def get_name_from_key_function_name(kf: KeyFunction) -> str:
         return substr
     return ""
 
+
 class BusObjectHelper():
 
     @classmethod
@@ -106,7 +107,12 @@ def add_addresses(adr1:str, adr2:str) -> str:
     _adr2 = int.from_bytes( AddressExpression.parse(adr2)[0], 'big')
     return a2s(_adr1 + _adr2)
     
-    
+def print_memory_entires(sensors: [SensorInfo]) -> None:
+    for _s in sensors:
+        s:SensorInfo = _s
+        print(f"{s.memory_line}: {b2s(s.sensor_id, ' ')} {hex(s.key)} {hex(s.key_func)} {hex(s.channel)} (FG: {s.in_func_group})")
+        
+
 class Device():
     """Data representation of a device"""
     static_info:dict={}
@@ -131,6 +137,7 @@ class Device():
 
     def __init__(self, 
                  address:str=None, 
+                 bus_device:bool=False,
                  dev_size:int=1,
                  channel:int=1, 
                  external_id:str=None, 
@@ -142,6 +149,7 @@ class Device():
                  memory_entries:[SensorInfo]=[]):
         
         self.address = address
+        self.bus_device = bus_device
         self.channel = channel
         self.dev_size = dev_size
         self.external_id = external_id
@@ -179,6 +187,9 @@ class Device():
         else:
             bd.external_id = a2s( (await fam14.get_base_id_in_int()) + id )
         bd.memory_entries = [m for m in (await device.get_all_sensors()) if b2s(m.dev_adr) == bd.address]
+        print(f"{bd.device_type} {bd.address}")
+        print_memory_entires( bd.memory_entries)
+        print("\n")
         bd.name = f"{bd.device_type} {bd.address}"
         if bd.dev_size > 1:
             bd.name += f" ({bd.channel}/{bd.dev_size})"
@@ -341,7 +352,7 @@ class DataManager():
             
         return None
     
-    def get_sensors_configured_in_a_device(self, device:Device) ->[Device]:
+    def get_sensors_configured_in_a_device(self, device:Device) -> [Device]:
         """returns all sensors configured in a device"""
         sensors = []
 
@@ -360,6 +371,7 @@ class DataManager():
                         sensors.append(self.devices[m_ext_id])
 
         return sensors
+    
     
     def get_devices_containing_sensor_in_config(self, sensor:Device) ->[Device]:
         """returns all devices which contain the given sensor in its config"""

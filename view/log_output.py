@@ -26,7 +26,7 @@ class LogOutputPanel():
 
     def serial_callback(self, data):
         if type(data) not in [EltakoPoll, EltakoDiscoveryReply, EltakoDiscoveryRequest]:
-            self.receive_log_message({'msg': str(prettify(data)), 'color': 'darkgrey'})
+            self.receive_log_message({'msg': f"Received Telegram: {str(prettify(data))}", 'color': 'darkgrey'})
 
     def receive_log_message(self, data):
         msg = data.get('msg', False)

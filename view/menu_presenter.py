@@ -16,7 +16,7 @@ class MenuPresenter():
         self.main = main
         self.controller = controller
         self.data_manager = data_manager
-        self.remember_latest_filename = None
+        self.remember_latest_filename = ""
 
         self.menu_bar = Menu(main)
         filemenu = Menu(self.menu_bar, tearoff=0)
