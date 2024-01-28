@@ -101,6 +101,10 @@ class BusObjectHelper():
             return l[0]
         return None
     
+def add_addresses(adr1:str, adr2:str) -> str:
+    _adr1 = int.from_bytes( AddressExpression.parse(adr1)[0], 'big')
+    _adr2 = int.from_bytes( AddressExpression.parse(adr2)[0], 'big')
+    return a2s(_adr1 + _adr2)
     
     
 class Device():
@@ -108,7 +112,7 @@ class Device():
     static_info:dict={}
     address:str = None
     channel:int=None
-    channels:int=None
+    dev_size:int=None
     external_id:str=None
     device_type:str=None
     version:str=None
@@ -127,7 +131,7 @@ class Device():
 
     def __init__(self, 
                  address:str=None, 
-                 channels:int=1,
+                 dev_size:int=1,
                  channel:int=1, 
                  external_id:str=None, 
                  device_type:str=None, 
@@ -139,7 +143,7 @@ class Device():
         
         self.address = address
         self.channel = channel
-        self.channels = channels
+        self.dev_size = dev_size
         self.external_id = external_id
         self.device_type = device_type
         self.version = version
@@ -163,7 +167,7 @@ class Device():
         id = device.address + channel -1
         bd.address = a2s( id )
         bd.channel = channel
-        bd.channels = device.size
+        bd.dev_size = device.size
         bd.base_id = await fam14.get_base_id()
         bd.device_type = type(device).__name__
         bd.version = '.'.join(map(str,device.version))
@@ -174,10 +178,10 @@ class Device():
             bd.use_in_ha = True
         else:
             bd.external_id = a2s( (await fam14.get_base_id_in_int()) + id )
-        bd.memory_entries = await device.get_all_sensors()
+        bd.memory_entries = [m for m in (await device.get_all_sensors()) if b2s(m.dev_adr) == bd.address]
         bd.name = f"{bd.device_type} {bd.address}"
-        if bd.channels > 1:
-            bd.name += f" ({bd.channel}/{bd.channels})"
+        if bd.dev_size > 1:
+            bd.name += f" ({bd.channel}/{bd.dev_size})"
 
         info:dict = find_device_info_by_device_type(bd.device_type)
         if info is not None:
@@ -336,7 +340,54 @@ class DataManager():
                 return d
             
         return None
+    
+    def get_sensors_configured_in_a_device(self, device:Device) ->[Device]:
+        """returns all sensors configured in a device"""
+        sensors = []
 
+        # if bus device selected
+        for m in device.memory_entries:
+            #for device with many addresses check if channel fits
+            if device.channel == m.channel:
+
+                # if sensor has global address
+                if m.sensor_id_str in self.devices:
+                    sensors.append(self.devices[m.sensor_id_str])
+
+                else:
+                    m_ext_id = add_addresses(m.sensor_id_str, device.base_id)
+                    if m_ext_id in self.devices:
+                        sensors.append(self.devices[m_ext_id])
+
+        return sensors
+    
+    def get_devices_containing_sensor_in_config(self, sensor:Device) ->[Device]:
+        """returns all devices which contain the given sensor in its config"""
+        devices = []
+
+        # if sensor selected
+        for d in self.devices.values():
+            for m in d.memory_entries:
+                if sensor.address == m.sensor_id_str:
+                    if d.channel == m.channel:
+                        # sensor with global id
+                        if m.sensor_id_str == sensor.external_id:
+                            devices.append(d)
+                        # sensor with local bus id
+                        elif d.base_id == sensor.base_id:
+                            devices.append(d)
+        return devices
+
+
+    def get_related_devices(self, device_external_id:str) -> [Device]:
+        """returns a list of all devices in which a sensor is entered or sensors which are configured inside an device."""
+
+        device:Device = self.devices[device_external_id]
+        
+        devices = []
+        devices.extend( self.get_sensors_configured_in_a_device(device) )
+        devices.extend( self.get_devices_containing_sensor_in_config(device) )
+        return devices
 
     def get_detected_sensor_by_id(self, id:str) -> dict:
         if id not in self.detected_sensors.keys():

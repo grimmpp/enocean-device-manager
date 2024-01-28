@@ -42,7 +42,6 @@ class AppController():
 
     def __init__(self) -> None:
         self._bus = None
-        self._serial_mutex = threading.Lock()
 
         for event_type in ControllerEventType:
             if event_type not in self._controller_event_handlers.keys():
@@ -154,11 +153,14 @@ class AppController():
 
     def establish_serial_connection(self, serial_port:str, device_type:str) -> None:
         baudrate:int=57600
+        delay_message:float=.1
         if device_type == 'FAM-USB':
             baudrate = 9600
+        elif device_type == 'FAM14':
+            delay_message = .001
 
         if not self.is_serial_connection_active():
-            self._bus = RS485SerialInterfaceV2(serial_port, baud_rate=baudrate, callback=self._send_serial_event)
+            self._bus = RS485SerialInterfaceV2(serial_port, baud_rate=baudrate, callback=self._send_serial_event, delay_message=delay_message)
             self._bus.start()
             self._bus.is_serial_connected.wait(timeout=10)
 
@@ -175,9 +177,14 @@ class AppController():
                         self.fire_event(
                             ControllerEventType.CONNECTION_STATUS_CHANGE, 
                             {'serial_port':  serial_port, 'baudrate': baudrate, 'connected': self._bus.is_active()})
-
+                        
                     t = threading.Thread(target=run)
                     t.start()
+                else:
+                    self.fire_event(
+                            ControllerEventType.CONNECTION_STATUS_CHANGE, 
+                            {'serial_port':  serial_port, 'baudrate': baudrate, 'connected': self._bus.is_active()})
+                        
 
             
 
@@ -226,40 +233,41 @@ class AppController():
                 continue
 
     async def _get_fam14_device_on_bus(self, force_overwrite:bool=False) -> None:
+        is_locked = False
         try:
+            logging.info(colored("Start scanning for devices", 'red'))
+
             self._bus.set_callback( None )
 
-            await locking.lock_bus(self._bus)
-                
-            logging.info(colored("Start scanning for devices", 'red'))
-            self.fire_event(ControllerEventType.LOG_MESSAGE, {'msg': "Get FAM14 information", 'color':'red'})
+            is_locked = (await locking.lock_bus(self._bus)) == locking.LOCKED
 
             # first get fam14 and make it know to data manager
             fam14 = await self.create_busobject(255)
             logging.info(colored(f"Found device: {fam14}",'grey'))
+            self.fire_event(ControllerEventType.LOG_MESSAGE, {'msg': f"Found device: {fam14}", 'color':'grey'})
             await self.async_fire_event(ControllerEventType.ASYNC_DEVICE_DETECTED, {'device': fam14, 'fam14': fam14, 'force_overwrite': force_overwrite})
 
         except Exception as e:
             raise e
         finally:
-            resp = await locking.unlock_bus(self._bus)
-
-            self.fire_event(ControllerEventType.DEVICE_SCAN_STATUS, 'FINISHED')
+            if is_locked:
+                resp = await locking.unlock_bus(self._bus)
             self._bus.set_callback( self._send_serial_event )
 
 
     async def _scan_for_devices_on_bus(self, force_overwrite:bool=False) -> None:
+        is_locked = False
         try:
             self.fire_event(ControllerEventType.DEVICE_SCAN_STATUS, 'STARTED')
+            
+            msg = "Start scanning for devices"
+            logging.info(colored(msg, 'red'))
+            self.fire_event(ControllerEventType.LOG_MESSAGE, {'msg': msg, 'color':'red'})
+
             self._bus.set_callback( None )
 
-            # print("Sending a lock command onto the bus; its reply should tell us whether there's a FAM in the game.")
-            time.sleep(0.2)
-            await locking.lock_bus(self._bus)
+            is_locked = (await locking.lock_bus(self._bus)) == locking.LOCKED
             
-            logging.info(colored("Start scanning for devices", 'red'))
-            self.fire_event(ControllerEventType.LOG_MESSAGE, {'msg': "Start scanning for devices", 'color':'red'})
-
             # first get fam14 and make it know to data manager
             fam14:FAM14 = await self.create_busobject(255)
             logging.info(colored(f"Found device: {fam14}",'grey'))
@@ -281,7 +289,8 @@ class AppController():
             raise e
         finally:
             # print("Unlocking the bus again")
-            await locking.unlock_bus(self._bus)
+            if is_locked:
+                await locking.unlock_bus(self._bus)
 
             self.fire_event(ControllerEventType.DEVICE_SCAN_STATUS, 'FINISHED')
             self._bus.set_callback( self._send_serial_event )

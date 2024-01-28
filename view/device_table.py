@@ -13,7 +13,7 @@ from homeassistant.const import CONF_ID, CONF_NAME
 
 from eltakobus.util import b2s
 from eltakobus.eep import EEP
-from data import DataManager, Device
+from data import DataManager, Device, add_addresses, a2s
 
 
 class DeviceTable():
@@ -74,7 +74,10 @@ class DeviceTable():
         self.menu.add_separator()
         self.menu.add_command(label="Rename")
 
-        self.treeview.bind('<ButtonRelease-1>', self.on_selected)
+        self.treeview.tag_configure('related_devices', background='lightgreen')
+
+        # self.treeview.bind('<ButtonRelease-1>', self.on_selected)
+        self.treeview.bind('<<TreeviewSelect>>', self.on_selected)
         self.treeview.bind("<Button-3>", self.show_context_menu)
 
         self.check_if_wireless_network_exists()
@@ -93,10 +96,23 @@ class DeviceTable():
         self.check_if_wireless_network_exists()
 
     def on_selected(self, event):
-        device_id = self.treeview.focus()
-        device = self.data_manager.get_device_by_id(device_id)
+        device_external_id = self.treeview.focus()
+        device = self.data_manager.get_device_by_id(device_external_id)
         if device is not None:
             self.controller.fire_event(ControllerEventType.SELECTED_DEVICE, device)
+
+        self.mark_related_elements(device_external_id)
+
+
+    def mark_related_elements(self, device_external_id:str) -> None:
+        for iid in self.treeview.tag_has( 'related_devices' ):
+            self.treeview.item( iid, tags=() )
+
+        devices = self.data_manager.get_related_devices(device_external_id)
+        for d in devices:
+            if self.treeview.exists(d.external_id):
+                self.treeview.item(d.external_id, tags=('related_devices'))
+
 
     def show_context_menu(self, event):
         try:
