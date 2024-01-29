@@ -10,6 +10,7 @@ from controller import AppController, ControllerEventType
 from const import *
 from homeassistant.const import CONF_ID, CONF_NAME
 
+from eltakobus.device import SensorInfo, KeyFunction
 from eltakobus.util import b2s
 from data import DataManager, Device, EEP_MAPPING
 
@@ -22,9 +23,18 @@ class DeviceDetails():
         self.data_manager = data_manager
         self.current_device = None
 
-        f = LabelFrame(main, padx=3, pady=3, text="Device Details")
-        f.pack()
+        self.controller.add_event_handler(ControllerEventType.SELECTED_DEVICE, self.selected_device_handler)
+
+        f = LabelFrame(self.main, padx=3, pady=3, text="Device Details")
+        f.pack(fill="both")
         self.root = f
+
+
+    def show_form(self):
+        f = self.root
+
+        for widget in f.winfo_children():
+            widget.destroy()
 
         c_row = 0
 
@@ -129,7 +139,7 @@ class DeviceDetails():
         self.last_row = c_row+1
         # self.clean_and_disable()
 
-        self.controller.add_event_handler(ControllerEventType.SELECTED_DEVICE, self.selected_device_handler)
+        
 
     def add_additional_fields(self, add_fields:dict, f:Frame, _row:int=0):
         for key in add_fields:
@@ -178,6 +188,8 @@ class DeviceDetails():
 
 
     def selected_device_handler(self, device:Device) -> None:
+        self.show_form()
+
         self.current_device = device
         self._update_text_field(self.text_name, device.name, NORMAL)
         self._update_text_field(self.text_version, device.version)
@@ -187,5 +199,28 @@ class DeviceDetails():
         f = Frame(self.root)
         f.grid(row=self.last_row, column=0, sticky=W, padx=3, columnspan=2)
         self.add_additional_fields(device.additional_fields, f)
+
+        f = Frame(self.root)
+        f.grid(row=self.last_row+1, column=0, sticky=W+E, padx=3, columnspan=2)
+
+        tv = ttk.Treeview(f, selectmode="none",height=10,columns=(0,1,2))
+        tv['show'] = 'headings'
+        tv.heading(0, text="Mem.Row")
+        tv.column(0, anchor="w", width=40)
+        tv.heading(1, text="Address")
+        tv.column(1, anchor="w", width=80)
+        tv.heading(2, text="Function")
+        tv.column(2, anchor="w", width=200)
+        for _m in device.memory_entries:
+            m:SensorInfo = _m
+            if not tv.exists(m.sensor_id_str):
+                tv.insert(parent='', index="end", iid=m.sensor_id_str, values=(m.memory_line, m.sensor_id_str, KeyFunction(m.key_func).name))
+        # for d in self.data_manager.get_related_devices(device.external_id):
+        #     tv.insert(parent='', index="end", iid=d.external_id, values=(d.address, d.device_type))
+
+        tv.pack(expand=True, fill="both")
+
+
+
 
         

@@ -341,8 +341,9 @@ class DataManager():
 
                 for si in bd.memory_entries:
                     _bd:Device = await Device.async_get_decentralized_device_by_sensor_info(si, data['device'], data['fam14'], channel)
-                    self.devices[_bd.external_id] = _bd
-                    self.controller.fire_event(ControllerEventType.UPDATE_SENSOR_REPRESENTATION, _bd)
+                    if _bd.external_id not in self.devices or not self.devices[_bd.external_id].bus_device:
+                        self.devices[_bd.external_id] = _bd
+                        self.controller.fire_event(ControllerEventType.UPDATE_SENSOR_REPRESENTATION, _bd)
 
 
     def get_device_by_id(self, device_id:str):
