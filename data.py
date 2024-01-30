@@ -717,17 +717,16 @@ class DataManager():
 
         if device.comment:
             out += spaces + f"# {device.comment}\n"
-        # parent relation
-        # if CONF_REGISTERED_IN in config:
-        #     dev_id_list = list(set(config[CONF_REGISTERED_IN]))
-        #     dev_id_list.sort()
-        #     out += spaces + f"# REGISTERD IN DEVICE: {dev_id_list}\n"
-        #
+        
+        rel_devs = [f"{d.name} (Type: {d.device_type}, Adr: {d.address})" for d in self.get_related_devices(device.external_id)]
+        if len(rel_devs):
+            out += spaces + f"# Related devices: {', '.join(rel_devs)}\n"
+            
         info = find_device_info_by_device_type(device.device_type)
         if info and 'PCT14-key-function' in info:
             kf = info['PCT14-key-function']
             fg = info['PCT14-function-group']
-            out += spaces[:-2] + f"  #PCT14 Configuration: Enter sender id/address into function group {fg} with function {kf} \n"    
+            out += spaces[:-2] + f"  # Use 'Write HA senders to devices' button or enter manually sender id in PCT14 into function group {fg} with function {kf} \n"    
         out += spaces[:-2] + f"- {CONF_ID}: {device.address}\n"
         out += spaces[:-2] + f"  {CONF_NAME}: {device.name}\n"
         out += spaces[:-2] + f"  {CONF_EEP}: {device.eep}\n"

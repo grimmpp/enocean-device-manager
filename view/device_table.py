@@ -174,7 +174,7 @@ class DeviceTable():
             else:
                 # update device
                 self.treeview.item(d.external_id, text=d.name, values=(d.address, d.external_id, device_type, comment, in_ha, ha_pl, eep, sender_adr, sender_eep), open=True)
-                if self.treeview.parent(_parent) != _parent:
+                if self.treeview.parent(d.external_id) != _parent:
                     self.treeview.move(d.external_id, _parent, 0)
         else:
             self.add_fam14(d)
