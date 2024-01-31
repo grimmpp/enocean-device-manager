@@ -4,7 +4,7 @@ import threading
 from tkinter import *
 from tkinter import filedialog
 from controller import AppController, ControllerEventType
-from data import DataManager
+from data.data import DataManager
 from view.about_window import AboutWindow
 from view import DEFAULT_WINDOW_TITLE
 

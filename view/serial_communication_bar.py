@@ -3,7 +3,7 @@ from tkinter import *
 from tkinter import ttk
 from idlelib.tooltip import Hovertip
 from controller import AppController, ControllerEventType
-from data import DataManager, Device
+from data.data import DataManager, Device
 
 class SerialConnectionBar():
 
@@ -13,7 +13,7 @@ class SerialConnectionBar():
         self.data_manager = data_manager
 
         f = LabelFrame(main, text="Serial Connection", bd=1)#, relief=SUNKEN)
-        f.grid(row=row, column=0, columnspan=1, sticky=W+E+N+S)
+        f.grid(row=row, column=0, columnspan=1, sticky=W+E+N+S, pady=(0,2), padx=2)
 
         self.b_detect = Button(f, text="Detect")
         self.b_detect.pack(side=tk.LEFT, padx=(5, 5), pady=5)

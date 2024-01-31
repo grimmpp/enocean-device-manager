@@ -9,7 +9,7 @@ from PIL import Image, ImageTk
 from idlelib.tooltip import Hovertip
 from controller import AppController, ControllerEventType
 
-from data import DataManager
+from data.data import DataManager
 from view.menu_presenter import MenuPresenter
 
 
@@ -20,7 +20,7 @@ class ToolBar():
         self.main = main
 
         f = Frame(main, bd=1)#, relief=SUNKEN)
-        f.grid(row=row, column=0, columnspan=1, sticky=W+E+N+S)
+        f.grid(row=row, column=0, columnspan=1, sticky=W+E+N+S, pady=2, padx=2)
 
         b = self._create_img_button(f, "Save to current file", "icons/Oxygen480-actions-document-save.png", menu_presenter.save_file )
         b = self._create_img_button(f, "Save as file", "icons/Oxygen480-actions-document-save-as.png", lambda: menu_presenter.save_file(save_as=True) )

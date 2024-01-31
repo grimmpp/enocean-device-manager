@@ -7,6 +7,8 @@ import asyncio
 import logging
 
 import os
+
+from data.filter import DataFilter
 os.environ.setdefault('SKIPP_IMPORT_HOME_ASSISTANT', "True")
 import sys
 # caution: path[0] is reserved for script path (or '' in REPL)
@@ -21,262 +23,8 @@ from eltakobus.eep import *
 from eltakobus.device import SensorInfo, KeyFunction
 from eltakobus.util import b2s, AddressExpression
 
-SENDER_BASE_ID = 0x0000B000
-
-EEP_MAPPING = [
-    {'hw-type': 'FTS14EM', CONF_EEP: 'F6-02-01', CONF_TYPE: Platform.BINARY_SENSOR, 'description': 'Rocker switch', 'address_count': 1},
-    {'hw-type': 'FTS14EM', CONF_EEP: 'F6-02-02', CONF_TYPE: Platform.BINARY_SENSOR, 'description': 'Rocker switch', 'address_count': 1},
-    {'hw-type': 'FTS14EM', CONF_EEP: 'F6-10-00', CONF_TYPE: Platform.BINARY_SENSOR, 'description': 'Window handle', 'address_count': 1},
-    {'hw-type': 'FTS14EM', CONF_EEP: 'D5-00-01', CONF_TYPE: Platform.BINARY_SENSOR, 'description': 'Contact sensor', 'address_count': 1},
-    {'hw-type': 'FTS14EM', CONF_EEP: 'A5-08-01', CONF_TYPE: Platform.BINARY_SENSOR, 'description': 'Occupancy sensor', 'address_count': 1},
-
-    # {'hw-type': 'FWG14', CONF_EEP: 'A5-13-01', CONF_TYPE: Platform.SENSOR, 'description': 'Weather station', 'address_count': 1},
-    {'hw-type': 'FTS14EM', CONF_EEP: 'A5-12-01', CONF_TYPE: Platform.SENSOR, 'description': 'Window handle', 'address_count': 1},
-    {'hw-type': 'FSDG14', CONF_EEP: 'A5-12-02', CONF_TYPE: Platform.SENSOR, 'description': 'Automated meter reading - electricity', 'address_count': 1},
-    {'hw-type': 'F3Z14D', CONF_EEP: 'A5-13-01', CONF_TYPE: Platform.SENSOR, 'description': 'Automated meter reading - gas', 'address_count': 1},
-    {'hw-type': 'F3Z14D', CONF_EEP: 'A5-12-03', CONF_TYPE: Platform.SENSOR, 'description': 'Automated meter reading - water', 'address_count': 1},
-
-    {'hw-type': 'FUD14', CONF_EEP: 'A5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 3, 'PCT14-key-function': 32, 'description': 'Central command - gateway', 'address_count': 1},
-    {'hw-type': 'FUD14_800W', CONF_EEP: 'A5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 3, 'PCT14-key-function': 32, 'description': 'Central command - gateway', 'address_count': 1},
-
-    {'hw-type': 'FMZ14', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 1, 'description': 'Eltako relay', 'address_count': 1},
-    {'hw-type': 'FSR14_1x', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 2, 'PCT14-key-function': 51, 'description': 'Eltako relay', 'address_count': 1},
-    {'hw-type': 'FSR14_x2', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 2, 'PCT14-key-function': 51, 'description': 'Eltako relay', 'address_count': 2},
-    {'hw-type': 'FSR14_4x', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 2, 'PCT14-key-function': 51, 'description': 'Eltako relay', 'address_count': 4},
-
-    {'hw-type': 'FSB14', CONF_EEP: 'G5-3F-7F', 'sender_eep': 'H5-3F-7F', CONF_TYPE: Platform.COVER, 'PCT14-function-group': 2, 'PCT14-key-function': 31, 'description': 'Eltako cover', 'address_count': 2},
-
-    {'hw-type': 'FAE14SSR', CONF_EEP: 'A5-10-06', 'sender_eep': 'A5-10-06', CONF_TYPE: Platform.CLIMATE, 'PCT14-function-group': 3, 'PCT14-key-function': 65, 'description': 'Eltako heating/cooling', 'address_count': 2},
-]
-
-ORG_MAPPING = {
-    5: {'Telegram': 'RPS', 'RORG': 'F6', CONF_NAME: 'Switch', CONF_TYPE: Platform.BINARY_SENSOR, CONF_EEP: 'F6-02-01' },
-    6: {'Telegram': '1BS', 'RORG': 'D5', CONF_NAME: '1 Byte Communication', CONF_TYPE: Platform.SENSOR, CONF_EEP: 'D5-??-??' },
-    7: {'Telegram': '4BS', 'RORG': 'A5', CONF_NAME: '4 Byte Communication', CONF_TYPE: Platform.SENSOR, CONF_EEP: 'A5-??-??' },
-}
-
-SENSOR_MESSAGE_TYPES = [EltakoWrappedRPS, EltakoWrapped4BS, RPSMessage, Regular4BSMessage, Regular1BSMessage, EltakoMessage]
-
-def a2s(address:int):
-    """address to string"""
-    if address is None:
-        return ""
-    
-    return b2s( address.to_bytes(4, byteorder = 'big') )
-
-def find_device_info_by_device_type(device_type:str) -> dict:
-    for i in EEP_MAPPING:
-        if i['hw-type'] == device_type:
-            return i
-    return None
-
-def get_eep_from_key_function_name(kf: KeyFunction) -> str:
-    pos = KeyFunction(kf).name.find('EEP_')
-    if pos > -1:
-        substr = KeyFunction(kf).name[pos+4:pos+4+8].replace('_', '-')
-        return substr
-    return None
-
-def get_name_from_key_function_name(kf: KeyFunction) -> str:
-    pos = KeyFunction(kf).name.find('_ACCORDING_')
-    if pos > -1:
-        substr = KeyFunction(kf).name[0:pos].replace('_', ' ').lower().title()
-        return substr
-    return ""
-
-
-class BusObjectHelper():
-
-    @classmethod
-    def find_sensors(cls, sensors:[SensorInfo], dev_id: int, channel:int, in_func_group: int) -> [SensorInfo]:
-        result = []
-        for s in sensors: 
-            if s.dev_id == dev_id and s.channel == channel and s.in_func_group == in_func_group:
-                result.append(s)
-        return result
-
-    @classmethod
-    def find_sensor(cls, sensors:[SensorInfo], dev_id: int, channel:int, in_func_group: int) -> SensorInfo:
-        l = cls.find_sensors(sensors, dev_id, channel, in_func_group)
-        if len(l) > 0:
-            return l[0]
-        return None
-    
-def add_addresses(adr1:str, adr2:str) -> str:
-    _adr1 = int.from_bytes( AddressExpression.parse(adr1)[0], 'big')
-    _adr2 = int.from_bytes( AddressExpression.parse(adr2)[0], 'big')
-    return a2s(_adr1 + _adr2)
-    
-def print_memory_entires(sensors: [SensorInfo]) -> None:
-    for _s in sensors:
-        s:SensorInfo = _s
-        print(f"{s.memory_line}: {b2s(s.sensor_id, ' ')} {hex(s.key)} {hex(s.key_func)} {hex(s.channel)} (FG: {s.in_func_group})")
-        
-
-class Device():
-    """Data representation of a device"""
-    static_info:dict={}
-    address:str = None
-    channel:int=None
-    dev_size:int=None
-    external_id:str=None
-    device_type:str=None
-    version:str=None
-    name:str=None
-    comment:str = ""
-    base_id:str=None
-    bus_device:bool=False
-    memory_entries:[SensorInfo]=[]  # only used for bus devices
-
-    # vars for ha
-    use_in_ha:bool=False
-    ha_platform:Platform=None
-    eep:str=None
-    additional_fields:dict={}
-
-
-    def __init__(self, 
-                 address:str=None, 
-                 bus_device:bool=False,
-                 dev_size:int=1,
-                 channel:int=1, 
-                 external_id:str=None, 
-                 device_type:str=None, 
-                 version:str=None, 
-                 name:str=None, 
-                 comment:str=None, 
-                 base_id:str=None, 
-                 memory_entries:[SensorInfo]=[]):
-        
-        self.address = address
-        self.bus_device = bus_device
-        self.channel = channel
-        self.dev_size = dev_size
-        self.external_id = external_id
-        self.device_type = device_type
-        self.version = version
-        self.name = name
-        self.comment = comment
-        self.base_id = base_id
-        self.memory_entries = memory_entries
-
-    def is_fam14(self) -> bool:
-        return self.external_id == self.base_id
-    
-    def is_bus_device(self) -> bool:
-        return self.bus_device
-        # return self.address.startswith('00-00-00-')            
-
-    @classmethod
-    async def async_get_bus_device_by_natvice_bus_object(cls, device: BusObject, fam14: FAM14, channel:int=1):
-
-        bd = Device()
-        bd.additional_fields = {}
-        id = device.address + channel -1
-        bd.address = a2s( id )
-        bd.channel = channel
-        bd.dev_size = device.size
-        bd.base_id = await fam14.get_base_id()
-        bd.device_type = type(device).__name__
-        bd.version = '.'.join(map(str,device.version))
-        bd.comment = ''
-        bd.bus_device = True
-        if isinstance(device, FAM14):
-            bd.external_id = bd.base_id
-            bd.use_in_ha = True
-        else:
-            bd.external_id = a2s( (await fam14.get_base_id_in_int()) + id )
-        bd.memory_entries = [m for m in (await device.get_all_sensors()) if b2s(m.dev_adr) == bd.address]
-        print(f"{bd.device_type} {bd.address}")
-        print_memory_entires( bd.memory_entries)
-        print("\n")
-        bd.name = f"{bd.device_type} {bd.address}"
-        if bd.dev_size > 1:
-            bd.name += f" ({bd.channel}/{bd.dev_size})"
-
-        info:dict = find_device_info_by_device_type(bd.device_type)
-        if info is not None:
-            bd.use_in_ha = True
-            bd.ha_platform = info[CONF_TYPE]
-            bd.eep = info.get(CONF_EEP, None)
-
-            if info.get('sender_eep', None):
-                bd.additional_fields['sender'] = {
-                    CONF_ID: a2s( SENDER_BASE_ID + id ),
-                    CONF_EEP: info.get('sender_eep')
-                }
-
-            if info[CONF_TYPE] == Platform.COVER:
-                bd.additional_fields[CONF_DEVICE_CLASS] = 'shutter'
-                bd.additional_fields[CONF_TIME_CLOSES] = 25
-                bd.additional_fields[CONF_TIME_OPENS] = 25
-
-            if info[CONF_TYPE] == Platform.CLIMATE:
-                bd.additional_fields[CONF_TEMPERATURE_UNIT] = f"'{UnitOfTemperature.KELVIN}'"
-                bd.additional_fields[CONF_MIN_TARGET_TEMPERATURE] = 16
-                bd.additional_fields[CONF_MAX_TARGET_TEMPERATURE] = 25
-                thermostat = BusObjectHelper.find_sensor(bd.memory_entries, device.address, channel, in_func_group=1)
-                if thermostat:
-                    bd.additional_fields[CONF_ROOM_THERMOSTAT] = {}
-                    bd.additional_fields[CONF_ROOM_THERMOSTAT][CONF_ID] = b2s(thermostat.sensor_id)
-                    bd.additional_fields[CONF_ROOM_THERMOSTAT][CONF_EEP] = A5_10_06.eep_string   #TODO: derive EEP from switch/sensor function
-                #TODO: cooling_mode
-
-        return bd
-    
-    @classmethod
-    def get_decentralized_device_by_telegram(cls, msg: RPSMessage):
-        bd = Device()
-        bd.address = b2s( msg.address )
-        bd.base_id = '00-00-00-00'
-        bd.device_type = 'unknown'
-        bd.version = 'unknown'
-        bd.comment = ''
-        if int.from_bytes( msg.address, "big") > 0x0000FFFF:
-            bd.external_id = b2s( msg.address )
-        else:
-            bd.external_id = 'unknown'
-        bd.name = 'unknown'
-        return bd
-    
-    @classmethod
-    async def async_get_decentralized_device_by_sensor_info(cls, sensor_info:SensorInfo, device: BusObject, fam14: FAM14, channel:int=1):
-        bd = Device()
-        bd.address = sensor_info.sensor_id_str
-        bd.base_id = await fam14.get_base_id()
-        bd.comment = KeyFunction(sensor_info.key_func).name
-        bd.eep = get_eep_from_key_function_name(sensor_info.key_func)
-        bd.name = f"{get_name_from_key_function_name(sensor_info.key_func)} {sensor_info.sensor_id_str}"
-        # found sensor by EEP in KeyFunction
-        if bd.eep and bd.name:
-            bd.use_in_ha = True
-            bd.device_type = 'Sensor'
-            bd.ha_platform = Platform.SENSOR
-        # buttons but ignore virtual buttons from HA
-        elif 'PUSH_BUTTON' in KeyFunction(sensor_info.key_func).name and not sensor_info.sensor_id_str.startswith('00-00-'):
-            bd.use_in_ha = True
-            bd.device_type = 'Button'
-            bd.ha_platform = Platform.BINARY_SENSOR
-            bd.eep = F6_02_01.eep_string
-            bd.name = f"Button {sensor_info.sensor_id_str}"
-        # is from FTS14EM
-        elif int.from_bytes(sensor_info.sensor_id, "big") < 0x1500:
-            bd.use_in_ha = True
-            bd.device_type = 'FTS14EM Button'
-            bd.ha_platform = Platform.BINARY_SENSOR
-            bd.eep = F6_02_01.eep_string
-            bd.name = 'FTS14EM Button ' + sensor_info.sensor_id_str
-
-        if sensor_info.sensor_id_str.startswith('00-00-'):
-            bd.external_id = a2s( int.from_bytes(sensor_info.sensor_id, "big") + (await fam14.get_base_id_in_int()) )
-        else:
-            bd.external_id = sensor_info.sensor_id_str
-        bd.version = 'unknown'
-        return bd
-
-class DeviceEncoder(json.JSONEncoder):
-    def default(self, o):
-        return o.__dict__   
+from data.data_helper import *
+from data.device import Device 
 
 class DataManager():
     """"""
@@ -300,7 +48,16 @@ class DataManager():
         self.fam14_base_id = '00-00-00-00'
 
         self.collected_sensor_list:[SensorInfo] = []
-        self.devices:dict = {}
+        self.devices:dict[str:Device] = {}
+        self.data_fitlers:dict[str:DataFilter] = {}
+
+
+    def add_filter(self, filter:DataFilter) -> None:
+        self.data_fitlers[filter.name] = filter
+
+    def remove_filter(self, filter:DataFilter) -> None:
+        if filter.name in self.data_fitlers.keys():
+            del self.data_fitlers[filter.name]
 
     def _reset(self, data):
         self.devices = {}

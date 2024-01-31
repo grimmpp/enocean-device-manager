@@ -1,9 +1,0 @@
-eltako:
-  general_settings:
-    fast_status_change: False
-    show_dev_id_in_dev_name: False
-
-logger:
-  default: info
-  logs:
-    eltako: info

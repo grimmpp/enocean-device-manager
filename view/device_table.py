@@ -13,7 +13,8 @@ from homeassistant.const import CONF_ID, CONF_NAME
 
 from eltakobus.util import b2s
 from eltakobus.eep import EEP
-from data import DataManager, Device, add_addresses, a2s
+from data.data import DataManager, Device, add_addresses, a2s
+from data.filter import DataFilter
 
 
 class DeviceTable():
@@ -82,13 +83,25 @@ class DeviceTable():
 
         self.check_if_wireless_network_exists()
 
+        self.current_data_filter:DataFilter = None
         self.controller = controller
         self.controller.add_event_handler(ControllerEventType.DEVICE_SCAN_STATUS, self.device_scan_status_handler)
         self.controller.add_event_handler(ControllerEventType.UPDATE_DEVICE_REPRESENTATION, self.update_device_representation_handler)
         self.controller.add_event_handler(ControllerEventType.UPDATE_SENSOR_REPRESENTATION, self.update_sensor_representation_handler)
         self.controller.add_event_handler(ControllerEventType.LOAD_FILE, self._reset)
+        self.controller.add_event_handler(ControllerEventType.SET_DATA_TABLE_FILTER, self._set_data_filter)
 
         self.data_manager = data_manager
+
+    def _set_data_filter(self, filter):
+        self.current_data_filter = filter
+
+        self._reset(None)
+        for d in self.data_manager.devices.values():
+            if d.bus_device:
+                self.update_device_handler(d)
+            else:
+                self.update_device_handler(d, parent=self.NON_BUS_DEVICE_LABEL)
 
     def _reset(self, data):
         for item in self.treeview.get_children():
@@ -160,6 +173,9 @@ class DeviceTable():
 
     def update_device_handler(self, d:Device, parent:str=None):
 
+        if self.current_data_filter is not None and not self.current_data_filter.filter_device(d):
+            return
+
         if not d.is_fam14():
             in_ha = d.use_in_ha
             ha_pl = "" if d.ha_platform is None else d.ha_platform
@@ -169,6 +185,7 @@ class DeviceTable():
             sender_adr = "" if 'sender' not in d.additional_fields else d.additional_fields['sender'][CONF_ID]
             sender_eep = "" if 'sender' not in d.additional_fields else d.additional_fields['sender'][CONF_EEP]
             _parent = d.base_id if parent is None else parent
+            if not self.treeview.exists(_parent): self.add_fam14(self.data_manager.devices[_parent])
             if not self.treeview.exists(d.external_id):
                 self.treeview.insert(parent=_parent, index="end", iid=d.external_id, text=d.name, values=(d.address, d.external_id, device_type, comment, in_ha, ha_pl, eep, sender_adr, sender_eep), open=True)
             else:

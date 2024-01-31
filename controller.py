@@ -32,6 +32,7 @@ class ControllerEventType(Enum):
     SELECTED_DEVICE = 10                # device
     LOAD_FILE = 11
     WRITE_SENDER_IDS_TO_DEVICES_STATUS = 12
+    SET_DATA_TABLE_FILTER = 13          # DataFilter
 
 class ControllerEvent():
     def __init__(self, event_type:ControllerEventType, data):

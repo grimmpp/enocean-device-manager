@@ -13,7 +13,7 @@ from homeassistant.const import CONF_ID, CONF_NAME
 
 from eltakobus.device import SensorInfo, KeyFunction
 from eltakobus.util import b2s
-from data import DataManager, Device, EEP_MAPPING
+from data.data import DataManager, Device, EEP_MAPPING
 
 
 class DeviceDetails():

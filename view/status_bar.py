@@ -3,7 +3,7 @@ from tkinter import *
 from tkinter import ttk
 
 from controller import AppController, ControllerEventType
-from data import DataManager
+from data.data import DataManager
 
 class StatusBar():
 
