@@ -67,19 +67,19 @@ class DeviceTable():
                 self.treeview.column(i, anchor="w", width=80)
             self.treeview.heading(i, text=col, anchor="center", command=lambda c=col, d=False: sort_treeview(self.treeview, c, d))
         
-        self.menu = Menu(main, tearoff=0)
-        self.menu.add_command(label="Cut")
-        self.menu.add_command(label="Copy")
-        self.menu.add_command(label="Paste")
-        self.menu.add_command(label="Reload")
-        self.menu.add_separator()
-        self.menu.add_command(label="Rename")
+        # self.menu = Menu(main, tearoff=0)
+        # self.menu.add_command(label="Cut")
+        # self.menu.add_command(label="Copy")
+        # self.menu.add_command(label="Paste")
+        # self.menu.add_command(label="Reload")
+        # self.menu.add_separator()
+        # self.menu.add_command(label="Rename")
 
         self.treeview.tag_configure('related_devices', background='lightgreen')
 
         # self.treeview.bind('<ButtonRelease-1>', self.on_selected)
         self.treeview.bind('<<TreeviewSelect>>', self.on_selected)
-        self.treeview.bind("<Button-3>", self.show_context_menu)
+        # self.treeview.bind("<Button-3>", self.show_context_menu)
 
         self.check_if_wireless_network_exists()
 
