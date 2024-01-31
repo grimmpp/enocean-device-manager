@@ -43,9 +43,10 @@ class DeviceDetails():
         l.grid(row=0, column=0, sticky=W, padx=3)
 
         self.text_name = Entry(f)
-        self.text_name.grid(row=c_row, column=1)
+        self.text_name.grid(row=c_row, column=1, sticky=W+E)
         self._update_text_field(self.text_name, device.name, NORMAL)
-
+        self.text_name.bind('<Return>', lambda e, d=device: self.update_device(d))
+        
 
         # address
         c_row += 1
@@ -55,8 +56,9 @@ class DeviceDetails():
         self.text_address = Entry(f)
         self.text_address.insert(END, "00-00-00-00")
         self.text_address.config(state=DISABLED)
-        self.text_address.grid(row=c_row, column=1)
+        self.text_address.grid(row=c_row, column=1, sticky=W+E)
         self._update_text_field(self.text_address, device.address)
+        self.text_address.bind('<Return>', lambda e, d=device: self.update_device(d))
 
 
         # version
@@ -66,8 +68,10 @@ class DeviceDetails():
 
         self.text_version = Entry(f)
         self.text_version.config(state=DISABLED)
-        self.text_version.grid(row=c_row, column=1)
+        self.text_version.grid(row=c_row, column=1, sticky=W+E)
         self._update_text_field(self.text_version, device.version)
+        self.text_version.bind('<Return>', lambda e, d=device: self.update_device(d))
+
 
         # device type
         c_row += 1
@@ -76,8 +80,10 @@ class DeviceDetails():
 
         self.cb_device_type = ttk.Combobox(f, width="20") 
         self.cb_device_type['values'] = list(set([t['hw-type'] for t in EEP_MAPPING]))
-        self.cb_device_type.grid(row=c_row, sticky=W, column=1)
+        self.cb_device_type.grid(row=c_row, column=1, sticky=W+E)
         self.cb_device_type.set(device.device_type if device.device_type else '')
+        self.cb_device_type.bind('<Return>', lambda e, d=device: self.update_device(d))
+
 
         # comment
         c_row += 1
@@ -85,8 +91,9 @@ class DeviceDetails():
         l.grid(row=c_row, column=0, sticky=W, padx=3)
 
         self.text_comment = Entry(f)
-        self.text_comment.grid(row=c_row, column=1)
+        self.text_comment.grid(row=c_row, column=1, sticky=W+E)
         self._update_text_field(self.text_comment, device.comment, NORMAL)
+        self.text_comment.bind('<Return>', lambda e, d=device: self.update_device(d))
 
         c_row += 1
         l = Label(f, text="Device EEP")
@@ -94,15 +101,18 @@ class DeviceDetails():
 
         self.cb_device_eep = ttk.Combobox(f, width="20") 
         self.cb_device_eep['values'] = list(set([t[CONF_EEP] for t in EEP_MAPPING]))
-        self.cb_device_eep.grid(row=c_row, sticky=W, column=1)
+        self.cb_device_eep.grid(row=c_row, column=1, sticky=W+E)
         self.cb_device_eep.set(device.eep if device.eep else '')
+        self.cb_device_eep.bind('<Return>', lambda e, d=device: self.update_device(d))
+
 
         # in HA
         c_row += 1
         self.cb_export_ha_var = tk.IntVar()
         cb = Checkbutton(f, text="Export to HA Config", variable=self.cb_export_ha_var)
-        cb.grid(row=c_row, sticky=W, column=0, columnspan=2, padx=3)
+        cb.grid(row=c_row, column=0, columnspan=2, padx=3, sticky=W)
         self.cb_export_ha_var.set(1 if device.use_in_ha else 0)
+        cb.bind('<Return>', lambda e, d=device: self.update_device(d))
 
         # HA platform
         c_row += 1
@@ -111,14 +121,15 @@ class DeviceDetails():
 
         self.cb_ha_platform = ttk.Combobox(f, width="20", state="readonly") 
         self.cb_ha_platform['values'] = [p.value for p in Platform]
-        self.cb_ha_platform.grid(row=c_row, sticky=W, column=1)
+        self.cb_ha_platform.grid(row=c_row, sticky=W+E, column=1)
         self.cb_ha_platform.set(device.ha_platform if device.ha_platform else '')
+        self.cb_ha_platform.bind('<Return>', lambda e, d=device: self.update_device(d))
 
         # additional fields
         c_row += 1
-        f = Frame(self.root)
-        f.grid(row=c_row, column=0, sticky=W, padx=3, columnspan=2)
-        self.add_additional_fields(device.additional_fields, f)
+        # f = Frame(self.root)
+        # f.grid(row=c_row, column=0, sticky=W, padx=3, columnspan=2)
+        c_row = self.add_additional_fields(device, device.additional_fields, f, c_row)
 
         # memory entries
         c_row += 1
@@ -174,7 +185,7 @@ class DeviceDetails():
 
         self.btn_cancel = Button(f_btn, text="Reload", anchor=CENTER, command=self.reload_values)
         self.btn_cancel.grid(row=0, column=0, padx=4, pady=4)
-        self.btn_apply = Button(f_btn, text="Apply", anchor=CENTER, command=lambda: self.update_device(device))
+        self.btn_apply = Button(f_btn, text="Apply", anchor=CENTER, command=lambda d=device: self.update_device(d))
         self.btn_apply.grid(row=0, column=1, padx=4, pady=4)
 
         self.last_row = c_row+1
@@ -192,28 +203,31 @@ class DeviceDetails():
 
         self.data_manager.update_device(device)
 
-    def add_additional_fields(self, add_fields:dict, f:Frame, _row:int=0):
-        for key in add_fields:
-            value = add_fields[key]
+    def add_additional_fields(self, device:Device, add_fields:dict, f:Frame, _row:int=0, spaces:int=0):
+        for key, value in add_fields.items():
+            
             if not isinstance(value, dict):
-                l = Label(f, text=key.title())
+                l = Label(f, text=spaces*" "+key.title())
                 l.grid(row=_row, column=0, sticky=W, padx=3)
 
-                t = Entry(f)
-                t.insert(END, str(value) )
-                def set_additional_field_value(event, add_fields, t):
-                    add_fields[key] = t.get()
-                t.bind("<Any-KeyPress>", lambda e, af=add_fields, t=t: set_additional_field_value(e,af,t))
-                t.grid(row=_row, column=1)
-            _row += 1
+                entry = Entry(f)
+                entry.insert(END, str(value) )
+                def set_additional_field_value(af, k, t):
+                    af[k]=t.get()
+                entry.bind("<Any-KeyPress>", lambda e, af=add_fields, k=key, t=entry: set_additional_field_value(af,k,t))# set_additional_field_value(e,af,k,t))
+                entry.grid(row=_row, column=1, sticky=W+E)
+                entry.bind('<Return>', lambda e, af=add_fields, k=key, t=entry, d=device: [set_additional_field_value(af,k,t), self.update_device(d)])
 
-        for key in add_fields:
-            value = add_fields[key]
             if isinstance(value, dict):
-                lf = LabelFrame(f, text=key.title())
-                lf.grid(row=_row, column=0, sticky=W, padx=3, columnspan=2)
-                self.add_additional_fields(value, lf)
+                # lf = LabelFrame(f, text=key.title())
+                # lf.grid(row=_row, column=0, sticky=W, padx=3, columnspan=2)
+                l = Label(f, text=spaces*" "+key.title()+":")
+                l.grid(row=_row, column=0, sticky=W, padx=3, columnspan=2)
+                _row = self.add_additional_fields(device, value, f, _row+1, spaces+3)
+
             _row += 1 
+
+        return _row
 
     def clean_and_disable(self) -> None:
         for widget in self.root.winfo_children():
