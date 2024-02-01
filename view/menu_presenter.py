@@ -106,8 +106,9 @@ class MenuPresenter():
 
         return filename
         
-    def load_file(self):
-        filename = self.import_from_file()
+    def load_file(self, filename:str=None):
+        if filename == None:
+            filename = self.import_from_file()
 
         if filename:
             self.controller.fire_event(ControllerEventType.LOAD_FILE, {})

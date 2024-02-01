@@ -1,3 +1,4 @@
+import time
 import tkinter as tk
 import os
 from pathlib import Path
@@ -80,11 +81,12 @@ class MainPanel():
         StatusBar(main, controller, data_manager, row=row_status_bar)
 
         
-        main.after(1000, self.on_loaded)
+        main.after(500, self.on_loaded)
 
         ## start main loop
         main.mainloop()
 
+        
         
 
 

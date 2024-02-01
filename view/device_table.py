@@ -106,6 +106,11 @@ class DeviceTable():
 
         self.data_manager = data_manager
 
+        # initial loading
+        for d in self.data_manager.devices.values():
+            parent = self.NON_BUS_DEVICE_LABEL if not d.is_bus_device() else None
+            self.update_device_handler(d, parent)
+
     def _set_data_filter_handler(self, filter):
         self.current_data_filter = filter
 

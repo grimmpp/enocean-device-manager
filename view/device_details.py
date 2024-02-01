@@ -146,7 +146,7 @@ class DeviceDetails():
         l.grid(row=c_row, column=0, sticky=W, padx=3)
 
         self.cb_device_eep = ttk.Combobox(f, width="20") 
-        self.cb_device_eep['values'] = list(set([t[CONF_EEP] for t in EEP_MAPPING]))
+        self.cb_device_eep['values'] = sorted(set([t[CONF_EEP] for t in EEP_MAPPING]))
         self.cb_device_eep.grid(row=c_row, column=1, sticky=W+E)
         self.cb_device_eep.set(device.eep if device.eep else '')
         self.cb_device_eep.bind('<Return>', lambda e, d=device: self.update_device(d))
@@ -166,7 +166,7 @@ class DeviceDetails():
         l.grid(row=c_row, column=0, sticky=W, padx=3)
 
         self.cb_ha_platform = ttk.Combobox(f, width="20", state="readonly") 
-        self.cb_ha_platform['values'] = [p.value for p in Platform]
+        self.cb_ha_platform['values'] = sorted([p.value for p in Platform])
         self.cb_ha_platform.grid(row=c_row, sticky=W+E, column=1)
         self.cb_ha_platform.set(device.ha_platform if device.ha_platform else '')
         self.cb_ha_platform.bind('<Return>', lambda e, d=device: self.update_device(d))
