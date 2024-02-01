@@ -4,7 +4,7 @@ import threading
 from tkinter import *
 from tkinter import filedialog
 from controller import AppController, ControllerEventType
-from data.data import DataManager
+from data.data_manager import DataManager
 from view.about_window import AboutWindow
 from view import DEFAULT_WINDOW_TITLE
 
@@ -21,17 +21,17 @@ class MenuPresenter():
         self.menu_bar = Menu(main)
         filemenu = Menu(self.menu_bar, tearoff=0)
         # filemenu.add_command(label="New")
-        filemenu.add_command(label="Load File...", command=self.load_file)
-        filemenu.add_command(label="Import From File...", command=self.import_from_file)
+        filemenu.add_command(label="Load File...", command=self.load_file, accelerator="Ctrl+O")
+        filemenu.add_command(label="Import From File...", command=self.import_from_file, accelerator="Ctrl+I")
         filemenu.add_separator()
-        filemenu.add_command(label="Export Home Assistant Configuration", command=self.export_ha_config)
-        filemenu.add_command(label="Export Home Assistant Configuration as ...", command=lambda: self.export_ha_config(save_as=True))
+        filemenu.add_command(label="Export Home Assistant Configuration", command=self.export_ha_config, accelerator="Ctrl+E")
+        filemenu.add_command(label="Export Home Assistant Configuration as ...", command=lambda: self.export_ha_config(save_as=True), accelerator="Ctrl+SHIFT+E")
         filemenu.add_separator()
-        filemenu.add_command(label="Save", command=self.save_file)
-        filemenu.add_command(label="Save as...", command=lambda: self.save_file(save_as=True))
+        filemenu.add_command(label="Save", command=self.save_file, accelerator="Ctrl+S")
+        filemenu.add_command(label="Save as...", command=lambda: self.save_file(save_as=True), accelerator="Ctrl+SHIFT+S")
         # filemenu.add_command(label="Close")
         filemenu.add_separator()
-        filemenu.add_command(label="Exit", command=main.quit)
+        filemenu.add_command(label="Exit", command=main.quit, accelerator="ALT+F4")
         self.menu_bar.add_cascade(label="File", menu=filemenu)
         
         # editmenu = Menu(self.menu_bar, tearoff=0)
@@ -51,6 +51,14 @@ class MenuPresenter():
 
         main.config(menu=self.menu_bar)
 
+        main.bind('<Control-o>', lambda e: self.load_file())
+        main.bind('<Control-i>', lambda e: self.import_from_file())
+        main.bind('<Control-e>', lambda e: self.export_ha_config())
+        main.bind('<Control-Shift-E>', lambda e: self.export_ha_config(save_as=True))
+        main.bind('<Control-s>', lambda e: self.save_file())
+        main.bind('<Control-Shift-S>', lambda e: self.save_file(save_as=True))
+        
+
 
     def save_file(self, save_as:bool=False):
         if save_as or not os.path.isfile(self.remember_latest_filename):
@@ -67,9 +75,9 @@ class MenuPresenter():
                 filename += '.eodm'
             self.remember_latest_filename = filename
 
-        # self.data_manager.export_cached_objects(self.remember_latest_filename)
-        with open(self.remember_latest_filename, 'wb') as file:
-            pickle.dump( self.data_manager.devices, file)
+        self.data_manager.write_application_data_to_file(self.remember_latest_filename)
+        # with open(self.remember_latest_filename, 'wb') as file:
+        #     pickle.dump( self.data_manager.devices, file)
         
         self.main.title(f"{DEFAULT_WINDOW_TITLE} ({os.path.basename(self.remember_latest_filename)})")
         self.controller.fire_event(ControllerEventType.LOG_MESSAGE, {'msg': f"Save to File: '{self.remember_latest_filename}'", 'color': 'red'})
@@ -88,8 +96,9 @@ class MenuPresenter():
             return None
         
         def load():
-            with open(filename, 'rb') as file:
-                self.data_manager.load_devices( pickle.load(file) )
+            self.data_manager.load_application_data_from_file(filename)
+            # with open(filename, 'rb') as file:
+            #     self.data_manager.load_devices( pickle.load(file) )
 
         t = threading.Thread(target=load)
         t.start()

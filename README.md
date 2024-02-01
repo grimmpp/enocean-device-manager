@@ -23,6 +23,7 @@ For further steps it is planned to extend the support for changing the data whic
 2. Change into the repo directory.
 3. Create virtual environment for python: `python.exe -m venv .venv`
 4. Install dependencies: `.\.venv\Scripts\pip.exe install -r .\requirements.txt` (This step takes a bit.)
+   Sometimes you need to run this step twice.
 5. Start the app: `.\.venv\Scripts\python.exe main.py`
 
 For update you can execute:

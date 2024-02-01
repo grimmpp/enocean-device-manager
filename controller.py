@@ -32,7 +32,9 @@ class ControllerEventType(Enum):
     SELECTED_DEVICE = 10                # device
     LOAD_FILE = 11
     WRITE_SENDER_IDS_TO_DEVICES_STATUS = 12
-    SET_DATA_TABLE_FILTER = 13          # DataFilter
+    SET_DATA_TABLE_FILTER = 13          # applies data filter to data table
+    ADDED_DATA_TABLE_FILTER = 14                # adds data filter to application data
+    REMOVED_DATA_TABLE_FILTER = 15             # remove data filter from application data
 
 class ControllerEvent():
     def __init__(self, event_type:ControllerEventType, data):
@@ -43,6 +45,7 @@ class AppController():
 
     def __init__(self) -> None:
         self._bus = None
+        self.current_base_id = None
 
         for event_type in ControllerEventType:
             if event_type not in self._controller_event_handlers.keys():
@@ -199,6 +202,7 @@ class AppController():
             self.fire_event(ControllerEventType.CONNECTION_STATUS_CHANGE, {'connected': self._bus.is_active()})
             if not self._bus.is_active():
                 self.fire_event(ControllerEventType.LOG_MESSAGE, {'msg': f"Serial connection stopped.", 'color':'green'})
+            self.current_base_id = None
             self._bus = None
 
     def kill_serial_connection_before_exit(self) -> None:
@@ -241,9 +245,10 @@ class AppController():
             self._bus.set_callback( None )
 
             is_locked = (await locking.lock_bus(self._bus)) == locking.LOCKED
-
+            
             # first get fam14 and make it know to data manager
-            fam14 = await self.create_busobject(255)
+            fam14:FAM14 = await self.create_busobject(255)
+            self.current_base_id = await fam14.get_base_id()
             logging.info(colored(f"Found device: {fam14}",'grey'))
             self.fire_event(ControllerEventType.LOG_MESSAGE, {'msg': f"Found device: {fam14}", 'color':'grey'})
             await self.async_fire_event(ControllerEventType.ASYNC_DEVICE_DETECTED, {'device': fam14, 'fam14': fam14, 'force_overwrite': force_overwrite})

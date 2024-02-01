@@ -13,7 +13,7 @@ from homeassistant.const import CONF_ID, CONF_NAME
 
 from eltakobus.device import SensorInfo, KeyFunction
 from eltakobus.util import b2s
-from data.data import DataManager, Device, EEP_MAPPING
+from data.data_manager import DataManager, Device, EEP_MAPPING
 
 
 class DeviceDetails():
@@ -26,15 +26,36 @@ class DeviceDetails():
 
         self.controller.add_event_handler(ControllerEventType.SELECTED_DEVICE, self.selected_device_handler)
 
-        f = LabelFrame(self.main, padx=3, pady=3, text="Device Details")
-        f.pack(fill="both")
-        self.root = f
+        # main
+        main_frame = Frame(main, width=370)
+        main_frame.pack(fill=BOTH, expand=1)
 
+        # canvas
+        canvas = Canvas(main_frame, width=250)
+        canvas.pack(side=LEFT, fill=BOTH, expand=1)
+
+        # scrollbar
+        scrollbar = tk.Scrollbar(main_frame, orient=VERTICAL, command=canvas.yview)
+        scrollbar.pack(side=RIGHT, fill=Y)
+
+        # configure the canvas
+        canvas.configure(yscrollcommand=scrollbar.set)
+        canvas.bind(
+            '<Configure>', lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+
+        inner_frame = LabelFrame(canvas, padx=6, pady=3, text="Device Details")
+        canvas.create_window((0, 0), window=inner_frame, anchor="nw")
+        self.canvas = canvas
+
+        self.root = main_frame
+        self.inner_frame = inner_frame
+        
 
     def show_form(self, device:Device):
-        f = self.root
+        f = self.inner_frame
 
-        self.clean_and_disable()
+        self.clean_and_disable(self.inner_frame)
 
         c_row = 0
 
@@ -61,6 +82,19 @@ class DeviceDetails():
         self.text_address.bind('<Return>', lambda e, d=device: self.update_device(d))
 
 
+        # address
+        c_row += 1
+        l = Label(f, text="External Id")
+        l.grid(row=c_row, column=0, sticky=W, padx=3)
+
+        self.text_ext_address = Entry(f)
+        self.text_ext_address.insert(END, "00-00-00-00")
+        self.text_ext_address.config(state=DISABLED)
+        self.text_ext_address.grid(row=c_row, column=1, sticky=W+E)
+        self._update_text_field(self.text_ext_address, device.external_id)
+        self.text_ext_address.bind('<Return>', lambda e, d=device: self.update_device(d))
+
+
         # version
         c_row += 1
         l = Label(f, text="Version")
@@ -83,6 +117,18 @@ class DeviceDetails():
         self.cb_device_type.grid(row=c_row, column=1, sticky=W+E)
         self.cb_device_type.set(device.device_type if device.device_type else '')
         self.cb_device_type.bind('<Return>', lambda e, d=device: self.update_device(d))
+
+
+        # device type
+        c_row += 1
+        l = Label(f, text="Key Function (for Sensor)")
+        l.grid(row=c_row, column=0, sticky=W, padx=3)
+
+        self.cb_key_function = ttk.Combobox(f, width="20") 
+        self.cb_key_function['values'] = [kf.name for kf in KeyFunction]
+        self.cb_key_function.grid(row=c_row, column=1, sticky=W+E)
+        self.cb_key_function.set(device.key_function if device.key_function else '')
+        self.cb_key_function.bind('<Return>', lambda e, d=device: self.update_device(d))
 
 
         # comment
@@ -127,20 +173,18 @@ class DeviceDetails():
 
         # additional fields
         c_row += 1
-        # f = Frame(self.root)
-        # f.grid(row=c_row, column=0, sticky=W, padx=3, columnspan=2)
         c_row = self.add_additional_fields(device, device.additional_fields, f, c_row)
 
         # memory entries
         c_row += 1
-        l = Label(self.root, text="Device Memory")
+        l = Label(f, text="Device Memory")
         l.grid(row=c_row, column=0, sticky=W, padx=3)
 
         c_row += 1
-        f = Frame(self.root)
-        f.grid(row=c_row, column=0, sticky=W+E, padx=3, columnspan=2)
+        ff = Frame(f)
+        ff.grid(row=c_row, column=0, sticky=W+E, padx=3, columnspan=2)
 
-        tv = ttk.Treeview(f, selectmode="none",height=10,columns=(0,1,2))
+        tv = ttk.Treeview(ff, selectmode="none",height=10,columns=(0,1,2))
         tv['show'] = 'headings'
         tv.heading(0, text="Mem.Row")
         tv.column(0, anchor="w", width=40)
@@ -156,14 +200,14 @@ class DeviceDetails():
 
         # list of references
         c_row += 1
-        l = Label(self.root, text="Related Devices")
+        l = Label(f, text="Related Devices")
         l.grid(row=c_row, column=0, sticky=W, padx=3)
 
         c_row += 1
-        f = Frame(self.root)
-        f.grid(row=c_row, column=0, sticky=W+E, padx=3, columnspan=2)
+        ff = Frame(f)
+        ff.grid(row=c_row, column=0, sticky=W+E, padx=3, columnspan=2)
 
-        tv = ttk.Treeview(f, selectmode="none",height=10,columns=(0,1,2))
+        tv = ttk.Treeview(ff, selectmode="none",height=10,columns=(0,1,2))
         tv['show'] = 'headings'
         tv.heading(0, text="Name")
         tv.column(0, anchor="w", width=40)
@@ -180,7 +224,7 @@ class DeviceDetails():
 
         # buttons
         c_row += 1
-        f_btn = Frame(self.root)
+        f_btn = Frame(f)
         f_btn.grid(row=c_row, column=0, columnspan=2)
 
         self.btn_cancel = Button(f_btn, text="Reload", anchor=CENTER, command=self.reload_values)
@@ -191,11 +235,13 @@ class DeviceDetails():
         self.last_row = c_row+1
 
 
-    def update_device(self, device):
+
+    def update_device(self, device:Device):
         device.name = self.text_name.get()
         device.address = self.text_address.get()
         device.version = self.text_version.get()
         device.device_type = self.cb_device_type.get()
+        device.key_function = self.cb_key_function.get()
         device.comment = self.text_comment.get()
         device.eep = self.cb_device_eep.get()
         device.use_in_ha = self.cb_export_ha_var.get() == 1
@@ -229,8 +275,8 @@ class DeviceDetails():
 
         return _row
 
-    def clean_and_disable(self) -> None:
-        for widget in self.root.winfo_children():
+    def clean_and_disable(self, frame:Frame) -> None:
+        for widget in frame.winfo_children():
             widget.destroy()
 
     def _update_text_field(self, text_field:Entry, value:str, state:str=DISABLED):

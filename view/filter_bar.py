@@ -8,7 +8,7 @@ from data.filter import DataFilter
 from view.checklistcombobox import ChecklistCombobox
 
 from controller import AppController, ControllerEventType
-from data.data import DataManager, EEP_MAPPING, get_eep_names
+from data.data_manager import DataManager, EEP_MAPPING, get_eep_names
 
 
 class FilterBar():
@@ -29,6 +29,7 @@ class FilterBar():
 
         self.cb_filtername = ttk.Combobox(f, width="14") 
         self.cb_filtername.grid(row=1, column=col, padx=(0,3) )
+        self.cb_filtername.bind('<Return>', lambda e: [self.load_filter(), self.add_filter(False), self.apply_filter(e, True)] )
 
         col += 1
         self.btn_save_filter = Button(f, text="Load", command=self.load_filter)
@@ -49,6 +50,7 @@ class FilterBar():
         self.global_filter = Entry(f, width="14") 
         self.global_filter.grid(row=1, column=col, padx=(0,3) )
         self.global_filter.bind('<Return>', self.apply_filter)
+        self.global_filter.bind("<KeyRelease>", lambda e: self.cb_filtername.set('') )
 
         # address
         col += 1
@@ -58,6 +60,7 @@ class FilterBar():
         self.cb_device_address = Entry(f, width="14") 
         self.cb_device_address.grid(row=1, column=col, padx=(0,3) )
         self.cb_device_address.bind('<Return>', self.apply_filter)
+        self.cb_device_address.bind("<KeyRelease>", lambda e: self.cb_filtername.set('') )
 
         # external address
         col += 1
@@ -67,6 +70,7 @@ class FilterBar():
         self.cb_external_address = Entry(f, width="14") 
         self.cb_external_address.grid(row=1, column=col, padx=(0,3) )
         self.cb_external_address.bind('<Return>', self.apply_filter)
+        self.cb_external_address.bind("<KeyRelease>", lambda e: self.cb_filtername.set('') )
 
         # device type
         col += 1
@@ -77,6 +81,7 @@ class FilterBar():
         self.cb_device_type = ChecklistCombobox(f, values=values, width="14") 
         self.cb_device_type.grid(row=1, column=col, padx=(0,3) )
         self.cb_device_type.bind('<Return>', self.apply_filter)
+        self.cb_device_type.bind("<KeyRelease>", lambda e: self.cb_filtername.set('') )
 
         # eep
         col += 1
@@ -87,6 +92,7 @@ class FilterBar():
         self.cb_device_eep = ChecklistCombobox(f, values=values, width="14") 
         self.cb_device_eep.grid(row=1, column=col, padx=(0,3))
         self.cb_device_eep.bind('<Return>', self.apply_filter)
+        self.cb_device_eep.bind("<KeyRelease>", lambda e: self.cb_filtername.set('') )
 
         # used in ha
         col += 1
@@ -95,6 +101,7 @@ class FilterBar():
         self.cb_in_ha = ttk.Checkbutton(f, text="Used in HA", variable=self.var_in_ha)
         self.cb_in_ha.grid(row=1, column=col, padx=(0,3) )
         self.cb_in_ha.bind('<Return>', self.apply_filter)
+        self.cb_in_ha.bind('<Button-1>', lambda e: self.cb_filtername.set('') )
 
 
         # button reset
@@ -106,39 +113,66 @@ class FilterBar():
         self.btn_apply_filter = Button(f, text="Apply", command=self.apply_filter)
         self.btn_apply_filter.grid(row=1, column=col, padx=(0,3) )
 
+        self.controller.add_event_handler(ControllerEventType.SET_DATA_TABLE_FILTER, self.on_set_filter_handler)
+        self.controller.add_event_handler(ControllerEventType.ADDED_DATA_TABLE_FILTER, self.on_filter_added_handler)
+        self.controller.add_event_handler(ControllerEventType.REMOVED_DATA_TABLE_FILTER, self.on_filter_removed_handler)
 
-    def add_filter(self):
+    def on_set_filter_handler(self, filter:DataFilter):
+        self.set_widget_values(filter)
+
+    def on_filter_added_handler(self, filter:DataFilter):
+        # always take entire list to be in sync
+        self.cb_filtername['values'] = sorted([k for k in self.data_manager.data_fitlers.keys()])
+
+    def on_filter_removed_handler(self, filter:DataFilter):
+        # always take entire list to be in sync
+        self.cb_filtername['values'] = sorted([k for k in self.data_manager.data_fitlers.keys()])
+        self.reset_filter()
+
+    def add_filter(self, show_error_message:bool=True):
         filter_obj = self.get_filter_object()
-        if len(filter_obj.name) > 1:
+        if filter_obj and len(filter_obj.name) > 1:
             self.data_manager.add_filter(filter_obj)
-            self.cb_filtername['values'] = sorted([k for k in self.data_manager.data_fitlers.keys()])
             
-        else:
+        elif show_error_message:
             messagebox.showerror(title="Error: Cannot add filter", message="Please, provdied a valid filter name!")
 
     def remove_filter(self):
         filter_obj = self.get_filter_object()
         if len(filter_obj.name) > 1:
             self.data_manager.remove_filter(filter_obj)
-            self.cb_filtername['values'] = sorted([k for k in self.data_manager.data_fitlers.keys()])
-            self.reset_filter()
         else:
             messagebox.showerror(title="Error: Cannot remove filter", message="Please, provdied a valid filter name!")
+
+    def set_widget_values(self, filter:DataFilter):
+        if filter is not None:
+            self.cb_filtername.set(filter.name)
+            self.global_filter.delete(0, END)
+            self.global_filter.insert(END, ', '.join(filter.global_filter))
+            self.cb_device_address.delete(0, END)
+            self.cb_device_address.insert(END, ', '.join(filter.device_address_filter))
+            self.cb_external_address.delete(0, END)
+            self.cb_external_address.insert(END, ', '.join(filter.device_external_address_filter))
+            self.select_ChecklistCombobox(self.cb_device_type, filter.device_type_filter)
+            self.select_ChecklistCombobox(self.cb_device_eep, filter.device_eep_filter)
+        else:
+            self.cb_filtername.set('')
+            self.global_filter.delete(0, END)
+            
+            for cb in [self.cb_device_address, self.cb_external_address, self.cb_device_eep, self.cb_device_type]:
+                cb.delete(0, END)
+                if isinstance(cb, ChecklistCombobox):
+                    for var in cb.variables:
+                        var.set(0)
 
     def load_filter(self):
         filter_name = self.cb_filtername.get()
         if filter_name in self.data_manager.data_fitlers.keys():
             df:DataFilter = self.data_manager.data_fitlers[filter_name]
-            self.global_filter.delete(0, END)
-            self.global_filter.insert(END, ', '.join(df.global_filter))
-            self.cb_device_address.delete(0, END)
-            self.cb_device_address.insert(END, ', '.join(df.device_address_filter))
-            self.cb_external_address.delete(0, END)
-            self.cb_external_address.insert(END, ', '.join(df.device_external_address_filter))
-            self.select_ChecklistCombobox(self.cb_device_type, df.device_type_filter)
-            self.select_ChecklistCombobox(self.cb_device_eep, df.device_eep_filter)
+            self.set_widget_values(df)
 
-            self.apply_filter()
+            # load shall only present the values and not apply the filter
+            # self.apply_filter()
 
 
     def select_ChecklistCombobox(self, widget:ChecklistCombobox, values:[str]):
@@ -146,20 +180,17 @@ class FilterBar():
         for i in range(0,len(widget.checkbuttons)):
             widget.variables[i].set( 1 if widget.checkbuttons[i].cget('text') in values else 0 )
 
-    def apply_filter(self, event=None):
-        self.controller.fire_event(ControllerEventType.SET_DATA_TABLE_FILTER, self.get_filter_object())
+    def apply_filter(self, event=None, reset_for_no_filter_name:bool=False):
+        filter = self.get_filter_object()
+        # trigger reset if filter name is empty and if enter was pushed on filter name field
+        if reset_for_no_filter_name:
+            if filter is None or filter.name is None or len(filter.name) == 0:
+                filter = None
+
+        self.controller.fire_event(ControllerEventType.SET_DATA_TABLE_FILTER, filter)
 
 
     def reset_filter(self):
-        self.cb_filtername.set('')
-        self.global_filter.delete(0, END)
-        
-        for cb in [self.cb_device_address, self.cb_external_address, self.cb_device_eep, self.cb_device_type]:
-            cb.delete(0, END)
-            if isinstance(cb, ChecklistCombobox):
-                for var in cb.variables:
-                    var.set(0)
-
         self.controller.fire_event(ControllerEventType.SET_DATA_TABLE_FILTER, None)
 
     def get_str_array(self, widget:Widget) -> [str]:

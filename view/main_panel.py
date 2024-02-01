@@ -15,7 +15,7 @@ from homeassistant.const import CONF_ID, CONF_NAME
 from eltakobus.message import EltakoPoll, EltakoDiscoveryReply, EltakoDiscoveryRequest, EltakoMessage
 from eltakobus.util import b2s
 from eltakobus.device import KeyFunction, SensorInfo
-from data.data import DataManager, Device
+from data.data_manager import DataManager, Device
 from view import DEFAULT_WINDOW_TITLE
 from view.device_details import DeviceDetails
 
@@ -61,6 +61,9 @@ class MainPanel():
         main_split_area.grid(row=row_main_area, column=0, sticky="nsew", columnspan=4)
         
         data_split_area = ttk.PanedWindow(main_split_area, orient="horizontal")
+        # data_split_area = Frame(main_split_area)
+        # data_split_area.columnconfigure(0, weight=5)
+        # data_split_area.columnconfigure(0, weight=0, minsize=100)
         
         dt = DeviceTable(data_split_area, controller, data_manager)
         dd = DeviceDetails(data_split_area, controller, data_manager)
@@ -70,7 +73,9 @@ class MainPanel():
         main_split_area.add(lo.root, weight=1)
 
         data_split_area.add(dt.root, weight=5)
-        data_split_area.add(dd.root, weight=2)
+        data_split_area.add(dd.root, weight=0)
+        # dt.root.grid(row=0, column=0, sticky="nsew")
+        # dd.root.grid(row=0, column=1, sticky="nsew")
 
         StatusBar(main, controller, data_manager, row=row_status_bar)
 

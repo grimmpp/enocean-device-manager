@@ -3,7 +3,7 @@ from tkinter import *
 from tkinter import ttk
 from idlelib.tooltip import Hovertip
 from controller import AppController, ControllerEventType
-from data.data import DataManager, Device
+from data.data_manager import DataManager, Device
 
 class SerialConnectionBar():
 

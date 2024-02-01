@@ -3,7 +3,8 @@ from tkinter import *
 from tkinter import ttk
 
 from controller import AppController, ControllerEventType
-from data.data import DataManager
+from data.data_manager import DataManager
+from data.filter import DataFilter
 
 class StatusBar():
 
@@ -26,6 +27,11 @@ class StatusBar():
         l = Label(f, text="Device Scan:")
         l.pack(side=tk.RIGHT, padx=(5, 0), pady=2)
 
+        self.l_filter_name = Label(f, text="No Filter")
+        self.l_filter_name.pack(side=tk.RIGHT, padx=(0, 0), pady=2)
+        self.l = Label(f, text="Active Filter: ")
+        self.l.pack(side=tk.RIGHT, padx=(5, 0), pady=2)
+
         self.l_devices = Label(f, text=self.get_device_count_str())
         self.l_devices.pack(side=tk.LEFT, padx=(5, 0), pady=2)
 
@@ -34,6 +40,15 @@ class StatusBar():
         self.controller.add_event_handler(ControllerEventType.UPDATE_DEVICE_REPRESENTATION, self.update_device_count)
         self.controller.add_event_handler(ControllerEventType.UPDATE_SENSOR_REPRESENTATION, self.update_device_count)
         self.controller.add_event_handler(ControllerEventType.DEVICE_SCAN_STATUS, self.device_scan_status_handler)
+        self.controller.add_event_handler(ControllerEventType.SET_DATA_TABLE_FILTER, self.active_filter_name_handler)
+
+    def active_filter_name_handler(self, filter:DataFilter):
+        if filter is None:
+            self.l_filter_name.config(text='No Filter', fg='SystemButtonText')
+        elif filter.name is None or filter.name == '':
+            self.l_filter_name.config(text='Custom Filter', fg='darkgreen')
+        else:
+            self.l_filter_name.config(text=filter.name, fg='darkgreen')
 
     def get_device_count_str(self) -> str:
         count:int = len(self.data_manager.devices)

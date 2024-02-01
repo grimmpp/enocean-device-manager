@@ -1,8 +1,11 @@
+from datetime import datetime
+import tzlocal
+import time
 import tkinter as tk
 from tkinter import *
 from tkinter import ttk
 import tkinter.scrolledtext as ScrolledText
-
+from data.data_helper import b2s, a2s
 from eltakobus.message import EltakoPoll, EltakoDiscoveryReply, EltakoDiscoveryRequest, EltakoMessage, prettify, Regular1BSMessage, EltakoWrapped1BS
 
 from controller import AppController, ControllerEventType
@@ -24,13 +27,30 @@ class LogOutputPanel():
         controller.add_event_handler(ControllerEventType.SERIAL_CALLBACK, self.serial_callback)
         controller.add_event_handler(ControllerEventType.LOG_MESSAGE, self.receive_log_message)
 
-    def serial_callback(self, data):
+    def serial_callback(self, data:EltakoMessage):
         if type(data) not in [EltakoPoll, EltakoDiscoveryReply, EltakoDiscoveryRequest]:
-            self.receive_log_message({'msg': f"Received Telegram: {str(prettify(data))}", 'color': 'darkgrey'})
+            telegram = data
+            tt = type(telegram).__name__
+            adr = b2s(telegram.address)
+            payload = ''
+            if hasattr(telegram, 'data'):
+                payload += ', data: '+b2s(telegram.data)
+            elif hasattr(telegram, 'payload'):
+                payload += ', payload: '+b2s(telegram.payload)
+            
+            if hasattr(telegram, 'status'):
+                payload += ', status: '+ a2s(telegram.status, 1)
+
+            self.receive_log_message({'msg': f"Received Telegram: {tt} from {adr}{payload}", 'color': 'darkgrey'})
 
     def receive_log_message(self, data):
         msg = data.get('msg', False)
         if not msg: return
+
+        # time_format = "%d.%b %Y %H:%M:%S"
+        time_format = "%Y-%m-%d %H:%M:%S.%f"
+        time_str = datetime.now().strftime(time_format)
+        msg = f"{time_str}: {msg}"
 
         self.st.configure(state='normal')
         self.st.insert(tk.END, msg + '\n')

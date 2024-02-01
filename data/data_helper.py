@@ -61,12 +61,12 @@ def get_eep_names():
             eep_list.append(c.__name__.replace('_','-').upper())
     return sorted(set(eep_list))
 
-def a2s(address:int):
+def a2s(address:int, length:int=4):
     """address to string"""
     if address is None:
         return ""
     
-    return b2s( address.to_bytes(4, byteorder = 'big') )
+    return b2s( address.to_bytes(length, byteorder = 'big') )
 
 def find_device_info_by_device_type(device_type:str) -> dict:
     for i in EEP_MAPPING:

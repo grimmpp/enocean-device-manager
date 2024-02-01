@@ -9,7 +9,7 @@ from PIL import Image, ImageTk
 from idlelib.tooltip import Hovertip
 from controller import AppController, ControllerEventType
 
-from data.data import DataManager
+from data.data_manager import DataManager
 from view.menu_presenter import MenuPresenter
 
 

@@ -1,3 +1,5 @@
+import threading
+import time
 import tkinter as tk
 import os
 from pathlib import Path
@@ -13,7 +15,8 @@ from homeassistant.const import CONF_ID, CONF_NAME
 
 from eltakobus.util import b2s
 from eltakobus.eep import EEP
-from data.data import DataManager, Device, add_addresses, a2s
+from eltakobus.message import EltakoMessage, RPSMessage, Regular1BSMessage, Regular4BSMessage, EltakoWrappedRPS
+from data.data_manager import DataManager, Device, add_addresses, a2s
 from data.filter import DataFilter
 
 
@@ -23,25 +26,31 @@ class DeviceTable():
 
     def __init__(self, main: Tk, controller:AppController, data_manager:DataManager):
         
+        self.blinking_enabled = True
         self.pane = ttk.Frame(main, padding=2)
-        # self.pane_1.grid(row=1, column=0, sticky="nsew", columnspan=3)
+        # self.pane.grid(row=0, column=0, sticky=W+E+N+S)
         self.root = self.pane
 
         # Scrollbar
-        self.scrollbar = ttk.Scrollbar(self.pane)
-        self.scrollbar.pack(side="right", fill="y")
+        yscrollbar = ttk.Scrollbar(self.pane, orient=VERTICAL)
+        yscrollbar.pack(side=RIGHT, fill=Y)
+
+        xscrollbar = ttk.Scrollbar(self.pane, orient=HORIZONTAL)
+        xscrollbar.pack(side=BOTTOM, fill=X)
 
         # Treeview
-        columns = ("Address", "External Address", "Device Type", "Comment", "Export to HA Config", "HA Platform", "Device EEP", "Sender Address", "Sender EEP")
+        columns = ("Address", "External Address", "Device Type", "Key Function", "Comment", "Export to HA Config", "HA Platform", "Device EEP", "Sender Address", "Sender EEP")
         self.treeview = ttk.Treeview(
             self.pane,
             selectmode="browse",
-            yscrollcommand=self.scrollbar.set,
-            columns=(0,1,2,3,4,5,6,7,8),
+            yscrollcommand=yscrollbar.set,
+            xscrollcommand=xscrollbar.set,
+            columns=(0,1,2,3,4,5,6,7,8,9),
             height=10,
         )
-        self.treeview.pack(expand=True, fill="both")
-        self.scrollbar.config(command=self.treeview.yview)
+        self.treeview.pack(expand=True, fill=BOTH)
+        yscrollbar.config(command=self.treeview.yview)
+        xscrollbar.config(command=self.treeview.xview)
 
         def sort_rows_in_treeview(tree:ttk.Treeview, col_i:int, descending:bool, partent:str=''):
             data = [(tree.set(item, col_i), item) for item in tree.get_children(partent)]
@@ -58,13 +67,14 @@ class DeviceTable():
                 sort_rows_in_treeview(tree, i, descending, item)
             tree.heading(i, command=lambda c=col, d=(not descending): sort_treeview(tree, c, d))
 
+        self.treeview.column('#0', anchor="w", width=250, minwidth=250)#, stretch=NO)
         for col in columns:
             # Treeview headings
             i = columns.index(col)
-            if col in ['Comment']:
-                self.treeview.column(i, anchor="w", width=250)
+            if col in ['Key Function']:
+                self.treeview.column(i, anchor="w", width=250, minwidth=250)#, stretch=NO)
             else:
-                self.treeview.column(i, anchor="w", width=80)
+                self.treeview.column(i, anchor="w", width=80, minwidth=80)#, stretch=NO)
             self.treeview.heading(i, text=col, anchor="center", command=lambda c=col, d=False: sort_treeview(self.treeview, c, d))
         
         # self.menu = Menu(main, tearoff=0)
@@ -76,6 +86,7 @@ class DeviceTable():
         # self.menu.add_command(label="Rename")
 
         self.treeview.tag_configure('related_devices', background='lightgreen')
+        self.treeview.tag_configure('blinking', background='lightblue')
 
         # self.treeview.bind('<ButtonRelease-1>', self.on_selected)
         self.treeview.bind('<<TreeviewSelect>>', self.on_selected)
@@ -89,11 +100,13 @@ class DeviceTable():
         self.controller.add_event_handler(ControllerEventType.UPDATE_DEVICE_REPRESENTATION, self.update_device_representation_handler)
         self.controller.add_event_handler(ControllerEventType.UPDATE_SENSOR_REPRESENTATION, self.update_sensor_representation_handler)
         self.controller.add_event_handler(ControllerEventType.LOAD_FILE, self._reset)
-        self.controller.add_event_handler(ControllerEventType.SET_DATA_TABLE_FILTER, self._set_data_filter)
+        self.controller.add_event_handler(ControllerEventType.SET_DATA_TABLE_FILTER, self._set_data_filter_handler)
+        self.controller.add_event_handler(ControllerEventType.SET_DATA_TABLE_FILTER, self._set_data_filter_handler)
+        self.controller.add_event_handler(ControllerEventType.SERIAL_CALLBACK, self._serial_callback_handler)
 
         self.data_manager = data_manager
 
-    def _set_data_filter(self, filter):
+    def _set_data_filter_handler(self, filter):
         self.current_data_filter = filter
 
         self._reset(None)
@@ -156,15 +169,15 @@ class DeviceTable():
                 text = d.name
                 comment = d.comment if d.comment is not None else "" 
                 in_ha = d.use_in_ha
-                self.treeview.insert(parent="", index=0, iid=d.external_id, text=text, values=("", "", "", comment, in_ha, "", "", ""), open=True)
+                self.treeview.insert(parent="", index=0, iid=d.external_id, text=text, values=("", "", "", "", comment, in_ha, "", "", ""), open=True)
             else:
-                self.treeview.item(d.base_id, text=d.name, values=("", "", "", d.comment, d.use_in_ha, "", "", "") )
+                self.treeview.item(d.base_id, text=d.name, values=("", "", "", "", d.comment, d.use_in_ha, "", "", "") )
 
 
     def check_if_wireless_network_exists(self):
         id = self.NON_BUS_DEVICE_LABEL
         if not self.treeview.exists(id):
-            self.treeview.insert(parent="", index="end", iid=id, text=self.NON_BUS_DEVICE_LABEL, values=("", "", "", "", "", "", "", ""), open=True)
+            self.treeview.insert(parent="", index="end", iid=id, text=self.NON_BUS_DEVICE_LABEL, values=("", "", "", "", "", "", "", "", ""), open=True)
 
 
     def update_device_representation_handler(self, d:Device):
@@ -181,21 +194,72 @@ class DeviceTable():
             ha_pl = "" if d.ha_platform is None else d.ha_platform
             eep = "" if d.eep is None else d.eep
             device_type = "" if d.device_type is None else d.device_type
+            key_func = "" if d.key_function is None else d.key_function
             comment = "" if d.comment is None else d.comment
             sender_adr = "" if 'sender' not in d.additional_fields else d.additional_fields['sender'][CONF_ID]
             sender_eep = "" if 'sender' not in d.additional_fields else d.additional_fields['sender'][CONF_EEP]
             _parent = d.base_id if parent is None else parent
             if not self.treeview.exists(_parent): self.add_fam14(self.data_manager.devices[_parent])
             if not self.treeview.exists(d.external_id):
-                self.treeview.insert(parent=_parent, index="end", iid=d.external_id, text=d.name, values=(d.address, d.external_id, device_type, comment, in_ha, ha_pl, eep, sender_adr, sender_eep), open=True)
+                self.treeview.insert(parent=_parent, index="end", iid=d.external_id, text=d.name, values=(d.address, d.external_id, device_type, key_func, comment, in_ha, ha_pl, eep, sender_adr, sender_eep), open=True)
             else:
                 # update device
-                self.treeview.item(d.external_id, text=d.name, values=(d.address, d.external_id, device_type, comment, in_ha, ha_pl, eep, sender_adr, sender_eep), open=True)
+                self.treeview.item(d.external_id, text=d.name, values=(d.address, d.external_id, device_type, key_func, comment, in_ha, ha_pl, eep, sender_adr, sender_eep), open=True)
                 if self.treeview.parent(d.external_id) != _parent:
                     self.treeview.move(d.external_id, _parent, 0)
         else:
             self.add_fam14(d)
+
+        # self.trigger_blinking(d.external_id)
+
+    def _serial_callback_handler(self, message:EltakoMessage):
+        if type(message) in [RPSMessage, Regular1BSMessage, Regular4BSMessage, EltakoWrappedRPS]:
+            if isinstance(message.address, int):
+                adr = a2s(message.address)
+            else: 
+                adr = b2s(message.address)
+
+            if not adr.startswith('00-00-00-'):
+                self.trigger_blinking(adr)
+            else:
+                d:Device = self.data_manager.find_device_by_local_address(adr, self.controller.current_base_id)
+                if d is not None:
+                    self.trigger_blinking(d.external_id)
+
+    def trigger_blinking(self, external_id:str):
+        if not self.blinking_enabled:
+            return
         
+        def blink(ext_id:str):
+            for i in range(0,2):
+                if self.treeview.exists(ext_id):
+                    tags = self.treeview.item(ext_id)['tags']
+                    if 'blinking' in tags:
+                        if isinstance(tags, str):
+                            self.treeview.item(ext_id, tags=() )
+                        else:
+                            tags.remove('blinking')
+                            self.treeview.item(ext_id, tags=tags )
+                    else:
+                        if isinstance(tags, str):
+                            self.treeview.item(ext_id, tags=('blinking') )
+                        else:
+                            tags.append('blinking')
+                            self.treeview.item(ext_id, tags=tags )
+                    time.sleep(.5)
+
+            if self.treeview.exists(ext_id):
+                tags = self.treeview.item(ext_id)['tags']
+                if 'blinking' in tags:
+                    if isinstance(tags, str):
+                        self.treeview.item(ext_id, tags=() )
+                    else:
+                        tags.remove('blinking')
+                        self.treeview.item(ext_id, tags=tags )
+
+        t = threading.Thread(target=lambda ext_id=external_id: blink(ext_id))
+        t.start()
+
 
     def update_sensor_representation_handler(self, d:Device):
         self.update_device_handler(d, parent=self.NON_BUS_DEVICE_LABEL)

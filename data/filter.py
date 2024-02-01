@@ -39,6 +39,10 @@ class DataFilter():
                 return True
             
         for f in self.global_filter:
+            # key function
+            if device.key_function and f.upper() in device.key_function.upper():
+                return True
+            
             # comment
             if device.comment and f.upper() in device.comment.upper():
                 return True

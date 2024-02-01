@@ -7,6 +7,7 @@ import asyncio
 import logging
 
 import os
+from data.application_data import ApplicationData
 
 from data.filter import DataFilter
 os.environ.setdefault('SKIPP_IMPORT_HOME_ASSISTANT', "True")
@@ -36,6 +37,8 @@ class DataManager():
         self.controller.add_event_handler(ControllerEventType.SERIAL_CALLBACK, self._serial_callback_handler)
         self.controller.add_event_handler(ControllerEventType.ASYNC_DEVICE_DETECTED, self._async_device_detected_handler)
         self.controller.add_event_handler(ControllerEventType.LOAD_FILE, self._reset)
+        self.controller.add_event_handler(ControllerEventType.SET_DATA_TABLE_FILTER, self.set_current_data_filter_handler)
+        self.controller.add_event_handler(ControllerEventType.REMOVED_DATA_TABLE_FILTER, self.remove_current_data_filter_handler)
 
         self.eltako = {}
         for p in [CONF_UNKNOWN, Platform.BINARY_SENSOR, Platform.LIGHT, Platform.SENSOR, Platform.SWITCH, Platform.COVER, Platform.CLIMATE]:
@@ -48,28 +51,72 @@ class DataManager():
         self.fam14_base_id = '00-00-00-00'
 
         self.collected_sensor_list:[SensorInfo] = []
+
         self.devices:dict[str:Device] = {}
         self.data_fitlers:dict[str:DataFilter] = {}
+        self.selected_data_filter_name:DataFilter = None
 
+    def set_current_data_filter_handler(self, filter:DataFilter):
+        if filter is not None:
+            self.selected_data_filter_name = filter.name
+        else:
+            self.selected_data_filter_name = None
+
+    def remove_current_data_filter_handler(self, filter:DataFilter):
+        if self.selected_data_filter_name is not None and self.selected_data_filter_name == filter.name:
+            self.selected_data_filter_name = None
 
     def add_filter(self, filter:DataFilter) -> None:
         self.data_fitlers[filter.name] = filter
+
+        self.controller.fire_event(ControllerEventType.ADDED_DATA_TABLE_FILTER, filter)
 
     def remove_filter(self, filter:DataFilter) -> None:
         if filter.name in self.data_fitlers.keys():
             del self.data_fitlers[filter.name]
 
+        self.controller.fire_event(ControllerEventType.REMOVED_DATA_TABLE_FILTER, filter)
+
     def _reset(self, data):
         self.devices = {}
 
-    def load_devices(self, devices:dict):
-        for key in devices.keys():
+    def load_data_filters(self, filters:[DataFilter]):
+        for f in filters.values():
+            self.add_filter(f)
+
+    def load_devices(self, devices:dict[str:Device]):
+        # load FAM14 first because of dependencies
+        d_list =  [d.external_id for d in devices.values() if d.is_fam14()] 
+        d_list += [d.external_id for d in devices.values() if not d.is_fam14()] 
+        for key in d_list:
             device:Device = devices[key]
             self.devices[key] = device
             if device.is_bus_device():
                 self.controller.fire_event(ControllerEventType.UPDATE_DEVICE_REPRESENTATION, device)
             else:
                 self.controller.fire_event(ControllerEventType.UPDATE_SENSOR_REPRESENTATION, device)
+
+    def load_application_data_from_file(self, filename:str):
+        app_data:ApplicationData = ApplicationData.read_from_file(filename)
+        
+        self.load_data_filters(app_data.data_filters)
+        self.selected_data_filter_name = app_data.selected_data_filter_name
+        if self.selected_data_filter_name is None or self.selected_data_filter_name == '': 
+            self.controller.fire_event(ControllerEventType.SET_DATA_TABLE_FILTER, None)
+        elif self.selected_data_filter_name not in self.data_fitlers.keys():
+            self.controller.fire_event(ControllerEventType.SET_DATA_TABLE_FILTER, None)
+        else:
+            self.controller.fire_event(ControllerEventType.SET_DATA_TABLE_FILTER, self.data_fitlers[self.selected_data_filter_name])
+
+        self.load_devices(app_data.devices)
+
+    def write_application_data_to_file(self, filename:str):
+        app_data = ApplicationData()
+        app_data.data_filters = self.data_fitlers
+        app_data.devices = self.devices
+        app_data.selected_data_filter_name = self.selected_data_filter_name
+
+        ApplicationData.write_to_file(filename, app_data)
 
     def _serial_callback_handler(self, message:EltakoMessage):
         # self.add_sensor_from_wireless_telegram(message)
@@ -151,6 +198,8 @@ class DataManager():
 
     def get_related_devices(self, device_external_id:str) -> [Device]:
         """returns a list of all devices in which a sensor is entered or sensors which are configured inside an device."""
+        if device_external_id is None or device_external_id == '' or device_external_id == 'Distributed Devices':
+            return []
 
         device:Device = self.devices[device_external_id]
         
@@ -167,6 +216,19 @@ class DataManager():
 
         return self.detected_sensors[id]
     
+    def find_device_by_local_address(self, address:str, base_id:str):
+        if base_id is None:
+            return None
+        
+        base_id_int:int = int.from_bytes(AddressExpression.parse( base_id )[0], "big") 
+        address_int:int = int.from_bytes(AddressExpression.parse( address )[0], "big") 
+        external_id:str = a2s(base_id_int + address_int)
+
+        if external_id in self.devices:
+            return self.devices[external_id]
+        else:
+            return None
+
     def find_sensors(self, dev_id:int, in_func_group: int) -> [SensorInfo]:
         result = []
         for s in self.collected_sensor_list: 

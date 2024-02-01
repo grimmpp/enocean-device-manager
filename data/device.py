@@ -17,6 +17,7 @@ class Device():
     dev_size:int=None
     external_id:str=None
     device_type:str=None
+    key_function:str=None
     version:str=None
     name:str=None
     comment:str = ""
@@ -75,6 +76,7 @@ class Device():
         bd.base_id = await fam14.get_base_id()
         bd.device_type = type(device).__name__
         bd.version = '.'.join(map(str,device.version))
+        bd.key_function = ''
         bd.comment = ''
         bd.bus_device = True
         if isinstance(device, FAM14):
@@ -87,6 +89,8 @@ class Device():
         print_memory_entires( bd.memory_entries)
         print("\n")
         bd.name = f"{bd.device_type} {bd.address}"
+        if bd.is_fam14():
+            bd.name = f"{bd.device_type} {bd.external_id}"
         if bd.dev_size > 1:
             bd.name += f" ({bd.channel}/{bd.dev_size})"
 
@@ -140,7 +144,8 @@ class Device():
         bd = Device()
         bd.address = sensor_info.sensor_id_str
         bd.base_id = await fam14.get_base_id()
-        bd.comment = KeyFunction(sensor_info.key_func).name
+        bd.comment = ''
+        bd.key_function = KeyFunction(sensor_info.key_func).name
         bd.eep = get_eep_from_key_function_name(sensor_info.key_func)
         bd.name = f"{get_name_from_key_function_name(sensor_info.key_func)} {sensor_info.sensor_id_str}"
         # found sensor by EEP in KeyFunction
@@ -162,6 +167,18 @@ class Device():
             bd.ha_platform = Platform.BINARY_SENSOR
             bd.eep = F6_02_01.eep_string
             bd.name = 'FTS14EM Button ' + sensor_info.sensor_id_str
+        elif bd.address.startswith('00-00-B') or 'FROM_CONTROLLER' in bd.key_function:
+            bd.use_in_ha = False
+            bd.device_type = 'Smart Home'
+            bd.ha_platform = ''
+            bd.eep = ''
+            bd.name = 'HA Contoller ' + sensor_info.sensor_id_str
+        elif 'WEATHER_STATION' in bd.key_function:
+            bd.use_in_ha = True
+            bd.device_type = 'Weather Station'
+            bd.ha_platform = Platform.SENSOR
+            bd.eep = 'A5-04-02'
+            bd.name = 'Weather Station ' + sensor_info.sensor_id_str
 
         if sensor_info.sensor_id_str.startswith('00-00-'):
             bd.external_id = a2s( int.from_bytes(sensor_info.sensor_id, "big") + (await fam14.get_base_id_in_int()) )
