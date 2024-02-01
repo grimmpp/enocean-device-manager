@@ -15,7 +15,7 @@ class LogOutputPanel():
     def __init__(self, main: Tk, controller:AppController):
         self.controller = controller
 
-        pane = ttk.Frame(main, padding=2)
+        pane = ttk.Frame(main, padding=2, height=100)
         # pane.grid(row=2, column=0, sticky="nsew", columnspan=3)
         self.root = pane
 

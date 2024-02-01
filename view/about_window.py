@@ -24,6 +24,11 @@ class AboutWindow():
         l.pack(side=TOP, fill="x", pady=2, padx=5)
         l.bind("<Button-1>", lambda e: self.callback("https://github.com/grimmpp/enocean-device-manager"))
 
+        text = "Report a bug or ask for features!"
+        l = tk.Label(popup, text=text, fg="blue", cursor="hand2", anchor="w")
+        l.pack(side=TOP, fill="x", pady=2, padx=5)
+        l.bind("<Button-1>", lambda e: self.callback("https://github.com/grimmpp/enocean-device-manager/issues"))
+
         l = tk.Label(popup, text="Author: Philipp Grimm", anchor="w")
         l.pack(side=TOP, fill="x", pady=2, padx=5)
 
@@ -40,7 +45,7 @@ class AboutWindow():
 
         # center
         w = 300
-        h = 200
+        h = 220
         x = main.winfo_x() + main.winfo_width()/2 - w/2
         y = main.winfo_y() + main.winfo_height()/2 - h/2
         popup.geometry('%dx%d+%d+%d' % (w, h, x, y))

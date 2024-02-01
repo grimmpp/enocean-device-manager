@@ -46,7 +46,7 @@ class MenuPresenter():
 
         helpmenu = Menu(self.menu_bar, tearoff=0)
         # helpmenu.add_command(label="Help Index")
-        helpmenu.add_command(label="About...", command=lambda: AboutWindow(main))
+        helpmenu.add_command(label="About...", command=lambda: AboutWindow(main), accelerator="F1")
         self.menu_bar.add_cascade(label="Help", menu=helpmenu)
 
         main.config(menu=self.menu_bar)
@@ -57,6 +57,7 @@ class MenuPresenter():
         main.bind('<Control-Shift-E>', lambda e: self.export_ha_config(save_as=True))
         main.bind('<Control-s>', lambda e: self.save_file())
         main.bind('<Control-Shift-S>', lambda e: self.save_file(save_as=True))
+        main.bind('<F1>', lambda e: AboutWindow(main))
         
 
 

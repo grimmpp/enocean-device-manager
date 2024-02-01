@@ -91,6 +91,8 @@ class MainPanel():
     def _init_window(self):
         self.main.title(DEFAULT_WINDOW_TITLE)
         self.main.geometry("1400x600")  # set starting size of window
+        # self.main.attributes('-fullscreen', True)
+        # self.main.state('zoomed') # opens window maximized
         self.main.config(bg="lightgrey")
         self.main.protocol("WM_DELETE_WINDOW", self.on_closing)
         filename = os.path.join(os.getcwd(), 'icons', 'Faenza-system-search.png')
