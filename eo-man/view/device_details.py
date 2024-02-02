@@ -7,8 +7,8 @@ from tkinter import ttk
 from tkinter.tix import IMAGETEXT
 from PIL import Image, ImageTk
 from idlelib.tooltip import Hovertip
-from controller import AppController, ControllerEventType
-from const import *
+from controller.app_bus import AppBus, AppBusEventType
+from data.const import *
 from homeassistant.const import CONF_ID, CONF_NAME
 
 from eltakobus.device import SensorInfo, KeyFunction
@@ -18,13 +18,13 @@ from data.data_manager import DataManager, Device, EEP_MAPPING
 
 class DeviceDetails():
 
-    def __init__(self, main: Tk, controller:AppController, data_manager:DataManager):
+    def __init__(self, main: Tk, app_bus:AppBus, data_manager:DataManager):
         self.main = main
-        self.controller = controller
+        self.app_bus = app_bus
         self.data_manager = data_manager
         self.current_device = None
 
-        self.controller.add_event_handler(ControllerEventType.SELECTED_DEVICE, self.selected_device_handler)
+        self.app_bus.add_event_handler(AppBusEventType.SELECTED_DEVICE, self.selected_device_handler)
 
         # main
         main_frame = Frame(main, width=370)

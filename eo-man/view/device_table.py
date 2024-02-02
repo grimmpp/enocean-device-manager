@@ -9,8 +9,8 @@ from tkinter import filedialog
 from tkinter.tix import IMAGETEXT
 from PIL import Image, ImageTk
 from idlelib.tooltip import Hovertip
-from controller import AppController, ControllerEventType
-from const import *
+from controller.app_bus import AppBus, AppBusEventType
+from data.const import *
 from homeassistant.const import CONF_ID, CONF_NAME
 
 from eltakobus.util import b2s
@@ -24,7 +24,7 @@ class DeviceTable():
 
     NON_BUS_DEVICE_LABEL:str="Distributed Devices"
 
-    def __init__(self, main: Tk, controller:AppController, data_manager:DataManager):
+    def __init__(self, main: Tk, app_bus:AppBus, data_manager:DataManager):
         
         self.blinking_enabled = True
         self.pane = ttk.Frame(main, padding=2)
@@ -95,18 +95,19 @@ class DeviceTable():
         self.check_if_wireless_network_exists()
 
         self.current_data_filter:DataFilter = None
-        self.controller = controller
-        self.controller.add_event_handler(ControllerEventType.DEVICE_SCAN_STATUS, self.device_scan_status_handler)
-        self.controller.add_event_handler(ControllerEventType.UPDATE_DEVICE_REPRESENTATION, self.update_device_representation_handler)
-        self.controller.add_event_handler(ControllerEventType.UPDATE_SENSOR_REPRESENTATION, self.update_sensor_representation_handler)
-        self.controller.add_event_handler(ControllerEventType.LOAD_FILE, self._reset)
-        self.controller.add_event_handler(ControllerEventType.SET_DATA_TABLE_FILTER, self._set_data_filter_handler)
-        self.controller.add_event_handler(ControllerEventType.SET_DATA_TABLE_FILTER, self._set_data_filter_handler)
-        self.controller.add_event_handler(ControllerEventType.SERIAL_CALLBACK, self._serial_callback_handler)
+        self.app_bus = app_bus
+        self.app_bus.add_event_handler(AppBusEventType.DEVICE_SCAN_STATUS, self.device_scan_status_handler)
+        self.app_bus.add_event_handler(AppBusEventType.UPDATE_DEVICE_REPRESENTATION, self.update_device_representation_handler)
+        self.app_bus.add_event_handler(AppBusEventType.UPDATE_SENSOR_REPRESENTATION, self.update_sensor_representation_handler)
+        self.app_bus.add_event_handler(AppBusEventType.LOAD_FILE, self._reset)
+        self.app_bus.add_event_handler(AppBusEventType.SET_DATA_TABLE_FILTER, self._set_data_filter_handler)
+        self.app_bus.add_event_handler(AppBusEventType.SERIAL_CALLBACK, self._serial_callback_handler)
 
         self.data_manager = data_manager
 
         # initial loading
+        if self.data_manager.selected_data_filter_name is not None:
+            self._set_data_filter_handler(self.data_manager.data_fitlers[self.data_manager.selected_data_filter_name])
         for d in self.data_manager.devices.values():
             parent = self.NON_BUS_DEVICE_LABEL if not d.is_bus_device() else None
             self.update_device_handler(d, parent)
@@ -130,7 +131,7 @@ class DeviceTable():
         device_external_id = self.treeview.focus()
         device = self.data_manager.get_device_by_id(device_external_id)
         if device is not None:
-            self.controller.fire_event(ControllerEventType.SELECTED_DEVICE, device)
+            self.app_bus.fire_event(AppBusEventType.SELECTED_DEVICE, device)
 
         self.mark_related_elements(device_external_id)
 
@@ -217,7 +218,10 @@ class DeviceTable():
 
         # self.trigger_blinking(d.external_id)
 
-    def _serial_callback_handler(self, message:EltakoMessage):
+    def _serial_callback_handler(self, data:dict):
+        message:EltakoMessage = data['msg']
+        current_base_id:str = data['base_id']
+        
         if type(message) in [RPSMessage, Regular1BSMessage, Regular4BSMessage, EltakoWrappedRPS]:
             if isinstance(message.address, int):
                 adr = a2s(message.address)
@@ -226,8 +230,8 @@ class DeviceTable():
 
             if not adr.startswith('00-00-00-'):
                 self.trigger_blinking(adr)
-            else:
-                d:Device = self.data_manager.find_device_by_local_address(adr, self.controller.current_base_id)
+            elif current_base_id is not None:
+                d:Device = self.data_manager.find_device_by_local_address(adr, current_base_id)
                 if d is not None:
                     self.trigger_blinking(d.external_id)
 

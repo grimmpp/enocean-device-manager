@@ -2,15 +2,15 @@ import tkinter as tk
 from tkinter import *
 from tkinter import ttk
 
-from controller import AppController, ControllerEventType
+from controller.app_bus import AppBus, AppBusEventType
 from data.data_manager import DataManager
 from data.filter import DataFilter
 
 class StatusBar():
 
     
-    def __init__(self, main: Tk, controller:AppController, data_manager:DataManager, row:int):
-        self.controller = controller
+    def __init__(self, main: Tk, app_bus:AppBus, data_manager:DataManager, row:int):
+        self.app_bus = app_bus
         self.data_manager = data_manager
         
         f = Frame(main, bd=1, relief=SUNKEN)
@@ -35,12 +35,17 @@ class StatusBar():
         self.l_devices = Label(f, text=self.get_device_count_str())
         self.l_devices.pack(side=tk.LEFT, padx=(5, 0), pady=2)
 
-        self.controller.add_event_handler(ControllerEventType.CONNECTION_STATUS_CHANGE, self.is_connected_handler)
-        self.controller.add_event_handler(ControllerEventType.DEVICE_ITERATION_PROGRESS, self.device_scan_progress_handler)
-        self.controller.add_event_handler(ControllerEventType.UPDATE_DEVICE_REPRESENTATION, self.update_device_count)
-        self.controller.add_event_handler(ControllerEventType.UPDATE_SENSOR_REPRESENTATION, self.update_device_count)
-        self.controller.add_event_handler(ControllerEventType.DEVICE_SCAN_STATUS, self.device_scan_status_handler)
-        self.controller.add_event_handler(ControllerEventType.SET_DATA_TABLE_FILTER, self.active_filter_name_handler)
+        self.app_bus.add_event_handler(AppBusEventType.CONNECTION_STATUS_CHANGE, self.is_connected_handler)
+        self.app_bus.add_event_handler(AppBusEventType.DEVICE_ITERATION_PROGRESS, self.device_scan_progress_handler)
+        self.app_bus.add_event_handler(AppBusEventType.UPDATE_DEVICE_REPRESENTATION, self.update_device_count)
+        self.app_bus.add_event_handler(AppBusEventType.UPDATE_SENSOR_REPRESENTATION, self.update_device_count)
+        self.app_bus.add_event_handler(AppBusEventType.DEVICE_SCAN_STATUS, self.device_scan_status_handler)
+        self.app_bus.add_event_handler(AppBusEventType.SET_DATA_TABLE_FILTER, self.active_filter_name_handler)
+
+        ## initialize
+        if self.data_manager.selected_data_filter_name is not None:
+            self.active_filter_name_handler(self.data_manager.data_fitlers[self.data_manager.selected_data_filter_name])
+            
 
     def active_filter_name_handler(self, filter:DataFilter):
         if filter is None:

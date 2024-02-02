@@ -15,55 +15,18 @@ from eltakobus.locking import buslocked, UNLOCKED
 from eltakobus.message import Regular4BSMessage
 import threading
 
-DEFAULT_SENDER_ADDRESS = 0x0000B000
+from controller.app_bus import AppBusEventType, AppBus
 
 
-class ControllerEventType(Enum):
-    LOG_MESSAGE = 0                     # dict with keys: msg:str, color:str
-    SERIAL_CALLBACK = 1                 # EltakoMessage
-    CONNECTION_STATUS_CHANGE = 2        # dict with keys: serial_port:str, baudrate:int, connected:bool
-    DEVICE_ITERATION_PROGRESS = 3            # percentage 0..100 in float
-    DEVICE_SCAN_STATUS = 4              # str: STARTED, FINISHED, DEVICE_DETECTED
-    ASYNC_DEVICE_DETECTED = 5           # BusObject
-    UPDATE_DEVICE_REPRESENTATION = 6    # busdevice
-    UPDATE_SENSOR_REPRESENTATION = 7    # esp2  eltakomessage
-    WINDOW_CLOSED = 8
-    WINDOW_LOADED = 9
-    SELECTED_DEVICE = 10                # device
-    LOAD_FILE = 11
-    WRITE_SENDER_IDS_TO_DEVICES_STATUS = 12
-    SET_DATA_TABLE_FILTER = 13          # applies data filter to data table
-    ADDED_DATA_TABLE_FILTER = 14                # adds data filter to application data
-    REMOVED_DATA_TABLE_FILTER = 15             # remove data filter from application data
+class SerialController():
 
-class ControllerEvent():
-    def __init__(self, event_type:ControllerEventType, data):
-        self.event_type = event_type
-        self.data = data
-
-class AppController():
-
-    def __init__(self) -> None:
-        self._bus = None
+    def __init__(self, app_bus:AppBus) -> None:
+        self.app_bus = app_bus
+        self._serial_bus = None
         self.current_base_id = None
 
-        for event_type in ControllerEventType:
-            if event_type not in self._controller_event_handlers.keys():
-                self._controller_event_handlers[event_type] = []
-
-        self.add_event_handler(ControllerEventType.WINDOW_CLOSED, self.on_window_closed)
-
-    _controller_event_handlers={}
-    def add_event_handler(self, event:ControllerEventType, handler) -> None:
-        self._controller_event_handlers[event].append(handler)
-
-    def fire_event(self, event:ControllerEventType, data) -> None:
-        # print(f"[Controller] Fire event {event}")
-        for h in self._controller_event_handlers[event]: h(data)
-
-    async def async_fire_event(self, event:ControllerEventType, data) -> None:
-        # print(f"[Controller] Fire async event {event}")
-        for h in self._controller_event_handlers[event]: await h(data)
+        self.app_bus.add_event_handler(AppBusEventType.WINDOW_CLOSED, self.on_window_closed)
+    
 
     def on_window_closed(self, data) -> None:
         self.kill_serial_connection_before_exit()
@@ -126,19 +89,19 @@ class AppController():
                 
                 if test_fam14 and fam14_test_request == fam14_test_response: 
                     result.append(port)
-                    self.fire_event(ControllerEventType.LOG_MESSAGE, {'msg': f"FAM14 detected on serial port {port},(baudrate: {baudrate})", 'color':'lightgreen'})
+                    self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"FAM14 detected on serial port {port},(baudrate: {baudrate})", 'color':'lightgreen'})
                 elif fam14_test_request == fam14_test_response: 
                     continue
 
                 if test_famusb and famusb_test_response == famusb_expected_response:
                     result.append(port)
-                    self.fire_event(ControllerEventType.LOG_MESSAGE, {'msg': f"FAM-USB detected on serial port {port},(baudrate: {baudrate})", 'color':'lightgreen'})
+                    self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"FAM-USB detected on serial port {port},(baudrate: {baudrate})", 'color':'lightgreen'})
                 elif test_famusb:
                     continue
                 
                 if not test_famusb and not test_fam14 and famusb_test_response == famusb_expected_response:
                     result.append(port)
-                    self.fire_event(ControllerEventType.LOG_MESSAGE, {'msg': f"FGW14-USB detected on serial port {port},(baudrate: {baudrate})", 'color':'lightgreen'})
+                    self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"FGW14-USB detected on serial port {port},(baudrate: {baudrate})", 'color':'lightgreen'})
 
                 s.close()
 
@@ -147,13 +110,13 @@ class AppController():
         return result
     
     def is_serial_connection_active(self) -> bool:
-        return self._bus is not None and self._bus.is_active()
+        return self._serial_bus is not None and self._serial_bus.is_active()
     
     def is_fam14_connection_active(self) -> bool:
-        return self.is_serial_connection_active() and self._bus.suppress_echo
+        return self.is_serial_connection_active() and self._serial_bus.suppress_echo
 
     def _send_serial_event(self, message) -> None:
-        self.fire_event(ControllerEventType.SERIAL_CALLBACK, message)
+        self.app_bus.fire_event(AppBusEventType.SERIAL_CALLBACK, {'msg': message, 'base_id': self.current_base_id})
 
     def establish_serial_connection(self, serial_port:str, device_type:str) -> None:
         baudrate:int=57600
@@ -164,50 +127,50 @@ class AppController():
             delay_message = .001
 
         if not self.is_serial_connection_active():
-            self._bus = RS485SerialInterfaceV2(serial_port, baud_rate=baudrate, callback=self._send_serial_event, delay_message=delay_message)
-            self._bus.start()
-            self._bus.is_serial_connected.wait(timeout=10)
+            self._serial_bus = RS485SerialInterfaceV2(serial_port, baud_rate=baudrate, callback=self._send_serial_event, delay_message=delay_message)
+            self._serial_bus.start()
+            self._serial_bus.is_serial_connected.wait(timeout=10)
 
-            if not self._bus.is_active():
-                self._bus.stop()
+            if not self._serial_bus.is_active():
+                self._serial_bus.stop()
             
-            if self._bus.is_active():
-                self.fire_event(ControllerEventType.LOG_MESSAGE, {'msg': f"Serial connection established. serial port: {serial_port}, baudrate: {baudrate}", 'color':'green'})
+            if self._serial_bus.is_active():
+                self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Serial connection established. serial port: {serial_port}, baudrate: {baudrate}", 'color':'green'})
                 
                 if device_type == 'FAM14':
 
                     def run():
                         asyncio.run( self._get_fam14_device_on_bus() )
-                        self.fire_event(
-                            ControllerEventType.CONNECTION_STATUS_CHANGE, 
-                            {'serial_port':  serial_port, 'baudrate': baudrate, 'connected': self._bus.is_active()})
+                        self.app_bus.fire_event(
+                            AppBusEventType.CONNECTION_STATUS_CHANGE, 
+                            {'serial_port':  serial_port, 'baudrate': baudrate, 'connected': self._serial_bus.is_active()})
                         
                     t = threading.Thread(target=run)
                     t.start()
                 else:
-                    self.fire_event(
-                            ControllerEventType.CONNECTION_STATUS_CHANGE, 
-                            {'serial_port':  serial_port, 'baudrate': baudrate, 'connected': self._bus.is_active()})
+                    self.app_bus.fire_event(
+                            AppBusEventType.CONNECTION_STATUS_CHANGE, 
+                            {'serial_port':  serial_port, 'baudrate': baudrate, 'connected': self._serial_bus.is_active()})
                         
 
             
 
     def stop_serial_connection(self) -> None:
         if self.is_serial_connection_active():
-            self._bus.stop()
-            self._bus._stop_flag.wait()
+            self._serial_bus.stop()
+            self._serial_bus._stop_flag.wait()
 
             time.sleep(0.5)
 
-            self.fire_event(ControllerEventType.CONNECTION_STATUS_CHANGE, {'connected': self._bus.is_active()})
-            if not self._bus.is_active():
-                self.fire_event(ControllerEventType.LOG_MESSAGE, {'msg': f"Serial connection stopped.", 'color':'green'})
+            self.app_bus.fire_event(AppBusEventType.CONNECTION_STATUS_CHANGE, {'connected': self._serial_bus.is_active()})
+            if not self._serial_bus.is_active():
+                self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Serial connection stopped.", 'color':'green'})
             self.current_base_id = None
-            self._bus = None
+            self._serial_bus = None
 
     def kill_serial_connection_before_exit(self) -> None:
         if self.is_serial_connection_active():
-            self._bus.stop()
+            self._serial_bus.stop()
 
     def scan_for_devices(self, force_overwrite:bool=False) -> None:
         # if connected to FAM14
@@ -217,22 +180,22 @@ class AppController():
             t.start()
 
     async def create_busobject(self, id: int) -> BusObject:
-        response = await self._bus.exchange(EltakoDiscoveryRequest(address=id), EltakoDiscoveryReply)
+        response = await self._serial_bus.exchange(EltakoDiscoveryRequest(address=id), EltakoDiscoveryReply)
 
         assert id == response.reported_address, "Queried for ID %s, received %s" % (id, prettify(response))
 
         for o in sorted_known_objects:
             if response.model.startswith(o.discovery_name) and (o.size is None or o.size == response.reported_size):
-                return o(response, bus=self._bus)
+                return o(response, bus=self._serial_bus)
         else:
-            return BusObject(response, bus=self._bus)
+            return BusObject(response, bus=self._serial_bus)
 
     async def enumerate_bus(self) -> Iterator[BusObject]:
         """Search the bus for devices, yield bus objects for every match"""
 
         for i in range(1, 256):
             try:
-                self.fire_event(ControllerEventType.DEVICE_ITERATION_PROGRESS, i/256.0*100.0)
+                self.app_bus.fire_event(AppBusEventType.DEVICE_ITERATION_PROGRESS, i/256.0*100.0)
                 yield await self.create_busobject(i)
             except TimeoutError:
                 continue
@@ -242,64 +205,64 @@ class AppController():
         try:
             logging.info(colored("Start scanning for devices", 'red'))
 
-            self._bus.set_callback( None )
+            self._serial_bus.set_callback( None )
 
-            is_locked = (await locking.lock_bus(self._bus)) == locking.LOCKED
+            is_locked = (await locking.lock_bus(self._serial_bus)) == locking.LOCKED
             
             # first get fam14 and make it know to data manager
             fam14:FAM14 = await self.create_busobject(255)
             self.current_base_id = await fam14.get_base_id()
             logging.info(colored(f"Found device: {fam14}",'grey'))
-            self.fire_event(ControllerEventType.LOG_MESSAGE, {'msg': f"Found device: {fam14}", 'color':'grey'})
-            await self.async_fire_event(ControllerEventType.ASYNC_DEVICE_DETECTED, {'device': fam14, 'fam14': fam14, 'force_overwrite': force_overwrite})
+            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Found device: {fam14}", 'color':'grey'})
+            await self.app_bus.async_fire_event(AppBusEventType.ASYNC_DEVICE_DETECTED, {'device': fam14, 'fam14': fam14, 'force_overwrite': force_overwrite})
 
         except Exception as e:
             raise e
         finally:
             if is_locked:
-                resp = await locking.unlock_bus(self._bus)
-            self._bus.set_callback( self._send_serial_event )
+                resp = await locking.unlock_bus(self._serial_bus)
+            self._serial_bus.set_callback( self._send_serial_event )
 
 
     async def _scan_for_devices_on_bus(self, force_overwrite:bool=False) -> None:
         is_locked = False
         try:
-            self.fire_event(ControllerEventType.DEVICE_SCAN_STATUS, 'STARTED')
+            self.app_bus.fire_event(AppBusEventType.DEVICE_SCAN_STATUS, 'STARTED')
             
             msg = "Start scanning for devices"
             logging.info(colored(msg, 'red'))
-            self.fire_event(ControllerEventType.LOG_MESSAGE, {'msg': msg, 'color':'red'})
+            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'color':'red'})
 
-            self._bus.set_callback( None )
+            self._serial_bus.set_callback( None )
 
-            is_locked = (await locking.lock_bus(self._bus)) == locking.LOCKED
+            is_locked = (await locking.lock_bus(self._serial_bus)) == locking.LOCKED
             
             # first get fam14 and make it know to data manager
             fam14:FAM14 = await self.create_busobject(255)
             logging.info(colored(f"Found device: {fam14}",'grey'))
-            await self.async_fire_event(ControllerEventType.ASYNC_DEVICE_DETECTED, {'device': fam14, 'fam14': fam14, 'force_overwrite': force_overwrite})
+            await self.app_bus.async_fire_event(AppBusEventType.ASYNC_DEVICE_DETECTED, {'device': fam14, 'fam14': fam14, 'force_overwrite': force_overwrite})
 
             # iterate through all devices
             async for dev in self.enumerate_bus():
                 try:
                     logging.info(colored(f"Found device: {dev}",'grey'))
-                    self.fire_event(ControllerEventType.LOG_MESSAGE, {'msg': f"Found device: {dev}", 'color':'grey'})
-                    self.fire_event(ControllerEventType.DEVICE_SCAN_STATUS, 'DEVICE_DETECTED')
-                    await self.async_fire_event(ControllerEventType.ASYNC_DEVICE_DETECTED, {'device': dev, 'fam14': fam14, 'force_overwrite': force_overwrite})
+                    self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Found device: {dev}", 'color':'grey'})
+                    self.app_bus.fire_event(AppBusEventType.DEVICE_SCAN_STATUS, 'DEVICE_DETECTED')
+                    await self.app_bus.async_fire_event(AppBusEventType.ASYNC_DEVICE_DETECTED, {'device': dev, 'fam14': fam14, 'force_overwrite': force_overwrite})
 
                 except TimeoutError:
                     logging.error("Read error, skipping: Device %s announces %d memory but produces timeouts at reading" % (dev, dev.discovery_response.memory_size))
             logging.info(colored("Device scan finished.", 'red'))
-            self.fire_event(ControllerEventType.LOG_MESSAGE, {'msg': "Device scan finished.", 'color':'red'})
+            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': "Device scan finished.", 'color':'red'})
         except Exception as e:
             raise e
         finally:
             # print("Unlocking the bus again")
             if is_locked:
-                await locking.unlock_bus(self._bus)
+                await locking.unlock_bus(self._serial_bus)
 
-            self.fire_event(ControllerEventType.DEVICE_SCAN_STATUS, 'FINISHED')
-            self._bus.set_callback( self._send_serial_event )
+            self.app_bus.fire_event(AppBusEventType.DEVICE_SCAN_STATUS, 'FINISHED')
+            self._serial_bus.set_callback( self._send_serial_event )
 
     def write_sender_id_to_devices(self, sender_base_id:int=45056, sender_id_list:dict={}):
         t = threading.Thread(target=lambda: asyncio.run( self.async_write_sender_id_to_devices(sender_base_id, sender_id_list) )  )
@@ -330,24 +293,24 @@ class AppController():
                 
                         msg = f"Updated Home Assistant sender id ({sender_id_str}) in device {type(dev).__name__} ({device_ext_id_str})"
                         logging.info(colored(msg,'grey'))
-                        self.fire_event(ControllerEventType.LOG_MESSAGE, {'msg': msg, 'color':'grey'})
-                        self.fire_event(ControllerEventType.WRITE_SENDER_IDS_TO_DEVICES_STATUS, 'DEVICE_UPDATED')
+                        self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'color':'grey'})
+                        self.app_bus.fire_event(AppBusEventType.WRITE_SENDER_IDS_TO_DEVICES_STATUS, 'DEVICE_UPDATED')
 
 
     async def async_write_sender_id_to_devices(self, sender_base_id:int=45056, sender_id_list:dict={}): # 45056 = 0x00 00 B0 00
         if not self.is_fam14_connection_active():
-            self.fire_event(ControllerEventType.LOG_MESSAGE, {'msg': "Cannot write HA sender ids to devices because you are not connected to FAM14.", 'color':'red'})
+            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': "Cannot write HA sender ids to devices because you are not connected to FAM14.", 'color':'red'})
         else:
             try:
-                self.fire_event(ControllerEventType.WRITE_SENDER_IDS_TO_DEVICES_STATUS, 'STARTED')
-                self._bus.set_callback( None )
+                self.app_bus.fire_event(AppBusEventType.WRITE_SENDER_IDS_TO_DEVICES_STATUS, 'STARTED')
+                self._serial_bus.set_callback( None )
 
                 # print("Sending a lock command onto the bus; its reply should tell us whether there's a FAM in the game.")
                 time.sleep(0.2)
-                await locking.lock_bus(self._bus)
+                await locking.lock_bus(self._serial_bus)
                     
                 logging.info(colored("Start writing Home Assistant sender ids to devices", 'red'))
-                self.fire_event(ControllerEventType.LOG_MESSAGE, {'msg': "Start writing Home Assistant sender ids to devices", 'color':'red'})
+                self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': "Start writing Home Assistant sender ids to devices", 'color':'red'})
 
                 # first get fam14 and make it know to data manager
                 fam14:FAM14 = await self.create_busobject(255)
@@ -355,7 +318,7 @@ class AppController():
                 fam14_base_id = b2s(await fam14.get_base_id_in_bytes())
                 msg = f"Update devices on Bus (fam14 base id: {fam14_base_id})"
                 logging.info(colored(msg,'grey'))
-                self.fire_event(ControllerEventType.LOG_MESSAGE, {'msg': msg, 'color':'grey'})
+                self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'color':'grey'})
 
                 # iterate through all devices
                 async for dev in self.enumerate_bus():
@@ -365,12 +328,12 @@ class AppController():
                         logging.error("Read error, skipping: Device %s announces %d memory but produces timeouts at reading" % (dev, dev.discovery_response.memory_size))
 
                 logging.info(colored("Device scan finished.", 'red'))
-                self.fire_event(ControllerEventType.LOG_MESSAGE, {'msg': "Device scan finished.", 'color':'red'})
+                self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': "Device scan finished.", 'color':'red'})
             except Exception as e:
                 raise e
             finally:
                 # print("Unlocking the bus again")
-                await locking.unlock_bus(self._bus)
+                await locking.unlock_bus(self._serial_bus)
 
-                self.fire_event(ControllerEventType.WRITE_SENDER_IDS_TO_DEVICES_STATUS, 'FINISHED')
-                self._bus.set_callback( self._send_serial_event )
+                self.app_bus.fire_event(AppBusEventType.WRITE_SENDER_IDS_TO_DEVICES_STATUS, 'FINISHED')
+                self._serial_bus.set_callback( self._send_serial_event )

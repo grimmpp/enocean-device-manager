@@ -2,15 +2,17 @@ import tkinter as tk
 from tkinter import *
 from tkinter import ttk
 from idlelib.tooltip import Hovertip
-from controller import AppController, ControllerEventType
+from controller.app_bus import AppBus, AppBusEventType
+from controller.serial_controller import SerialController
 from data.data_manager import DataManager, Device
 
 class SerialConnectionBar():
 
-    def __init__(self, main: Tk, controller:AppController, data_manager:DataManager, row:int):
+    def __init__(self, main: Tk, app_bus:AppBus, data_manager:DataManager, row:int):
         self.main = main
-        self.controller = controller
+        self.app_bus = app_bus
         self.data_manager = data_manager
+        self.serial_cntr = SerialController(app_bus)
 
         f = LabelFrame(main, text="Serial Connection", bd=1)#, relief=SUNKEN)
         f.grid(row=row, column=0, columnspan=1, sticky=W+E+N+S, pady=(0,2), padx=2)
@@ -53,26 +55,26 @@ class SerialConnectionBar():
         Hovertip(self.b_sync_ha_sender,"Ensures sender configuration for Home Assistant is written into device memory.",300)
         self.b_sync_ha_sender.pack(side=tk.LEFT, padx=(0, 5), pady=5)
 
-        self.controller.add_event_handler(ControllerEventType.CONNECTION_STATUS_CHANGE, self.is_connected_handler)
-        self.controller.add_event_handler(ControllerEventType.DEVICE_SCAN_STATUS, self.device_scan_status_handler)
-        self.controller.add_event_handler(ControllerEventType.WRITE_SENDER_IDS_TO_DEVICES_STATUS, self.device_scan_status_handler)
-        self.controller.add_event_handler(ControllerEventType.WINDOW_LOADED, self.on_window_loaded)
+        self.app_bus.add_event_handler(AppBusEventType.CONNECTION_STATUS_CHANGE, self.is_connected_handler)
+        self.app_bus.add_event_handler(AppBusEventType.DEVICE_SCAN_STATUS, self.device_scan_status_handler)
+        self.app_bus.add_event_handler(AppBusEventType.WRITE_SENDER_IDS_TO_DEVICES_STATUS, self.device_scan_status_handler)
+        self.app_bus.add_event_handler(AppBusEventType.WINDOW_LOADED, self.on_window_loaded)
         
     def write_ha_senders_to_devices(self):
         sender_list = {}
         for dev in self.data_manager.devices.values():
             sender_list[dev.external_id] = dev.additional_fields
-        self.controller.write_sender_id_to_devices(45056, sender_list)
+        self.serial_cntr.write_sender_id_to_devices(45056, sender_list)
         
     def on_window_loaded(self, data):
         self.detect_serial_ports_command()
 
     def scan_for_devices(self):
-        self.controller.scan_for_devices( self.overwrite.get() )
+        self.serial_cntr.scan_for_devices( self.overwrite.get() )
 
     def device_scan_status_handler(self, status:str):
         if status == 'FINISHED':
-            self.is_connected_handler({'connected': self.controller.is_serial_connection_active()})
+            self.is_connected_handler({'connected': self.serial_cntr.is_serial_connection_active()})
             self.main.config(cursor="")
             self.b_scan.config(state=NORMAL)
             self.b_connect.config(state=NORMAL)
@@ -84,13 +86,13 @@ class SerialConnectionBar():
             self.b_sync_ha_sender.config(state=DISABLED)
 
     def toggle_serial_connection_command(self):
-        if not self.controller.is_serial_connection_active():
+        if not self.serial_cntr.is_serial_connection_active():
             self.b_detect.config(state=DISABLED)
             self.b_connect.config(state=DISABLED)
             self.b_scan.config(state=DISABLED)
-            self.controller.establish_serial_connection(self.cb_serial_ports.get(), self.cb_device_type.get())
+            self.serial_cntr.establish_serial_connection(self.cb_serial_ports.get(), self.cb_device_type.get())
         else:
-            self.controller.stop_serial_connection()
+            self.serial_cntr.stop_serial_connection()
 
     def is_connected_handler(self, data:dict):
         status = data.get('connected')
@@ -100,7 +102,7 @@ class SerialConnectionBar():
             self.b_detect.config(state=DISABLED)
             self.cb_device_type.config(state=DISABLED)
             
-            if self.controller.is_fam14_connection_active():
+            if self.serial_cntr.is_fam14_connection_active():
                 self.b_scan.config(state=NORMAL)
                 self.b_sync_ha_sender.config(state=NORMAL)
             else:
@@ -117,7 +119,7 @@ class SerialConnectionBar():
             self.detect_serial_ports_command()
 
     def detect_serial_ports_command(self):
-        serial_ports = self.controller.get_serial_ports(self.cb_device_type.get())
+        serial_ports = self.serial_cntr.get_serial_ports(self.cb_device_type.get())
         self.cb_serial_ports['values'] = serial_ports
         if len(self.cb_serial_ports['values']) > 0:
             self.cb_serial_ports.set(self.cb_serial_ports['values'][0])

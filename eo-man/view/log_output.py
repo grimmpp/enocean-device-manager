@@ -8,12 +8,12 @@ import tkinter.scrolledtext as ScrolledText
 from data.data_helper import b2s, a2s
 from eltakobus.message import EltakoPoll, EltakoDiscoveryReply, EltakoDiscoveryRequest, EltakoMessage, prettify, Regular1BSMessage, EltakoWrapped1BS
 
-from controller import AppController, ControllerEventType
+from controller.app_bus import AppBus, AppBusEventType
 
 class LogOutputPanel():
 
-    def __init__(self, main: Tk, controller:AppController):
-        self.controller = controller
+    def __init__(self, main: Tk, app_bus:AppBus):
+        self.app_bus = app_bus
 
         pane = ttk.Frame(main, padding=2, height=100)
         # pane.grid(row=2, column=0, sticky="nsew", columnspan=3)
@@ -24,12 +24,15 @@ class LogOutputPanel():
         self.st.pack(expand=True, fill="both")
         # self.st.grid(row=2, column=0, sticky="nsew", columnspan=3)
 
-        controller.add_event_handler(ControllerEventType.SERIAL_CALLBACK, self.serial_callback)
-        controller.add_event_handler(ControllerEventType.LOG_MESSAGE, self.receive_log_message)
+        app_bus.add_event_handler(AppBusEventType.SERIAL_CALLBACK, self.serial_callback)
+        app_bus.add_event_handler(AppBusEventType.LOG_MESSAGE, self.receive_log_message)
 
-    def serial_callback(self, data:EltakoMessage):
-        if type(data) not in [EltakoPoll, EltakoDiscoveryReply, EltakoDiscoveryRequest]:
-            telegram = data
+
+    def serial_callback(self, data:dict):
+        telegram:EltakoMessage = data['msg']
+        current_base_id:str = data['base_id']
+
+        if type(telegram) not in [EltakoPoll, EltakoDiscoveryReply, EltakoDiscoveryRequest]:
             tt = type(telegram).__name__
             adr = b2s(telegram.address)
             payload = ''
@@ -42,6 +45,7 @@ class LogOutputPanel():
                 payload += ', status: '+ a2s(telegram.status, 1)
 
             self.receive_log_message({'msg': f"Received Telegram: {tt} from {adr}{payload}", 'color': 'darkgrey'})
+
 
     def receive_log_message(self, data):
         msg = data.get('msg', False)
