@@ -35,7 +35,7 @@ required = ['eltako14bus==0.0.45', 'pyserial', 'pyserial-asyncio', 'aiocoap',
 
 setup(
     name='eo-man',
-    version='0.1-rc',
+    version='0.1-rc1',
     package_dir={'':"eo-man"},
     # packages=find_packages("./eo-man"),
     package=['view', 'data', 'controller', 'icons'],
