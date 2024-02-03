@@ -56,7 +56,7 @@ class MainPanel():
         
         dt = DeviceTable(data_split_area, app_bus, data_manager)
         dd = DeviceDetails(data_split_area, app_bus, data_manager)
-        lo = LogOutputPanel(main_split_area, app_bus)
+        lo = LogOutputPanel(main_split_area, app_bus, data_manager)
 
         main_split_area.add(data_split_area, weight=5)
         main_split_area.add(lo.root, weight=1)

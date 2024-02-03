@@ -212,6 +212,35 @@ class DataManager():
             self.app_bus.fire_event(AppBusEventType.UPDATE_SENSOR_REPRESENTATION, device)
 
 
+    def find_device_by_local_address(self, address:str, base_id:str) -> Device:
+        local_adr = int.from_bytes(AddressExpression.parse(address)[0], "big")
+        base_adr = int.from_bytes(AddressExpression.parse(base_id)[0], "big")
+
+        if (local_adr + base_adr) > 0xFFFFFFFF:
+            return None
+
+        ext_id = a2s(local_adr + base_adr)
+        if ext_id in self.devices:
+            return self.devices[ext_id]
+        
+        return None
+
+
+    def get_values_from_message_to_string(self, message:EltakoMessage) -> str:
+        ext_id_str = b2s(message.address)
+        if ext_id_str in self.devices:
+            device = self.devices[ext_id_str]
+            try:
+                eep:EEP = EEP.find(device.eep)
+                properties_as_str = []
+                for k, v in eep.decode_message(message).__dict__.items():
+                    properties_as_str.append(f"{str(k)[1:] if str(k).startswith('_') else str(k)}: {str(v)}")
+
+                return eep, ', '.join(properties_as_str)
+            except:
+                pass
+        return None, ''
+
 
     def generate_ha_config(self) -> str:
         ha_platforms = set([str(d.ha_platform) for d in self.devices.values() if d.ha_platform is not None])

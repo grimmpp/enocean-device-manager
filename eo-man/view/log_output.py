@@ -6,14 +6,16 @@ from tkinter import *
 from tkinter import ttk
 import tkinter.scrolledtext as ScrolledText
 from data.data_helper import b2s, a2s
+from data.data_manager import DataManager
 from eltakobus.message import EltakoPoll, EltakoDiscoveryReply, EltakoDiscoveryRequest, EltakoMessage, prettify, Regular1BSMessage, EltakoWrapped1BS
 
 from controller.app_bus import AppBus, AppBusEventType
 
 class LogOutputPanel():
 
-    def __init__(self, main: Tk, app_bus:AppBus):
+    def __init__(self, main: Tk, app_bus:AppBus, data_manager:DataManager):
         self.app_bus = app_bus
+        self.data_manager = data_manager
 
         pane = ttk.Frame(main, padding=2, height=100)
         # pane.grid(row=2, column=0, sticky="nsew", columnspan=3)
@@ -44,7 +46,11 @@ class LogOutputPanel():
             if hasattr(telegram, 'status'):
                 payload += ', status: '+ a2s(telegram.status, 1)
 
-            self.receive_log_message({'msg': f"Received Telegram: {tt} from {adr}{payload}", 'color': 'darkgrey'})
+            eep, values = self.data_manager.get_values_from_message_to_string(telegram)
+            if eep is not None: 
+                values = f" => values for EEP {eep.__name__}: ({values})"
+
+            self.receive_log_message({'msg': f"Received Telegram: {tt} from {adr}{payload}{values}", 'color': 'darkgrey'})
 
 
     def receive_log_message(self, data):
