@@ -2,15 +2,17 @@ import os
 import sys
 import logging
 from tkinter import *
-from view.main_panel import *
-from controller import AppController
+from data.data_manager import DataManager
+from view.main_panel import MainPanel
+from controller.app_bus import AppBus
+from controller.serial_controller import SerialController
 
 def main():
    # TODO: does not load module logging
    # logging.baicConfig(format='%(message)s', level=logging.INFO)
 
-   controller = AppController()
-   data_manager = DataManager(controller)
+   app_bus = AppBus()
+   data_manager = DataManager(app_bus)
 
    filename = None
    if len(sys.argv) > 1 and os.path.isfile(sys.argv[1]) and sys.argv[1].endswith('.eodm'):
@@ -18,7 +20,7 @@ def main():
        data_manager.load_application_data_from_file(filename)
 
    root = Tk()
-   MainPanel(root, controller, data_manager)
+   MainPanel(root, app_bus, data_manager)
 
 if __name__ == "__main__":
     main()

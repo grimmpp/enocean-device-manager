@@ -1,22 +1,10 @@
-import time
 import tkinter as tk
 import os
-from pathlib import Path
 from tkinter import *
 from tkinter import ttk
-from tkinter import filedialog
-from tkinter.tix import IMAGETEXT
-from PIL import Image, ImageTk
-from idlelib.tooltip import Hovertip
-from controller import AppController, ControllerEventType
-import tkinter.scrolledtext as ScrolledText
-from const import *
-from homeassistant.const import CONF_ID, CONF_NAME
+from controller.app_bus import AppBus, AppBusEventType
 
-from eltakobus.message import EltakoPoll, EltakoDiscoveryReply, EltakoDiscoveryRequest, EltakoMessage
-from eltakobus.util import b2s
-from eltakobus.device import KeyFunction, SensorInfo
-from data.data_manager import DataManager, Device
+from data.data_manager import DataManager
 from view import DEFAULT_WINDOW_TITLE
 from view.device_details import DeviceDetails
 
@@ -30,9 +18,9 @@ from view.tool_bar import ToolBar
 
 class MainPanel():
 
-    def __init__(self, main: Tk, controller:AppController, data_manager: DataManager):
+    def __init__(self, main: Tk, app_bus:AppBus, data_manager: DataManager):
         self.main = main
-        self.controller = controller
+        self.app_bus = app_bus
         ## init main window
         self._init_window()
 
@@ -53,10 +41,10 @@ class MainPanel():
         main.columnconfigure(0, weight=1, minsize=100)
 
         ## init presenters
-        mp = MenuPresenter(main, controller, data_manager)
+        mp = MenuPresenter(main, app_bus, data_manager)
         ToolBar(main, mp, row=row_button_bar)
-        SerialConnectionBar(main, controller, data_manager, row=row_serial_con_bar)
-        FilterBar(main, controller, data_manager, row=row_filter_bar)
+        SerialConnectionBar(main, app_bus, data_manager, row=row_serial_con_bar)
+        FilterBar(main, app_bus, data_manager, row=row_filter_bar)
         # main area
         main_split_area = ttk.PanedWindow(main, orient="vertical")
         main_split_area.grid(row=row_main_area, column=0, sticky="nsew", columnspan=4)
@@ -66,9 +54,9 @@ class MainPanel():
         # data_split_area.columnconfigure(0, weight=5)
         # data_split_area.columnconfigure(0, weight=0, minsize=100)
         
-        dt = DeviceTable(data_split_area, controller, data_manager)
-        dd = DeviceDetails(data_split_area, controller, data_manager)
-        lo = LogOutputPanel(main_split_area, controller)
+        dt = DeviceTable(data_split_area, app_bus, data_manager)
+        dd = DeviceDetails(data_split_area, app_bus, data_manager)
+        lo = LogOutputPanel(main_split_area, app_bus)
 
         main_split_area.add(data_split_area, weight=5)
         main_split_area.add(lo.root, weight=1)
@@ -78,10 +66,7 @@ class MainPanel():
         # dt.root.grid(row=0, column=0, sticky="nsew")
         # dd.root.grid(row=0, column=1, sticky="nsew")
 
-        StatusBar(main, controller, data_manager, row=row_status_bar)
-
-        
-        main.after(500, self.on_loaded)
+        StatusBar(main, app_bus, data_manager, row=row_status_bar)
 
         ## start main loop
         main.mainloop()
@@ -97,12 +82,12 @@ class MainPanel():
         # self.main.state('zoomed') # opens window maximized
         self.main.config(bg="lightgrey")
         self.main.protocol("WM_DELETE_WINDOW", self.on_closing)
-        filename = os.path.join(os.getcwd(), 'icons', 'Faenza-system-search.png')
+        filename = os.path.join(os.path.dirname(__file__), '..', 'icons', 'Faenza-system-search.png')
         self.main.wm_iconphoto(False, tk.PhotoImage(file=filename))
 
     def on_loaded(self) -> None:
-        self.controller.fire_event(ControllerEventType.WINDOW_LOADED, {})
+        self.app_bus.fire_event(AppBusEventType.WINDOW_LOADED, {})
 
     def on_closing(self) -> None:
-        self.controller.fire_event(ControllerEventType.WINDOW_CLOSED, {})
+        self.app_bus.fire_event(AppBusEventType.WINDOW_CLOSED, {})
         self.main.destroy()

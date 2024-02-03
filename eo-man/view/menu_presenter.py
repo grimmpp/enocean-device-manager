@@ -3,7 +3,7 @@ from pathlib import Path
 import threading
 from tkinter import *
 from tkinter import filedialog
-from controller import AppController, ControllerEventType
+from controller.app_bus import AppBus, AppBusEventType
 from data.data_manager import DataManager
 from view.about_window import AboutWindow
 from view import DEFAULT_WINDOW_TITLE
@@ -12,9 +12,9 @@ import pickle
 
 class MenuPresenter():
 
-    def __init__(self, main: Tk, controller: AppController, data_manager: DataManager):
+    def __init__(self, main: Tk, app_bus: AppBus, data_manager: DataManager):
         self.main = main
-        self.controller = controller
+        self.app_bus = app_bus
         self.data_manager = data_manager
         self.remember_latest_filename = ""
 
@@ -81,7 +81,7 @@ class MenuPresenter():
         #     pickle.dump( self.data_manager.devices, file)
         
         self.main.title(f"{DEFAULT_WINDOW_TITLE} ({os.path.basename(self.remember_latest_filename)})")
-        self.controller.fire_event(ControllerEventType.LOG_MESSAGE, {'msg': f"Save to File: '{self.remember_latest_filename}'", 'color': 'red'})
+        self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Save to File: '{self.remember_latest_filename}'", 'color': 'red'})
 
     def import_from_file(self):
         if not self.remember_latest_filename:
@@ -111,11 +111,11 @@ class MenuPresenter():
             filename = self.import_from_file()
 
         if filename:
-            self.controller.fire_event(ControllerEventType.LOAD_FILE, {})
+            self.app_bus.fire_event(AppBusEventType.LOAD_FILE, {})
             self.remember_latest_filename = filename
 
             self.main.title(f"{DEFAULT_WINDOW_TITLE} ({os.path.basename(self.remember_latest_filename)})")
-            self.controller.fire_event(ControllerEventType.LOG_MESSAGE, {'msg': f"Load File: '{self.remember_latest_filename}'", 'color': 'red'})
+            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Load File: '{self.remember_latest_filename}'", 'color': 'red'})
 
     
     remember_latest_ha_config_filename:str=None
@@ -138,6 +138,6 @@ class MenuPresenter():
         with open(self.remember_latest_ha_config_filename, 'w') as file:
             file.write(file_content)
 
-        self.controller.fire_event(ControllerEventType.LOG_MESSAGE, {'msg': f"Export Home Assistant Config to File: '{self.remember_latest_ha_config_filename}'", 'color': 'red'})
+        self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Export Home Assistant Config to File: '{self.remember_latest_ha_config_filename}'", 'color': 'red'})
 
         

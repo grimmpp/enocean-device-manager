@@ -8,7 +8,7 @@
             "name": "Python: Main Window with Demo Data",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/main.py",
+            "program": "${workspaceFolder}/eo-man/__main__.py",
             "console": "integratedTerminal",
             "args": ["${workspaceFolder}/demo.eodm"],
             "justMyCode": true
@@ -17,7 +17,7 @@
             "name": "Python: Main Window",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/main.py",
+            "program": "${workspaceFolder}/eo-man/__main__.py",
             "console": "integratedTerminal",
             "justMyCode": true
         }

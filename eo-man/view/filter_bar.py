@@ -2,20 +2,19 @@ import tkinter as tk
 from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
-from const import CONF_EEP
+from data.const import CONF_EEP
 from data.filter import DataFilter
 
 from view.checklistcombobox import ChecklistCombobox
 
-from controller import AppController, ControllerEventType
+from controller.app_bus import AppBus, AppBusEventType
 from data.data_manager import DataManager, EEP_MAPPING, get_eep_names
 
 
 class FilterBar():
-
     
-    def __init__(self, main: Tk, controller:AppController, data_manager:DataManager, row:int):
-        self.controller = controller
+    def __init__(self, main: Tk, app_bus:AppBus, data_manager:DataManager, row:int):
+        self.app_bus = app_bus
         self.data_manager = data_manager
         
         f = LabelFrame(main, text= "Tabel Filter", bd=1, relief=SUNKEN)
@@ -113,9 +112,19 @@ class FilterBar():
         self.btn_apply_filter = Button(f, text="Apply", command=self.apply_filter)
         self.btn_apply_filter.grid(row=1, column=col, padx=(0,3) )
 
-        self.controller.add_event_handler(ControllerEventType.SET_DATA_TABLE_FILTER, self.on_set_filter_handler)
-        self.controller.add_event_handler(ControllerEventType.ADDED_DATA_TABLE_FILTER, self.on_filter_added_handler)
-        self.controller.add_event_handler(ControllerEventType.REMOVED_DATA_TABLE_FILTER, self.on_filter_removed_handler)
+        self.app_bus.add_event_handler(AppBusEventType.SET_DATA_TABLE_FILTER, self.on_set_filter_handler)
+        self.app_bus.add_event_handler(AppBusEventType.ADDED_DATA_TABLE_FILTER, self.on_filter_added_handler)
+        self.app_bus.add_event_handler(AppBusEventType.REMOVED_DATA_TABLE_FILTER, self.on_filter_removed_handler)
+
+        ## initiall add all filters
+        for d in self.data_manager.data_fitlers.values():
+            self.on_filter_added_handler(d)
+        selected_fn = self.data_manager.selected_data_filter_name
+        if selected_fn is not None and len(selected_fn) > 0 and selected_fn in self.data_manager.data_fitlers.keys():
+            self.on_set_filter_handler(self.data_manager.data_fitlers[selected_fn])
+            self.apply_filter()
+
+
 
     def on_set_filter_handler(self, filter:DataFilter):
         self.set_widget_values(filter)
@@ -187,11 +196,11 @@ class FilterBar():
             if filter is None or filter.name is None or len(filter.name) == 0:
                 filter = None
 
-        self.controller.fire_event(ControllerEventType.SET_DATA_TABLE_FILTER, filter)
+        self.app_bus.fire_event(AppBusEventType.SET_DATA_TABLE_FILTER, filter)
 
 
     def reset_filter(self):
-        self.controller.fire_event(ControllerEventType.SET_DATA_TABLE_FILTER, None)
+        self.app_bus.fire_event(AppBusEventType.SET_DATA_TABLE_FILTER, None)
 
     def get_str_array(self, widget:Widget) -> [str]:
         widget_value = ''

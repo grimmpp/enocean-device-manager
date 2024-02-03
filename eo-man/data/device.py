@@ -4,10 +4,10 @@ from eltakobus.device import BusObject, FAM14
 from eltakobus.message import *
 from eltakobus.eep import *
 
-from homeassistant.const import CONF_ID, CONF_DEVICE, CONF_DEVICES, CONF_NAME, CONF_PLATFORM, CONF_TYPE, CONF_DEVICE_CLASS, CONF_TEMPERATURE_UNIT, UnitOfTemperature, Platform
+from data.homeassistant_const import CONF_ID, CONF_DEVICE, CONF_DEVICES, CONF_NAME, CONF_PLATFORM, CONF_TYPE, CONF_DEVICE_CLASS, CONF_TEMPERATURE_UNIT, UnitOfTemperature, Platform
 
 from data.data_helper import *
-from const import *
+from data.const import *
 
 class Device():
     """Data representation of a device"""
@@ -85,9 +85,9 @@ class Device():
         else:
             bd.external_id = a2s( (await fam14.get_base_id_in_int()) + id )
         bd.memory_entries = [m for m in (await device.get_all_sensors()) if b2s(m.dev_adr) == bd.address]
-        print(f"{bd.device_type} {bd.address}")
-        print_memory_entires( bd.memory_entries)
-        print("\n")
+        # print(f"{bd.device_type} {bd.address}")
+        # print_memory_entires( bd.memory_entries)
+        # print("\n")
         bd.name = f"{bd.device_type} {bd.address}"
         if bd.is_fam14():
             bd.name = f"{bd.device_type} {bd.external_id}"
