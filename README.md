@@ -19,7 +19,11 @@ Additional info for Home Assistant is automatically added. The configuration for
 For further steps it is planned to extend the support for changing the data which was collected so that a proper management of the devices can be supported.
 
 ## Install python package
-
+1. Clone/Download the repo.
+2. Change into the repo directory.
+3. Create virtual environment for python: `python.exe -m venv .venv` 
+4. Install dependencies: `.\.venv\Scripts\python.exe steup.py install`
+5. Run it: `.\.venv\Scripts\python.exe eo-man`
 
 ## Install dependencies and run the App (alternativ)
 1. Clone/Download the repo.
