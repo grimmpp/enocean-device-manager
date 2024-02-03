@@ -13,7 +13,7 @@ import sys
 # from custom_components.eltako.const import *
 from data.const import *
 
-from homeassistant.const import CONF_ID, CONF_DEVICES, CONF_NAME
+from data.homeassistant_const import CONF_ID, CONF_DEVICES, CONF_NAME
 # from eltakobus.message import *
 # from eltakobus.eep import *
 from eltakobus.util import b2s

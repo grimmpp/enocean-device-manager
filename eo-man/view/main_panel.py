@@ -68,9 +68,6 @@ class MainPanel():
 
         StatusBar(main, app_bus, data_manager, row=row_status_bar)
 
-        
-        main.after(500, self.on_loaded)
-
         ## start main loop
         main.mainloop()
 

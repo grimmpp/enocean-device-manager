@@ -11,7 +11,7 @@ from PIL import Image, ImageTk
 from idlelib.tooltip import Hovertip
 from controller.app_bus import AppBus, AppBusEventType
 from data.const import *
-from homeassistant.const import CONF_ID, CONF_NAME
+from data.homeassistant_const import CONF_ID, CONF_NAME
 
 from eltakobus.util import b2s
 from eltakobus.eep import EEP
@@ -221,7 +221,7 @@ class DeviceTable():
     def _serial_callback_handler(self, data:dict):
         message:EltakoMessage = data['msg']
         current_base_id:str = data['base_id']
-        
+
         if type(message) in [RPSMessage, Regular1BSMessage, Regular4BSMessage, EltakoWrappedRPS]:
             if isinstance(message.address, int):
                 adr = a2s(message.address)

@@ -9,7 +9,7 @@ from PIL import Image, ImageTk
 from idlelib.tooltip import Hovertip
 from controller.app_bus import AppBus, AppBusEventType
 from data.const import *
-from homeassistant.const import CONF_ID, CONF_NAME
+from data.homeassistant_const import CONF_ID, CONF_NAME
 
 from eltakobus.device import SensorInfo, KeyFunction
 from eltakobus.util import b2s
