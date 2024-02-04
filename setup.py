@@ -22,11 +22,10 @@ required = ['eltako14bus==0.0.45', 'pyserial', 'pyserial-asyncio', 'aiocoap',
 
 setup(
     name='eo-man',
-    version='0.1.1',
-    package_dir={'':"eo-man"},
+    version='0.1.2',
+    package_dir={'eo-man':"eo-man"},
     # packages=find_packages("./eo-man"),
-    package=['view', 'data', 'controller', 'icons'],
-    package_data={'': ['*.png']},
+    package=["eo-man"],
     include_package_data=True,
     install_requires=required,
     author="Philipp Grimm",
@@ -37,3 +36,5 @@ setup(
     url="https://github.com/grimmpp/enocean-device-manager",
     python_requires='>=3.7',
 )
+
+#python setup.py bdist_wheel
