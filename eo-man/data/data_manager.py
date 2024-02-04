@@ -226,8 +226,16 @@ class DataManager():
         return None
 
 
-    def get_values_from_message_to_string(self, message:EltakoMessage) -> str:
+    def get_values_from_message_to_string(self, message:EltakoMessage, base_id:str=None) -> str:
+        # get ext id
         ext_id_str = b2s(message.address)
+        if ext_id_str.startswith('00-00-00-') and base_id is not None:
+            device:Device = self.find_device_by_local_address(ext_id_str, base_id)
+            if device is None: 
+                return None, None
+            else:
+                ext_id_str = device.external_id
+
         if ext_id_str in self.devices:
             device = self.devices[ext_id_str]
             try:
@@ -239,7 +247,7 @@ class DataManager():
                 return eep, ', '.join(properties_as_str)
             except:
                 pass
-        return None, ''
+        return None, None
 
 
     def generate_ha_config(self) -> str:

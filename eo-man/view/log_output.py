@@ -46,9 +46,11 @@ class LogOutputPanel():
             if hasattr(telegram, 'status'):
                 payload += ', status: '+ a2s(telegram.status, 1)
 
-            eep, values = self.data_manager.get_values_from_message_to_string(telegram)
+            eep, values = self.data_manager.get_values_from_message_to_string(telegram, current_base_id)
             if eep is not None: 
                 values = f" => values for EEP {eep.__name__}: ({values})"
+            else:
+                values = ''
 
             self.receive_log_message({'msg': f"Received Telegram: {tt} from {adr}{payload}{values}", 'color': 'darkgrey'})
 
