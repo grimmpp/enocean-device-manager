@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.1.3 Bug fixed in python package
+## v0.1.4 Bug fixed in python package
 * Bug in python package fixed
 
 ## v0.1.1 Bug Fix and values in log view
