@@ -21,11 +21,11 @@ For further steps it is planned to extend the support for changing the data whic
 ## Install python package in virtual environment (Recommended)
 1. Create virtual python environment: `python.exe -m venv .\.venv`
 2. Install application: `.\.venv\Scripts\pip.exe install eo-man  --force-reinstall` (Package available under pypi: [eo-man](https://pypi.org/project/eo-man/))
-3. Run application: `.\.venv\Scripts\python eo-man`
+3. Run application: `.\.venv\Scripts\python.exe eo-man`
 
 ## Install python package in gloabl environment
 1. Install application: `pip.exe install eo-man` (Package available under pypi: [eo-man](https://pypi.org/project/eo-man/))
-2. Run application: `python.exe eo-man --force-reinstall`
+2. Run application: `python.exe eo-man`
 
 ## Install source code from this repository and run the App (alternative)
 1. Clone/Download the repo.
