@@ -1,5 +1,9 @@
 import os
 import sys
+
+file_dir = os.path.dirname(__file__)
+sys.path.append(file_dir)
+
 import logging
 from tkinter import *
 from data.data_manager import DataManager

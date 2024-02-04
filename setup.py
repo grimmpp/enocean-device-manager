@@ -22,9 +22,10 @@ required = ['eltako14bus==0.0.45', 'pyserial', 'pyserial-asyncio', 'aiocoap',
 
 setup(
     name='eo-man',
-    version='0.1.2',
+    version='0.1.3',
     package_dir={'eo-man':"eo-man"},
     # packages=find_packages("./eo-man"),
+    #package_data={'': ['*.png']},
     package=["eo-man"],
     include_package_data=True,
     install_requires=required,
