@@ -3,12 +3,11 @@ from pathlib import Path
 import threading
 from tkinter import *
 from tkinter import filedialog
-from controller.app_bus import AppBus, AppBusEventType
-from data.data_manager import DataManager
-from view.about_window import AboutWindow
-from view import DEFAULT_WINDOW_TITLE
 
-import pickle
+from ..controller.app_bus import AppBus, AppBusEventType
+from ..data.data_manager import DataManager
+from ..view.about_window import AboutWindow
+from ..view import DEFAULT_WINDOW_TITLE
 
 class MenuPresenter():
 

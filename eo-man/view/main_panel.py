@@ -1,20 +1,22 @@
-import tkinter as tk
 import os
+
+import tkinter as tk
 from tkinter import *
 from tkinter import ttk
-from controller.app_bus import AppBus, AppBusEventType
 
-from data.data_manager import DataManager
-from view import DEFAULT_WINDOW_TITLE
-from view.device_details import DeviceDetails
+from ..controller.app_bus import AppBus, AppBusEventType
 
-from view.device_table import DeviceTable
-from view.filter_bar import FilterBar
-from view.log_output import LogOutputPanel
-from view.menu_presenter import MenuPresenter
-from view.serial_communication_bar import SerialConnectionBar
-from view.status_bar import StatusBar
-from view.tool_bar import ToolBar
+from ..data.data_manager import DataManager
+
+from ..view import DEFAULT_WINDOW_TITLE
+from ..view.device_details import DeviceDetails
+from ..view.device_table import DeviceTable
+from ..view.filter_bar import FilterBar
+from ..view.log_output import LogOutputPanel
+from ..view.menu_presenter import MenuPresenter
+from ..view.serial_communication_bar import SerialConnectionBar
+from ..view.status_bar import StatusBar
+from ..view.tool_bar import ToolBar
 
 class MainPanel():
 

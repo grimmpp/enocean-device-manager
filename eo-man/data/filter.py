@@ -1,14 +1,14 @@
 
-from data.device import Device
+from .device import Device
 
 class DataFilter():
 
     def __init__(self, name:str, 
-                 global_filter:[str]=[], 
-                 device_address_filter:[str]=[],
-                 device_external_address_filter:[str]=[],
-                 device_type_filter:[str]=[],
-                 device_eep_filter:[str]=[]):
+                 global_filter:list[str]=[], 
+                 device_address_filter:list[str]=[],
+                 device_external_address_filter:list[str]=[],
+                 device_type_filter:list[str]=[],
+                 device_eep_filter:list[str]=[]):
         self.name = name
         self.global_filter = global_filter
         self.device_address_filter = device_address_filter

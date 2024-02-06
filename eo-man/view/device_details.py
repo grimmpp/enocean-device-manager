@@ -7,13 +7,14 @@ from tkinter import ttk
 from tkinter.tix import IMAGETEXT
 from PIL import Image, ImageTk
 from idlelib.tooltip import Hovertip
-from controller.app_bus import AppBus, AppBusEventType
-from data.const import *
-from data.homeassistant_const import CONF_ID, CONF_NAME
 
 from eltakobus.device import SensorInfo, KeyFunction
 from eltakobus.util import b2s
-from data.data_manager import DataManager, Device, EEP_MAPPING
+
+from ..data.data_manager import DataManager, Device, EEP_MAPPING
+from ..controller.app_bus import AppBus, AppBusEventType
+from ..data.const import *
+from ..data.homeassistant_const import CONF_ID, CONF_NAME
 
 
 class DeviceDetails():

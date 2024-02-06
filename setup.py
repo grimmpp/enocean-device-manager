@@ -18,11 +18,13 @@ with open('LICENSE', encoding="utf-8") as f:
 required = ['eltako14bus==0.0.45', 'pyserial', 'pyserial-asyncio', 'aiocoap', 
             # 'homeassistant', 
             'pyyaml', 
-            'termcolor', 'strenum', 'pillow', 'numpy', 'tzlocal', 'tkinterhtml']
+            'termcolor', 'strenum', 'pillow', 'numpy',
+            # 'tzlocal', 
+            'tkinterhtml']
 
 setup(
     name='eo-man',
-    version='0.1.4',
+    version='0.1.5',
     package_dir={'eo-man':"eo-man"},
     # packages=find_packages("./eo-man"),
     #package_data={'': ['*.png']},

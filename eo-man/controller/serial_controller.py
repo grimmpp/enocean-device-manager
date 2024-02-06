@@ -4,18 +4,16 @@ import sys
 import glob
 import serial
 from serial import rs485
-
 from typing import Iterator
-
 from termcolor import colored
 import logging
+import threading
 
 from eltakobus import *
 from eltakobus.locking import buslocked, UNLOCKED
 from eltakobus.message import Regular4BSMessage
-import threading
 
-from controller.app_bus import AppBusEventType, AppBus
+from .app_bus import AppBusEventType, AppBus
 
 
 class SerialController():
@@ -31,7 +29,7 @@ class SerialController():
     def on_window_closed(self, data) -> None:
         self.kill_serial_connection_before_exit()
 
-    def get_serial_ports(self, device_type:str) ->[str]:
+    def get_serial_ports(self, device_type:str) ->list[str]:
         if device_type == 'FAM14':
             return self.get_serial_ports_for_fam14()
         elif device_type == 'FGW14-USB':
@@ -41,16 +39,16 @@ class SerialController():
         else:
             return []
 
-    def get_serial_ports_for_fam14(self) -> [str]:
+    def get_serial_ports_for_fam14(self) -> list[str]:
         return self._get_serial_ports(baudrate=57600, test_fam14=True)
     
-    def get_serial_ports_for_fgw14usb(self) -> [str]:
+    def get_serial_ports_for_fgw14usb(self) -> list[str]:
         return self._get_serial_ports(baudrate=57600, test_fam14=False)
     
-    def get_serial_ports_for_famusb(self) -> [str]:
+    def get_serial_ports_for_famusb(self) -> list[str]:
         return self._get_serial_ports(baudrate=9600, test_fam14=False, test_famusb=True)
 
-    def _get_serial_ports(self, baudrate:int=57600, test_fam14:bool=True, test_famusb:bool=False) -> [str]:
+    def _get_serial_ports(self, baudrate:int=57600, test_fam14:bool=True, test_famusb:bool=False) -> list[str]:
         """ Lists serial port names
 
             :raises EnvironmentError:

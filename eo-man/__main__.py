@@ -1,15 +1,16 @@
-import os
 import sys
+import os
 
-file_dir = os.path.dirname(__file__)
+file_dir = os.path.join( os.path.dirname(__file__), '..')
 sys.path.append(file_dir)
+__package__ = 'eo-man'
 
 import logging
 from tkinter import *
-from data.data_manager import DataManager
-from view.main_panel import MainPanel
-from controller.app_bus import AppBus
-from controller.serial_controller import SerialController
+
+from .data.data_manager import DataManager
+from .view.main_panel import MainPanel
+from .controller.app_bus import AppBus
 
 def main():
    # TODO: does not load module logging

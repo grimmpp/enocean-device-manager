@@ -1,25 +1,16 @@
-from controller.app_bus import AppBus, AppBusEventType
+import os
 from termcolor import colored
 import logging
 
-import os
-from data.application_data import ApplicationData
+from ..controller.app_bus import AppBus, AppBusEventType
+from .data_helper import *
+from .device import Device 
+from .application_data import ApplicationData
+from .filter import DataFilter
+from .const import *
+from .homeassistant_const import CONF_ID, CONF_DEVICES, CONF_NAME
 
-from data.filter import DataFilter
-os.environ.setdefault('SKIPP_IMPORT_HOME_ASSISTANT', "True")
-import sys
-# caution: path[0] is reserved for script path (or '' in REPL)
-# sys.path.insert(1, 'C:\\Users\\automation\\Documents\\home-assistant-eltako')
-# from custom_components.eltako.const import *
-from data.const import *
-
-from data.homeassistant_const import CONF_ID, CONF_DEVICES, CONF_NAME
-# from eltakobus.message import *
-# from eltakobus.eep import *
 from eltakobus.util import b2s
-
-from data.data_helper import *
-from data.device import Device 
 
 class DataManager():
     """Manages EnOcean Devices"""
@@ -66,7 +57,7 @@ class DataManager():
         self.devices = {}
 
 
-    def load_data_filters(self, filters:[DataFilter]):
+    def load_data_filters(self, filters:list[DataFilter]):
         for f in filters.values():
             self.add_filter(f)
 
@@ -150,7 +141,7 @@ class DataManager():
             
         return None
     
-    def get_sensors_configured_in_a_device(self, device:Device) -> [Device]:
+    def get_sensors_configured_in_a_device(self, device:Device) -> list[Device]:
         """returns all sensors configured in a device"""
         sensors = []
 
@@ -171,7 +162,7 @@ class DataManager():
         return sensors
     
     
-    def get_devices_containing_sensor_in_config(self, sensor:Device) ->[Device]:
+    def get_devices_containing_sensor_in_config(self, sensor:Device) ->list[Device]:
         """returns all devices which contain the given sensor in its config"""
         devices = []
 
@@ -189,7 +180,7 @@ class DataManager():
         return devices
 
 
-    def get_related_devices(self, device_external_id:str) -> [Device]:
+    def get_related_devices(self, device_external_id:str) -> list[Device]:
         """returns a list of all devices in which a sensor is entered or sensors which are configured inside an device."""
         if device_external_id is None or device_external_id == '' or device_external_id == 'Distributed Devices':
             return []

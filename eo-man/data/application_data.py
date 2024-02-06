@@ -1,6 +1,6 @@
 
-from data.device import Device
-from data.filter import DataFilter
+from .device import Device
+from .filter import DataFilter
 
 import pickle
 

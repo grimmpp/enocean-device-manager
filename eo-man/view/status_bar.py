@@ -2,9 +2,9 @@ import tkinter as tk
 from tkinter import *
 from tkinter import ttk
 
-from controller.app_bus import AppBus, AppBusEventType
-from data.data_manager import DataManager
-from data.filter import DataFilter
+from ..controller.app_bus import AppBus, AppBusEventType
+from ..data.data_manager import DataManager
+from ..data.filter import DataFilter
 
 class StatusBar():
 
