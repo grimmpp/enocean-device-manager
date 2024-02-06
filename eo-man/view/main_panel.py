@@ -70,6 +70,7 @@ class MainPanel():
 
         StatusBar(main, app_bus, data_manager, row=row_status_bar)
 
+
         ## start main loop
         main.mainloop()
 
@@ -85,7 +86,12 @@ class MainPanel():
         self.main.config(bg="lightgrey")
         self.main.protocol("WM_DELETE_WINDOW", self.on_closing)
         filename = os.path.join(os.path.dirname(__file__), '..', 'icons', 'Faenza-system-search.png')
-        self.main.wm_iconphoto(False, tk.PhotoImage(file=filename))
+        # icon next to title in window frame
+        # self.main.wm_iconphoto(False, tk.PhotoImage(file=filename))
+        # icon in taskbar
+        icon = tk.PhotoImage(file=filename)
+        self.main.iconphoto(True, icon, icon)
+        # self.main.iconbitmap(bitmap=filename.replace('.png', '.icon'))
 
     def on_loaded(self) -> None:
         self.app_bus.fire_event(AppBusEventType.WINDOW_LOADED, {})

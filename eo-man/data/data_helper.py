@@ -1,8 +1,9 @@
 
+import os
 from termcolor import colored
 
 from .const import *
-from .homeassistant_const import CONF_ID, CONF_DEVICE, CONF_DEVICES, CONF_NAME, CONF_PLATFORM, CONF_TYPE, CONF_DEVICE_CLASS, CONF_TEMPERATURE_UNIT, UnitOfTemperature, Platform
+from homeassistant.const import CONF_ID, CONF_DEVICE, CONF_DEVICES, CONF_NAME, CONF_PLATFORM, CONF_TYPE, CONF_DEVICE_CLASS, CONF_TEMPERATURE_UNIT, UnitOfTemperature, Platform
 
 from eltakobus.device import BusObject, FAM14, SensorInfo, KeyFunction
 from eltakobus.message import *
@@ -116,3 +117,13 @@ def print_memory_entires(sensors: list[SensorInfo]) -> None:
         s:SensorInfo = _s
         print(f"{s.memory_line}: {b2s(s.sensor_id, ' ')} {hex(s.key)} {hex(s.key_func)} {hex(s.channel)} (FG: {s.in_func_group})")
         
+
+def get_application_version() -> str:
+    filename = os.path.join(os.path.dirname(__file__), '..', '..', 'eo_man.egg-info', 'PKG-INFO')
+    if os.path.isfile(filename):
+        with open(filename, 'r', encoding="utf8") as f:
+            lines = f.read().splitlines()
+        for l in lines:
+            if l.startswith('Version: '):
+                return l[len('Version: '):]
+    return 'unknown'

@@ -8,6 +8,11 @@ __package__ = 'eo-man'
 import logging
 from tkinter import *
 
+import os
+import imp
+dirname = os.path.join( os.path.dirname(__file__), 'data', 'homeassistant')
+imp.load_package('homeassistant', dirname)
+
 from .data.data_manager import DataManager
 from .view.main_panel import MainPanel
 from .controller.app_bus import AppBus

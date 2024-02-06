@@ -4,10 +4,12 @@ from tkinter import ttk
 import webbrowser
 from tkinterhtml import HtmlFrame
 
+from ..data.data_manager import DataManager
+
 
 class AboutWindow():
 
-    def __init__(self, main:Tk):
+    def __init__(self, main:Tk, data_manager:DataManager):
         popup = Toplevel(main)
         popup.wm_title("About")
 
@@ -16,7 +18,7 @@ class AboutWindow():
         l = tk.Label(popup, text="About Device Manager", font='Arial 14 bold')
         l.pack(side=TOP, fill="x", pady=10)
 
-        l = tk.Label(popup, text="Version: 0.0.0", anchor="w")
+        l = tk.Label(popup, text="Version: "+data_manager.application_version, anchor="w")
         l.pack(side=TOP, fill="x", pady=2, padx=5)
 
         text = "GitHub: grimmpp/enocean-device-manager"

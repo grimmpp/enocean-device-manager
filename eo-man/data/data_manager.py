@@ -3,14 +3,16 @@ from termcolor import colored
 import logging
 
 from ..controller.app_bus import AppBus, AppBusEventType
-from .data_helper import *
+from . import data_helper 
 from .device import Device 
 from .application_data import ApplicationData
 from .filter import DataFilter
 from .const import *
-from .homeassistant_const import CONF_ID, CONF_DEVICES, CONF_NAME
+from homeassistant.const import CONF_ID, CONF_DEVICES, CONF_NAME
 
-from eltakobus.util import b2s
+from eltakobus.util import AddressExpression, b2s
+from eltakobus.eep import EEP
+from eltakobus.message import RPSMessage, Regular1BSMessage, Regular4BSMessage, EltakoMessage
 
 class DataManager():
     """Manages EnOcean Devices"""
@@ -23,6 +25,7 @@ class DataManager():
         self.app_bus.add_event_handler(AppBusEventType.SET_DATA_TABLE_FILTER, self.set_current_data_filter_handler)
         self.app_bus.add_event_handler(AppBusEventType.REMOVED_DATA_TABLE_FILTER, self.remove_current_data_filter_handler)
         
+        self.application_version = data_helper.get_application_version()
         self.devices:dict[str:Device] = {}
         self.data_fitlers:dict[str:DataFilter] = {}
         self.selected_data_filter_name:DataFilter = None
@@ -92,6 +95,7 @@ class DataManager():
 
     def write_application_data_to_file(self, filename:str):
         app_data = ApplicationData()
+        app_data.application_version = self.application_version
         app_data.data_filters = self.data_fitlers
         app_data.devices = self.devices
         app_data.selected_data_filter_name = self.selected_data_filter_name
@@ -155,7 +159,7 @@ class DataManager():
                     sensors.append(self.devices[m.sensor_id_str])
 
                 else:
-                    m_ext_id = add_addresses(m.sensor_id_str, device.base_id)
+                    m_ext_id = data_helper.add_addresses(m.sensor_id_str, device.base_id)
                     if m_ext_id in self.devices:
                         sensors.append(self.devices[m_ext_id])
 
@@ -210,7 +214,7 @@ class DataManager():
         if (local_adr + base_adr) > 0xFFFFFFFF:
             return None
 
-        ext_id = a2s(local_adr + base_adr)
+        ext_id = data_helper.a2s(local_adr + base_adr)
         if ext_id in self.devices:
             return self.devices[ext_id]
         
@@ -296,7 +300,7 @@ class DataManager():
         if len(rel_devs):
             out += spaces + f"# Related devices: {', '.join(rel_devs)}\n"
             
-        info = find_device_info_by_device_type(device.device_type)
+        info = data_helper.find_device_info_by_device_type(device.device_type)
         if info and 'PCT14-key-function' in info:
             kf = info['PCT14-key-function']
             fg = info['PCT14-function-group']
@@ -327,7 +331,7 @@ class DataManager():
     def save_as_yaml_to_flie(self, filename:str):
         logging.info(colored(f"\nStore config into {filename}", 'red', attrs=['bold']))
         
-        config_str = self.generate_config()
+        config_str = self.generate_ha_config()
 
         with open(filename, 'w', encoding="utf-8") as f:
             print(config_str, file=f)
