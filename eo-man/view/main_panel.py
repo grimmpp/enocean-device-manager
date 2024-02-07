@@ -1,4 +1,6 @@
 import os
+import sys
+import copy
 
 import tkinter as tk
 from tkinter import *
@@ -69,7 +71,6 @@ class MainPanel():
         # dd.root.grid(row=0, column=1, sticky="nsew")
 
         StatusBar(main, app_bus, data_manager, row=row_status_bar)
-
 
         ## start main loop
         main.mainloop()

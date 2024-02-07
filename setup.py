@@ -39,10 +39,6 @@ setup(
     license=license,
     url="https://github.com/grimmpp/enocean-device-manager",
     python_requires='>=3.7',
-    setuptools_git_versioning={
-        "enabled": True,
-    },
-    setup_requires=["setuptools-git-versioning<2"],
 )
 
 #python setup.py bdist_wheel

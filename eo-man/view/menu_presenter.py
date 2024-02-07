@@ -66,12 +66,12 @@ class MenuPresenter():
 
             filename = filedialog.asksaveasfilename(initialdir=self.remember_latest_filename, 
                                                 title="Save Application State",
-                                                filetypes=[("EnOcean Device Manager", "*.eodm")],
+                                                filetypes=[("EnOcean Device Manager", "*.eodm"), ("EnOcean Device Manager", "*.yaml")],
                                                 defaultextension=".eodm")
             if not filename:
                 return
             
-            if not filename.endswith('.eodm'):
+            if not filename.endswith('.eodm') and not filename.endswith('.yaml'):
                 filename += '.eodm'
             self.remember_latest_filename = filename
 
@@ -89,7 +89,7 @@ class MenuPresenter():
         initial_dir = os.path.dirname(self.remember_latest_filename)
         filename = filedialog.askopenfilename(initialdir=initial_dir, 
                                                 title="Load Application State",
-                                                filetypes=[("EnOcean Device Manager", "*.eodm")],
+                                                filetypes=[("EnOcean Device Manager", "*.eodm"), ("EnOcean Device Manager", "*.yaml")],
                                                 defaultextension=".eodm") #, ("configuration", "*.yaml"), ("all files", "*.*")))
         
         if not filename:

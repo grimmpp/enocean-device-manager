@@ -79,7 +79,10 @@ class DataManager():
 
 
     def load_application_data_from_file(self, filename:str):
-        app_data:ApplicationData = ApplicationData.read_from_file(filename)
+        if filename.endswith('.eodm'):
+            app_data:ApplicationData = ApplicationData.read_from_file(filename)
+        elif filename.endswith('.yaml'):
+            app_data:ApplicationData = ApplicationData.read_from_yaml_file(filename)
         
         self.load_data_filters(app_data.data_filters)
         self.selected_data_filter_name = app_data.selected_data_filter_name
@@ -100,7 +103,12 @@ class DataManager():
         app_data.devices = self.devices
         app_data.selected_data_filter_name = self.selected_data_filter_name
 
-        ApplicationData.write_to_file(filename, app_data)
+        if filename.endswith('.eodm'):
+            ApplicationData.write_to_file(filename, app_data)
+        elif filename.endswith('.yaml'):
+            ApplicationData.write_to_yaml_file(filename, app_data)
+        else:
+            raise Exception('unknow file type')
 
 
     def _serial_callback_handler(self, data:dict):

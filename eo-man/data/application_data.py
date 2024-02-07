@@ -1,4 +1,6 @@
 from typing import Final
+import yaml
+
 from .device import Device
 from .filter import DataFilter
 
@@ -8,11 +10,16 @@ class ApplicationData():
 
     class_version:Final = '1.0.0'
 
-    def __init__(self):
-        self.application_version:str = 'unknown'
-        self.selected_data_filter_name:str=None
-        self.data_filters:dict[str:DataFilter] = {}
-        self.devices:dict[str:Device] = {}
+    def __init__(self, version:str='unknown', 
+                 selected_data_filter:str=None, data_filters:dict[str:DataFilter]={},
+                 devices:dict[str:Device]={}):
+        
+        self.application_version:str = version
+
+        self.selected_data_filter_name:str=selected_data_filter
+        self.data_filters:dict[str:DataFilter] = data_filters
+
+        self.devices:dict[str:Device] = devices
 
     @classmethod
     def read_from_file(cls, filename:str):
@@ -44,8 +51,26 @@ class ApplicationData():
 
         return result
     
+    @classmethod
+    def read_from_yaml_file(cls, filename:str):
+        with open(filename, 'r') as file:
+            return yaml.load(file, Loader=yaml.Loader)
+        
+    
+    # @classmethod
+    # def from_yaml(cls, constructor, node):
+    #     return cls(version=node.version, 
+    #                selected_data_filter=node.selected_data_filter,
+    #                data_filters=node.data_filters,
+    #                devices=node.devices
+    #                )
 
     @classmethod
     def write_to_file(cls, filename:str, application_data):
         with open(filename, 'wb') as file:
             pickle.dump(application_data, file)
+
+    @classmethod
+    def write_to_yaml_file(cls, filename:str, application_data):
+        with open(filename.replace('.eodm', '.yaml'), 'w') as file:
+            yaml.dump(application_data, file)

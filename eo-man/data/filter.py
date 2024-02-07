@@ -1,4 +1,3 @@
-
 from .device import Device
 
 class DataFilter():
