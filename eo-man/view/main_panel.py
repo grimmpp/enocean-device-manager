@@ -73,6 +73,8 @@ class MainPanel():
 
         StatusBar(main, app_bus, data_manager, row=row_status_bar)
 
+        main.after(1, lambda: main.focus_force())
+
         ## start main loop
         main.mainloop()
 

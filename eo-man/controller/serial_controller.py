@@ -201,7 +201,7 @@ class SerialController():
     async def _get_fam14_device_on_bus(self, force_overwrite:bool=False) -> None:
         is_locked = False
         try:
-            logging.info(colored("Start scanning for devices", 'red'))
+            logging.debug(colored("Start scanning for devices", 'red'))
 
             self._serial_bus.set_callback( None )
 
@@ -210,7 +210,6 @@ class SerialController():
             # first get fam14 and make it know to data manager
             fam14:FAM14 = await self.create_busobject(255)
             self.current_base_id = await fam14.get_base_id()
-            logging.info(colored(f"Found device: {fam14}",'grey'))
             self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Found device: {fam14}", 'color':'grey'})
             await self.app_bus.async_fire_event(AppBusEventType.ASYNC_DEVICE_DETECTED, {'device': fam14, 'fam14': fam14, 'force_overwrite': force_overwrite})
 
@@ -231,7 +230,6 @@ class SerialController():
             self.app_bus.fire_event(AppBusEventType.DEVICE_SCAN_STATUS, 'STARTED')
             
             msg = "Start scanning for devices"
-            logging.info(colored(msg, 'red'))
             self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'color':'red'})
 
             self._serial_bus.set_callback( None )
@@ -240,20 +238,19 @@ class SerialController():
             
             # first get fam14 and make it know to data manager
             fam14:FAM14 = await self.create_busobject(255)
-            logging.info(colored(f"Found device: {fam14}",'grey'))
+            logging.debug(colored(f"Found device: {fam14}",'grey'))
             await self.app_bus.async_fire_event(AppBusEventType.ASYNC_DEVICE_DETECTED, {'device': fam14, 'fam14': fam14, 'force_overwrite': force_overwrite})
 
             # iterate through all devices
             async for dev in self.enumerate_bus():
                 try:
-                    logging.info(colored(f"Found device: {dev}",'grey'))
                     self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Found device: {dev}", 'color':'grey'})
                     self.app_bus.fire_event(AppBusEventType.DEVICE_SCAN_STATUS, 'DEVICE_DETECTED')
                     await self.app_bus.async_fire_event(AppBusEventType.ASYNC_DEVICE_DETECTED, {'device': dev, 'fam14': fam14, 'force_overwrite': force_overwrite})
 
                 except TimeoutError:
                     logging.error("Read error, skipping: Device %s announces %d memory but produces timeouts at reading" % (dev, dev.discovery_response.memory_size))
-            logging.info(colored("Device scan finished.", 'red'))
+
             self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': "Device scan finished.", 'color':'red'})
         except Exception as e:
             msg = 'Device scan failed!'
@@ -296,7 +293,6 @@ class SerialController():
                             await dev.ensure_programmed(i, sender_address, eep_profile)
                 
                         msg = f"Updated Home Assistant sender id ({sender_id_str}) in device {type(dev).__name__} ({device_ext_id_str})"
-                        logging.info(colored(msg,'grey'))
                         self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'color':'grey'})
                         self.app_bus.fire_event(AppBusEventType.WRITE_SENDER_IDS_TO_DEVICES_STATUS, 'DEVICE_UPDATED')
 
@@ -312,8 +308,7 @@ class SerialController():
                 # print("Sending a lock command onto the bus; its reply should tell us whether there's a FAM in the game.")
                 time.sleep(0.2)
                 await locking.lock_bus(self._serial_bus)
-                    
-                logging.info(colored("Start writing Home Assistant sender ids to devices", 'red'))
+                
                 self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': "Start writing Home Assistant sender ids to devices", 'color':'red'})
 
                 # first get fam14 and make it know to data manager
@@ -321,7 +316,6 @@ class SerialController():
                 fam14_base_id_int = await fam14.get_base_id_in_int()
                 fam14_base_id = b2s(await fam14.get_base_id_in_bytes())
                 msg = f"Update devices on Bus (fam14 base id: {fam14_base_id})"
-                logging.info(colored(msg,'grey'))
                 self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'color':'grey'})
 
                 # iterate through all devices
@@ -331,7 +325,6 @@ class SerialController():
                     except TimeoutError:
                         logging.error("Read error, skipping: Device %s announces %d memory but produces timeouts at reading" % (dev, dev.discovery_response.memory_size))
 
-                logging.info(colored("Device scan finished.", 'red'))
                 self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': "Device scan finished.", 'color':'red'})
             except Exception as e:
                 msg = 'Write sender id to devices failed!'

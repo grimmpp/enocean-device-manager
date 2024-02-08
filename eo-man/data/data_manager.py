@@ -339,7 +339,8 @@ class DataManager():
         return out
     
     def save_as_yaml_to_flie(self, filename:str):
-        logging.info(colored(f"\nStore config into {filename}", 'red', attrs=['bold']))
+        msg = f"Store config into {filename}"
+        self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'color': 'darkred', 'log-level': 'DEBUG'})
         
         config_str = self.generate_ha_config()
 
