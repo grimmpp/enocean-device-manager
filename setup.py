@@ -23,13 +23,13 @@ required = ['eltako14bus==0.0.45', 'pyserial', 'pyserial-asyncio', 'aiocoap',
             'tkinterhtml']
 
 setup(
-    name='eo-man',
+    name='eo_man',
     version='0.1.5',
-    package_dir={'eo-man':"eo-man"},
+    package_dir={'eo_man':"eo_man"},
     # packages=find_packages("./eo-man"),
     #package_data={'': ['*.png']},
     package_data={'': ['icons/*']},
-    package=["eo-man"],
+    package=["eo_man"],
     include_package_data=True,
     install_requires=required,
     author="Philipp Grimm",

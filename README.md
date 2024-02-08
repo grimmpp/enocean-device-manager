@@ -20,25 +20,25 @@ For further steps it is planned to extend the support for changing the data whic
 
 ## Install python package in virtual environment (Recommended)
 1. Create virtual python environment: `python.exe -m venv .\.venv`
-2. Install application: `.\.venv\Scripts\pip.exe install eo-man  --force-reinstall` (Package available under pypi: [eo-man](https://pypi.org/project/eo-man/))
-3. Run application: `.\.venv\Scripts\python.exe -m eo-man`
+2. Install application: `.\.venv\Scripts\pip.exe install eo_man  --force-reinstall` (Package available under pypi: [eo_man](https://pypi.org/project/eo-man/))
+3. Run application: `.\.venv\Scripts\python.exe -m eo_man`
 
 ## Install python package in gloabl environment
-1. Install application: `pip.exe install eo-man` (Package available under pypi: [eo-man](https://pypi.org/project/eo-man/))
-2. Run application: `python.exe -m eo-man`
+1. Install application: `pip.exe install eo_man` (Package available under pypi: [eo_man](https://pypi.org/project/eo-man/))
+2. Run application: `python.exe -m eo_man`
 
 ## Install source code from this repository and run the App (alternative)
 1. Clone/Download the repo.
 2. Change into the repo directory.
 3. Create virtual environment for python: `python.exe -m venv .venv`
 4. Install dependencies: `.\.venv\Scripts\python.exe setup.py install`
-5. Start the app: `.\.venv\Scripts\python.exe -m eo-man` or `.\.venv\Scripts\python.exe -m eo-man demo.eodm` (Directly loads demo data)
+5. Start the app: `.\.venv\Scripts\python.exe -m eo_man` or `.\.venv\Scripts\python.exe -m eo_man demo.eodm` (Directly loads demo data)
 
 For update you can execute:
 1. `git pull` (Gets newest state of the code)
 2. Optionally change branch: `git checkout BRANCH_NAME`
 3. Reinstall`.\.venv\Scripts\python.exe setup.py install --force`
-4. Run app: `.\.venv\Scripts\python.exe -m eo-man`
+4. Run app: `.\.venv\Scripts\python.exe -m eo_man`
 
 ## Bugs and Features 
 Please open [issues](/issues) if you encounter bugs or if you have ideas for new features. Also quite a lot of devices are not yet supported.

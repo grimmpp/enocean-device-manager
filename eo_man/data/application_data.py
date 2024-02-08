@@ -72,5 +72,5 @@ class ApplicationData():
 
     @classmethod
     def write_to_yaml_file(cls, filename:str, application_data):
-        with open(filename.replace('.eodm', '.yaml'), 'w') as file:
+        with open(filename, 'w') as file:
             yaml.dump(application_data, file)

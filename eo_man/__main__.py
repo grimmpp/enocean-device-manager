@@ -2,7 +2,7 @@ import sys
 import os
 from typing import Final
 
-PACKAGE_NAME: Final = 'eo-man'
+PACKAGE_NAME: Final = 'eo_man'
 
 # load same path like calling the app via 'python -m eo-man'
 file_dir = os.path.join( os.path.dirname(__file__), '..')
@@ -10,10 +10,8 @@ sys.path.append(file_dir)
 __import__(PACKAGE_NAME)
 __package__ = PACKAGE_NAME
 
-# import fake homeassistant package
-file_dir = os.path.join( os.path.dirname(__file__), 'data')
-sys.path.append(file_dir)
-__import__('homeassistant')
+from eo_man import load_dep_homeassistant
+load_dep_homeassistant()
 
 from .data.data_manager import DataManager
 from .view.main_panel import MainPanel

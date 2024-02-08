@@ -8,7 +8,7 @@
             "name": "Python: Main Window with Demo Data",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/eo-man/",
+            "program": "${workspaceFolder}/eo_man",
             "console": "integratedTerminal",
             "args": ["${workspaceFolder}/demo.eodm"],
             "justMyCode": true
@@ -17,9 +17,18 @@
             "name": "Python: Main Window",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/eo-man/",
+            "program": "${workspaceFolder}/eo_man",
             "console": "integratedTerminal",
             "justMyCode": true
-        }
+        },
+        {
+            "name": "Python: Debug Tests",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "purpose": ["debug-test"],
+            "console": "integratedTerminal",
+            "justMyCode": false
+          }
     ]
 }

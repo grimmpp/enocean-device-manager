@@ -1,7 +1,7 @@
-!!python/object:eo-man.data.application_data.ApplicationData
+!!python/object:eo_man.data.application_data.ApplicationData
 application_version: 0.1.5
 data_filters:
-  Buttons: !!python/object:eo-man.data.filter.DataFilter
+  Buttons: !!python/object:eo_man.data.filter.DataFilter
     device_address_filter: []
     device_eep_filter: []
     device_external_address_filter:
@@ -9,7 +9,7 @@ data_filters:
     device_type_filter: []
     global_filter: []
     name: Buttons
-  Smart Home: !!python/object:eo-man.data.filter.DataFilter
+  Smart Home: !!python/object:eo_man.data.filter.DataFilter
     device_address_filter: []
     device_eep_filter: []
     device_external_address_filter: []
@@ -18,7 +18,7 @@ data_filters:
     global_filter: []
     name: Smart Home
 devices:
-  05-1E-83-15: !!python/object:eo-man.data.device.Device
+  05-1E-83-15: !!python/object:eo_man.data.device.Device
     address: 05-1E-83-15
     base_id: 00-00-00-00
     bus_device: false
@@ -34,7 +34,7 @@ devices:
     name: Weather Station 05-1E-83-15
     use_in_ha: true
     version: unknown
-  FE-DB-0A-10: !!python/object:eo-man.data.device.Device
+  FE-DB-0A-10: !!python/object:eo_man.data.device.Device
     address: FE-DB-0A-10
     base_id: FF-CD-60-80
     bus_device: false
@@ -51,7 +51,7 @@ devices:
     name: Button FE-DB-0A-10
     use_in_ha: true
     version: unknown
-  FE-DB-0A-1B: !!python/object:eo-man.data.device.Device
+  FE-DB-0A-1B: !!python/object:eo_man.data.device.Device
     address: FE-DB-0A-1B
     base_id: FF-CD-60-80
     bus_device: false
@@ -68,7 +68,7 @@ devices:
     name: Button FE-DB-0A-1B
     use_in_ha: true
     version: unknown
-  FE-DB-DA-04: !!python/object:eo-man.data.device.Device
+  FE-DB-DA-04: !!python/object:eo_man.data.device.Device
     address: FE-DB-DA-04
     base_id: FF-CD-60-80
     bus_device: false
@@ -85,7 +85,7 @@ devices:
     name: Button FE-DB-DA-04
     use_in_ha: true
     version: unknown
-  FF-81-41-07: !!python/object:eo-man.data.device.Device
+  FF-81-41-07: !!python/object:eo_man.data.device.Device
     address: FF-81-41-07
     base_id: FF-CD-60-80
     bus_device: false
@@ -102,7 +102,7 @@ devices:
     name: Button FF-81-41-07
     use_in_ha: true
     version: unknown
-  FF-86-B0-8A: !!python/object:eo-man.data.device.Device
+  FF-86-B0-8A: !!python/object:eo_man.data.device.Device
     address: FF-86-B0-8A
     base_id: FF-CD-60-80
     bus_device: false
@@ -118,7 +118,7 @@ devices:
     name: HA Contoller FF-86-B0-8A
     use_in_ha: false
     version: unknown
-  FF-86-B0-8B: !!python/object:eo-man.data.device.Device
+  FF-86-B0-8B: !!python/object:eo_man.data.device.Device
     address: FF-86-B0-8B
     base_id: FF-CD-60-80
     bus_device: false
@@ -134,7 +134,7 @@ devices:
     name: HA Contoller FF-86-B0-8B
     use_in_ha: false
     version: unknown
-  FF-86-B0-8C: !!python/object:eo-man.data.device.Device
+  FF-86-B0-8C: !!python/object:eo_man.data.device.Device
     address: FF-86-B0-8C
     base_id: FF-CD-60-80
     bus_device: false
@@ -150,7 +150,7 @@ devices:
     name: HA Contoller FF-86-B0-8C
     use_in_ha: false
     version: unknown
-  FF-CD-60-80: !!python/object:eo-man.data.device.Device
+  FF-CD-60-80: !!python/object:eo_man.data.device.Device
     additional_fields: {}
     address: 00-00-00-FF
     base_id: FF-CD-60-80
@@ -165,7 +165,7 @@ devices:
     name: FAM14 FF-CD-60-80
     use_in_ha: true
     version: 1.5.0.0
-  FF-CD-60-81: !!python/object:eo-man.data.device.Device
+  FF-CD-60-81: !!python/object:eo_man.data.device.Device
     additional_fields:
       sender:
         eep: A5-38-08
@@ -185,7 +185,7 @@ devices:
     name: FMZ14 00-00-00-01
     use_in_ha: true
     version: 2.2.0.0
-  FF-CD-60-85: !!python/object:eo-man.data.device.Device
+  FF-CD-60-85: !!python/object:eo_man.data.device.Device
     additional_fields:
       device_class: shutter
       sender:
@@ -222,7 +222,7 @@ devices:
     name: FSB14 00-00-00-05 (1/2)
     use_in_ha: true
     version: 2.5.0.0
-  FF-CD-60-86: !!python/object:eo-man.data.device.Device
+  FF-CD-60-86: !!python/object:eo_man.data.device.Device
     additional_fields:
       device_class: shutter
       sender:
@@ -246,7 +246,7 @@ devices:
     name: FSB14 00-00-00-06 (2/2)
     use_in_ha: true
     version: 2.5.0.0
-  FF-CD-60-87: !!python/object:eo-man.data.device.Device
+  FF-CD-60-87: !!python/object:eo_man.data.device.Device
     additional_fields:
       sender:
         eep: A5-38-08
@@ -351,7 +351,7 @@ devices:
     name: FSR14_4x 00-00-00-07 (1/4)
     use_in_ha: true
     version: 4.1.0.0
-  FF-CD-60-88: !!python/object:eo-man.data.device.Device
+  FF-CD-60-88: !!python/object:eo_man.data.device.Device
     additional_fields:
       sender:
         eep: A5-38-08
@@ -442,7 +442,7 @@ devices:
     name: FSR14_4x 00-00-00-08 (2/4)
     use_in_ha: true
     version: 4.1.0.0
-  FF-CD-60-89: !!python/object:eo-man.data.device.Device
+  FF-CD-60-89: !!python/object:eo_man.data.device.Device
     additional_fields:
       sender:
         eep: A5-38-08
@@ -547,7 +547,7 @@ devices:
     name: FSR14_4x 00-00-00-09 (3/4)
     use_in_ha: true
     version: 4.1.0.0
-  FF-CD-60-8A: !!python/object:eo-man.data.device.Device
+  FF-CD-60-8A: !!python/object:eo_man.data.device.Device
     additional_fields:
       sender:
         eep: A5-38-08
@@ -610,7 +610,7 @@ devices:
     name: FSR14_4x 00-00-00-0A (4/4)
     use_in_ha: true
     version: 4.1.0.0
-  FF-CD-60-D0: !!python/object:eo-man.data.device.Device
+  FF-CD-60-D0: !!python/object:eo_man.data.device.Device
     additional_fields: {}
     address: 00-00-00-50
     base_id: FF-CD-60-80
@@ -624,7 +624,7 @@ devices:
     memory_entries: []
     name: FGW14_USB 00-00-00-50
     version: 1.10.0.0
-  FF-CD-70-82: !!python/object:eo-man.data.device.Device
+  FF-CD-70-82: !!python/object:eo_man.data.device.Device
     address: 00-00-10-02
     base_id: FF-CD-60-80
     bus_device: false
@@ -641,7 +641,7 @@ devices:
     name: FTS14EM Button 00-00-10-02
     use_in_ha: true
     version: unknown
-  FF-CD-70-A6: !!python/object:eo-man.data.device.Device
+  FF-CD-70-A6: !!python/object:eo_man.data.device.Device
     address: 00-00-10-26
     base_id: FF-CD-60-80
     bus_device: false
@@ -658,7 +658,7 @@ devices:
     name: FTS14EM Button 00-00-10-26
     use_in_ha: true
     version: unknown
-  FF-CE-10-85: !!python/object:eo-man.data.device.Device
+  FF-CE-10-85: !!python/object:eo_man.data.device.Device
     address: 00-00-B0-05
     base_id: FF-CD-60-80
     bus_device: false
@@ -674,7 +674,7 @@ devices:
     name: HA Contoller 00-00-B0-05
     use_in_ha: false
     version: unknown
-  FF-CE-10-87: !!python/object:eo-man.data.device.Device
+  FF-CE-10-87: !!python/object:eo_man.data.device.Device
     address: 00-00-B0-07
     base_id: FF-CD-60-80
     bus_device: false
@@ -690,7 +690,7 @@ devices:
     name: HA Contoller 00-00-B0-07
     use_in_ha: false
     version: unknown
-  FF-E2-35-90: !!python/object:eo-man.data.device.Device
+  FF-E2-35-90: !!python/object:eo_man.data.device.Device
     address: FF-E2-35-90
     base_id: 00-00-00-00
     bus_device: false

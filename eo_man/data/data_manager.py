@@ -95,6 +95,7 @@ class DataManager():
             self.app_bus.fire_event(AppBusEventType.SET_DATA_TABLE_FILTER, self.data_fitlers[self.selected_data_filter_name])
 
         self.load_devices(app_data.devices)
+        return app_data
 
 
     def write_application_data_to_file(self, filename:str):
