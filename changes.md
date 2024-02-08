@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.1.5 Reefactoring + Basic Features
+## v0.1.5 Reefactoring + Basic Features (GOAL: Stability)
 * Improved imports incl. homeassistant mock
 * Changed application output format to yaml. **=> Braking Change**
 * Refactored Home Assistant Configuration Exporter
