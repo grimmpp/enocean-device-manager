@@ -28,8 +28,9 @@ def main():
    app_bus = AppBus()
 
    # init LOGGING
-   logging.basicConfig(format='%(message)s', level=logging.DEBUG)
+   logging.basicConfig(format='%(message)s ', level=logging.INFO)
    LOGGER = logging.getLogger(PACKAGE_NAME)
+   LOGGER.setLevel(logging.DEBUG)
    LOGGER.info("Start Application eo-man")
    # add print log messages for log message view on command line as debug
    def print_log_event(e:dict):
