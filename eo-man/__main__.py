@@ -1,22 +1,25 @@
 import sys
 import os
 
+# load same path like calling the app via 'python -m eo-man'
 file_dir = os.path.join( os.path.dirname(__file__), '..')
 sys.path.append(file_dir)
 __import__('eo-man')
 __package__ = 'eo-man'
 
-import logging
-from tkinter import *
-
-import os
-import imp
-dirname = os.path.join( os.path.dirname(__file__), 'data', 'homeassistant')
-imp.load_package('homeassistant', dirname)
+# import fake homeassistant package
+file_dir = os.path.join( os.path.dirname(__file__), 'data')
+sys.path.append(file_dir)
+__import__('homeassistant')
 
 from .data.data_manager import DataManager
 from .view.main_panel import MainPanel
 from .controller.app_bus import AppBus
+
+
+import logging
+from tkinter import *
+
 
 def main():
    # TODO: does not load module logging

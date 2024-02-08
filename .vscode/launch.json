@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/eo-man/",
             "console": "integratedTerminal",
-            "args": ["${workspaceFolder}/demo_3.yaml"],
+            "args": ["${workspaceFolder}/demo.eodm"],
             "justMyCode": true
         },
         {
