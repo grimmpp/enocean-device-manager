@@ -1,0 +1,140 @@
+eltako:
+  general_settings:
+    fast_status_change: False
+    show_dev_id_in_dev_name: False
+
+  gateway:
+  - id: 1
+    device_type: fam14   # you can simply change fam14 to fgw14usb
+    base_id: FF-CD-60-80
+    # comment: 
+    devices:
+      :
+      sensor:
+      - id: 05-1E-83-15
+        name: Weather Station 05-1E-83-15
+        eep: 
+
+
+      - id: FF-E2-35-90
+        name: unknown
+        eep: 
+
+
+      cover:
+        # Related devices: HA Contoller 00-00-B0-05 (Type: Smart Home, Adr: 00-00-B0-05)
+        # Use 'Write HA senders to devices' button or enter manually sender id in PCT14 into function group 2 with function 31 
+      - id: 00-00-00-05
+        name: FSB14 00-00-00-05 (1/2)
+        eep: G5-3F-7F
+        device_class: shutter
+        sender: 
+          eep: H5-3F-7F
+          id: 00-00-B0-05
+        time_closes: 25
+        time_opens: 25
+
+
+        # Use 'Write HA senders to devices' button or enter manually sender id in PCT14 into function group 2 with function 31 
+      - id: 00-00-00-06
+        name: FSB14 00-00-00-06 (2/2)
+        eep: G5-3F-7F
+        device_class: shutter
+        sender: 
+          eep: H5-3F-7F
+          id: 00-00-B0-06
+        time_closes: 25
+        time_opens: 25
+
+
+      binary_sensor:
+        # Related devices: FSR14_4x 00-00-00-07 (1/4) (Type: FSR14_4x, Adr: 00-00-00-07), FSR14_4x 00-00-00-08 (2/4) (Type: FSR14_4x, Adr: 00-00-00-08), FSR14_4x 00-00-00-09 (3/4) (Type: FSR14_4x, Adr: 00-00-00-09), FSR14_4x 00-00-00-0A (4/4) (Type: FSR14_4x, Adr: 00-00-00-0A)
+      - id: FE-DB-0A-10
+        name: Button FE-DB-0A-10
+        eep: F6-02-01
+
+
+        # Related devices: FSR14_4x 00-00-00-07 (1/4) (Type: FSR14_4x, Adr: 00-00-00-07), FSR14_4x 00-00-00-08 (2/4) (Type: FSR14_4x, Adr: 00-00-00-08), FSR14_4x 00-00-00-09 (3/4) (Type: FSR14_4x, Adr: 00-00-00-09), FSR14_4x 00-00-00-0A (4/4) (Type: FSR14_4x, Adr: 00-00-00-0A)
+      - id: FE-DB-0A-1B
+        name: Button FE-DB-0A-1B
+        eep: F6-02-01
+
+
+        # Related devices: FSR14_4x 00-00-00-07 (1/4) (Type: FSR14_4x, Adr: 00-00-00-07), FSR14_4x 00-00-00-08 (2/4) (Type: FSR14_4x, Adr: 00-00-00-08), FSR14_4x 00-00-00-09 (3/4) (Type: FSR14_4x, Adr: 00-00-00-09), FSR14_4x 00-00-00-0A (4/4) (Type: FSR14_4x, Adr: 00-00-00-0A)
+      - id: FE-DB-DA-04
+        name: Button FE-DB-DA-04
+        eep: F6-02-01
+
+
+        # Related devices: FSR14_4x 00-00-00-08 (2/4) (Type: FSR14_4x, Adr: 00-00-00-08)
+      - id: FF-81-41-07
+        name: Button FF-81-41-07
+        eep: F6-02-01
+
+
+        # Related devices: FSR14_4x 00-00-00-07 (1/4) (Type: FSR14_4x, Adr: 00-00-00-07)
+      - id: 00-00-10-02
+        name: FTS14EM Button 00-00-10-02
+        eep: F6-02-01
+
+
+        # Related devices: FSR14_4x 00-00-00-09 (3/4) (Type: FSR14_4x, Adr: 00-00-00-09)
+      - id: 00-00-10-26
+        name: FTS14EM Button 00-00-10-26
+        eep: F6-02-01
+
+
+      light:
+      - id: 00-00-00-01
+        name: FMZ14 00-00-00-01
+        eep: M5-38-08
+        sender: 
+          eep: A5-38-08
+          id: 00-00-B0-01
+
+
+        # Related devices: FTS14EM Button 00-00-10-02 (Type: FTS14EM Button, Adr: 00-00-10-02), HA Contoller FF-86-B0-8A (Type: Smart Home, Adr: FF-86-B0-8A), Button FE-DB-0A-1B (Type: Button, Adr: FE-DB-0A-1B), Button FE-DB-DA-04 (Type: Button, Adr: FE-DB-DA-04), HA Contoller 00-00-B0-07 (Type: Smart Home, Adr: 00-00-B0-07), Button FE-DB-0A-10 (Type: Button, Adr: FE-DB-0A-10)
+        # Use 'Write HA senders to devices' button or enter manually sender id in PCT14 into function group 2 with function 51 
+      - id: 00-00-00-07
+        name: FSR14_4x 00-00-00-07 (1/4)
+        eep: M5-38-08
+        sender: 
+          eep: A5-38-08
+          id: 00-00-B0-07
+
+
+        # Related devices: Button FF-81-41-07 (Type: Button, Adr: FF-81-41-07), HA Contoller FF-86-B0-8B (Type: Smart Home, Adr: FF-86-B0-8B), Button FE-DB-0A-1B (Type: Button, Adr: FE-DB-0A-1B), Button FE-DB-DA-04 (Type: Button, Adr: FE-DB-DA-04), Button FE-DB-0A-10 (Type: Button, Adr: FE-DB-0A-10)
+        # Use 'Write HA senders to devices' button or enter manually sender id in PCT14 into function group 2 with function 51 
+      - id: 00-00-00-08
+        name: FSR14_4x 00-00-00-08 (2/4)
+        eep: M5-38-08
+        sender: 
+          eep: A5-38-08
+          id: 00-00-B0-08
+
+
+        # Related devices: FTS14EM Button 00-00-10-26 (Type: FTS14EM Button, Adr: 00-00-10-26), HA Contoller FF-86-B0-8C (Type: Smart Home, Adr: FF-86-B0-8C), Button FE-DB-0A-1B (Type: Button, Adr: FE-DB-0A-1B), Button FE-DB-DA-04 (Type: Button, Adr: FE-DB-DA-04), Button FE-DB-0A-10 (Type: Button, Adr: FE-DB-0A-10), HA Contoller 00-00-B0-07 (Type: Smart Home, Adr: 00-00-B0-07)
+        # Use 'Write HA senders to devices' button or enter manually sender id in PCT14 into function group 2 with function 51 
+      - id: 00-00-00-09
+        name: FSR14_4x 00-00-00-09 (3/4)
+        eep: M5-38-08
+        sender: 
+          eep: A5-38-08
+          id: 00-00-B0-09
+
+
+        # Related devices: Button FE-DB-0A-1B (Type: Button, Adr: FE-DB-0A-1B), Button FE-DB-DA-04 (Type: Button, Adr: FE-DB-DA-04), Button FE-DB-0A-10 (Type: Button, Adr: FE-DB-0A-10)
+        # Use 'Write HA senders to devices' button or enter manually sender id in PCT14 into function group 2 with function 51 
+      - id: 00-00-00-0A
+        name: FSR14_4x 00-00-00-0A (4/4)
+        eep: M5-38-08
+        sender: 
+          eep: A5-38-08
+          id: 00-00-B0-0A
+
+
+logger:
+  default: info
+  logs:
+    eltako: info
+
