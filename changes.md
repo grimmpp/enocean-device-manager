@@ -5,6 +5,10 @@
 * Changed application output format to yaml.
 * Refactored Home Assistant Configuration Exporter
 * Created start file for windows (eo-man.bat) which can be used to create a shortcut for e.g. the taskbar.
+* Changed folder structure (renamed 'eo-man' to 'eo_man' which allows using package name.)
+* Introduced tests
+* Introduced cli commands
+* Added possibility to only use command line to generate Home Assistant Configuration
 
 ## v0.1.4 Bug fixed in python package
 * Bug in python package fixed

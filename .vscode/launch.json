@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/eo_man",
             "console": "integratedTerminal",
-            "args": ["${workspaceFolder}/demo.eodm"],
+            "args": ["--app_config", "${workspaceFolder}/demo.eodm"],
             "justMyCode": true
         },
         {
@@ -19,6 +19,24 @@
             "request": "launch",
             "program": "${workspaceFolder}/eo_man",
             "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Python: CLI Manual",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/eo_man",
+            "console": "integratedTerminal",
+            "args": ["-h"],
+            "justMyCode": true
+        },
+        {
+            "name": "Python: CLI load demo and store ha config",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/eo_man",
+            "console": "integratedTerminal",
+            "args": ["--app_config", "${workspaceFolder}/demo.eodm", "--ha_config", "${workspaceFolder}/ha_config.yaml"],
             "justMyCode": true
         },
         {
