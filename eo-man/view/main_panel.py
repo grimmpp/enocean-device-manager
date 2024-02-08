@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 import copy
@@ -99,4 +100,5 @@ class MainPanel():
 
     def on_closing(self) -> None:
         self.app_bus.fire_event(AppBusEventType.WINDOW_CLOSED, {})
+        logging.info("Close Application eo-man")
         self.main.destroy()

@@ -215,6 +215,9 @@ class SerialController():
             await self.app_bus.async_fire_event(AppBusEventType.ASYNC_DEVICE_DETECTED, {'device': fam14, 'fam14': fam14, 'force_overwrite': force_overwrite})
 
         except Exception as e:
+            msg = 'Failed to load FAM14!!!'
+            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
+            logging.exception(msg, exc_info=True)
             raise e
         finally:
             if is_locked:
@@ -253,6 +256,9 @@ class SerialController():
             logging.info(colored("Device scan finished.", 'red'))
             self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': "Device scan finished.", 'color':'red'})
         except Exception as e:
+            msg = 'Device scan failed!'
+            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
+            logging.exception(msg, exc_info=True)
             raise e
         finally:
             # print("Unlocking the bus again")
@@ -328,6 +334,9 @@ class SerialController():
                 logging.info(colored("Device scan finished.", 'red'))
                 self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': "Device scan finished.", 'color':'red'})
             except Exception as e:
+                msg = 'Write sender id to devices failed!'
+                self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
+                logging.exception(msg, exc_info=True)
                 raise e
             finally:
                 # print("Unlocking the bus again")

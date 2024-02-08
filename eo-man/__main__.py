@@ -14,18 +14,23 @@ __import__('homeassistant')
 
 from .data.data_manager import DataManager
 from .view.main_panel import MainPanel
-from .controller.app_bus import AppBus
-
+from .controller.app_bus import AppBus, AppBusEventType
 
 import logging
 from tkinter import *
 
 
 def main():
-   # TODO: does not load module logging
-   # logging.baicConfig(format='%(message)s', level=logging.INFO)
-
+   # init application message BUS
    app_bus = AppBus()
+
+   # init LOGGING
+   logging.basicConfig(format='%(message)s', level=logging.DEBUG)
+   logging.info("Start Application eo-man")
+   # add print log messages for log message view on command line as debug
+   app_bus.add_event_handler(AppBusEventType.LOG_MESSAGE, lambda e: logging.debug(str(e['msg'])))
+   
+   # init DATA MANAGER
    data_manager = DataManager(app_bus)
 
    filename = None
