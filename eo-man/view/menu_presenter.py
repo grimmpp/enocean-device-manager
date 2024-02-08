@@ -3,9 +3,13 @@ from pathlib import Path
 import threading
 from tkinter import *
 from tkinter import filedialog
+import logging
 
 from ..controller.app_bus import AppBus, AppBusEventType
+
 from ..data.data_manager import DataManager
+from ..data.ha_config_generator import HomeAssistantConfigurationGenerator
+
 from ..view.about_window import AboutWindow
 from ..view import DEFAULT_WINDOW_TITLE
 
@@ -15,6 +19,7 @@ class MenuPresenter():
         self.main = main
         self.app_bus = app_bus
         self.data_manager = data_manager
+        self.ha_conf_gen = HomeAssistantConfigurationGenerator(app_bus, data_manager)
         self.remember_latest_filename = ""
 
         self.menu_bar = Menu(main)
@@ -61,49 +66,64 @@ class MenuPresenter():
 
 
     def save_file(self, save_as:bool=False):
-        if save_as or not os.path.isfile(self.remember_latest_filename):
-        # initial_dir = os.path.dirname(self.remember_latest_filename)
+        try:
+            if save_as or not os.path.isfile(self.remember_latest_filename):
+            # initial_dir = os.path.dirname(self.remember_latest_filename)
 
-            filename = filedialog.asksaveasfilename(initialdir=self.remember_latest_filename, 
-                                                title="Save Application State",
-                                                filetypes=[("EnOcean Device Manager", "*.eodm"), ("EnOcean Device Manager", "*.yaml")],
-                                                defaultextension=".eodm")
-            if not filename:
-                return
+                filename = filedialog.asksaveasfilename(initialdir=self.remember_latest_filename, 
+                                                    title="Save Application State",
+                                                    filetypes=[("EnOcean Device Manager", "*.eodm"), ("EnOcean Device Manager", "*.yaml")],
+                                                    defaultextension=".eodm")
+                if not filename:
+                    return
+                
+                if not filename.endswith('.eodm') and not filename.endswith('.yaml'):
+                    filename += '.eodm'
+                self.remember_latest_filename = filename
+
+            self.data_manager.write_application_data_to_file(self.remember_latest_filename)
+            # with open(self.remember_latest_filename, 'wb') as file:
+            #     pickle.dump( self.data_manager.devices, file)
             
-            if not filename.endswith('.eodm') and not filename.endswith('.yaml'):
-                filename += '.eodm'
-            self.remember_latest_filename = filename
+            self.main.title(f"{DEFAULT_WINDOW_TITLE} ({os.path.basename(self.remember_latest_filename)})")
+            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Save to File: '{self.remember_latest_filename}'", 'color': 'red'})
 
-        self.data_manager.write_application_data_to_file(self.remember_latest_filename)
-        # with open(self.remember_latest_filename, 'wb') as file:
-        #     pickle.dump( self.data_manager.devices, file)
-        
-        self.main.title(f"{DEFAULT_WINDOW_TITLE} ({os.path.basename(self.remember_latest_filename)})")
-        self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Save to File: '{self.remember_latest_filename}'", 'color': 'red'})
+        except Exception as e:
+            msg = f"Saving application configuration to file '{filename}' failed!"
+            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
+            logging.exception(msg, exc_info=True)
+
 
     def import_from_file(self):
-        if not self.remember_latest_filename:
-            self.remember_latest_filename = os.path.expanduser('~')
+        filename = None
+        try:
+            if not self.remember_latest_filename:
+                self.remember_latest_filename = os.path.expanduser('~')
 
-        initial_dir = os.path.dirname(self.remember_latest_filename)
-        filename = filedialog.askopenfilename(initialdir=initial_dir, 
-                                                title="Load Application State",
-                                                filetypes=[("EnOcean Device Manager", "*.eodm"), ("EnOcean Device Manager", "*.yaml")],
-                                                defaultextension=".eodm") #, ("configuration", "*.yaml"), ("all files", "*.*")))
-        
-        if not filename:
-            return None
-        
-        def load():
-            self.data_manager.load_application_data_from_file(filename)
-            # with open(filename, 'rb') as file:
-            #     self.data_manager.load_devices( pickle.load(file) )
+            initial_dir = os.path.dirname(self.remember_latest_filename)
+            filename = filedialog.askopenfilename(initialdir=initial_dir, 
+                                                    title="Load Application State",
+                                                    filetypes=[("EnOcean Device Manager", "*.eodm"), ("EnOcean Device Manager", "*.yaml")],
+                                                    defaultextension=".eodm") #, ("configuration", "*.yaml"), ("all files", "*.*")))
+            
+            if not filename:
+                return None
+            
+            def load():
+                self.data_manager.load_application_data_from_file(filename)
+                # with open(filename, 'rb') as file:
+                #     self.data_manager.load_devices( pickle.load(file) )
 
-        t = threading.Thread(target=load)
-        t.start()
+            t = threading.Thread(target=load)
+            t.start()
+
+        except Exception as e:
+            msg = f"Loading application configuration file '{filename}' failed!"
+            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
+            logging.exception(msg, exc_info=True)
 
         return filename
+        
         
     def load_file(self, filename:str=None):
         if filename == None:
@@ -119,24 +139,26 @@ class MenuPresenter():
     
     remember_latest_ha_config_filename:str=None
     def export_ha_config(self, save_as:bool=False):
-        if save_as or not self.remember_latest_ha_config_filename:
-        # initial_dir = os.path.dirname(self.remember_latest_filename)
+        try:
+            if save_as or not self.remember_latest_ha_config_filename:
+            # initial_dir = os.path.dirname(self.remember_latest_filename)
 
-            filename = filedialog.asksaveasfilename(initialdir=self.remember_latest_filename, 
-                                                title="Save Home Assistant Configuration",
-                                                filetypes=[("Home Assistant Configuration", "*.yaml")],
-                                                defaultextension=".yaml")
-            if not filename:
-                return
+                filename = filedialog.asksaveasfilename(initialdir=self.remember_latest_filename, 
+                                                    title="Save Home Assistant Configuration",
+                                                    filetypes=[("Home Assistant Configuration", "*.yaml")],
+                                                    defaultextension=".yaml")
+                if not filename:
+                    return
 
-            if not filename.endswith('.yaml'):
-                filename += '.yaml'
-            self.remember_latest_ha_config_filename = filename
+                if not filename.endswith('.yaml'):
+                    filename += '.yaml'
+                self.remember_latest_ha_config_filename = filename
 
-        file_content = self.data_manager.generate_ha_config()
-        with open(self.remember_latest_ha_config_filename, 'w') as file:
-            file.write(file_content)
+            self.ha_conf_gen.save_as_yaml_to_file(self.remember_latest_ha_config_filename)
 
-        self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Export Home Assistant Config to File: '{self.remember_latest_ha_config_filename}'", 'color': 'red'})
+        except Exception as e:
+            msg = 'Exporting Home Assistant Configuration failed!'
+            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
+            logging.exception(msg, exc_info=True)
 
         
