@@ -41,10 +41,10 @@ class TestLoadAndStoreAppConfig(unittest.TestCase):
         app_data2:ApplicationData = dm.load_application_data_from_file(filename2)
         
         # compare app_data
-        self.assertEquals(len(app_data.devices), len(app_data2.devices))
-        self.assertEquals(len(app_data.data_filters), len(app_data2.data_filters))
-        self.assertEquals(len(app_data.selected_data_filter_name), len(app_data2.selected_data_filter_name))
-        self.assertEquals(len(app_data.application_version), len(app_data2.application_version))
+        self.assertEqual(len(app_data.devices), len(app_data2.devices))
+        self.assertEqual(len(app_data.data_filters), len(app_data2.data_filters))
+        self.assertEqual(len(app_data.selected_data_filter_name), len(app_data2.selected_data_filter_name))
+        self.assertEqual(len(app_data.application_version), len(app_data2.application_version))
         # "binary" check
-        self.assertEquals(pickle.dumps(app_data), pickle.dumps(app_data2))
+        self.assertEqual(pickle.dumps(app_data), pickle.dumps(app_data2))
         
