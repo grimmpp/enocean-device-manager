@@ -1,7 +1,10 @@
+from datetime import datetime
+
 from homeassistant.const import CONF_ID, CONF_DEVICES, CONF_NAME
 
 from ..controller.app_bus import AppBus, AppBusEventType
 
+from .app_info import ApplicationInfo as AppInfo
 from .data_manager import DataManager
 from .device import Device
 from .const import *
@@ -13,12 +16,30 @@ class HomeAssistantConfigurationGenerator():
         self.app_bus = app_bus
         self.data_manager = data_manager
 
+    def get_description(self) -> str:
+        return f"""
+# DESCRIPTION:
+#
+# This is an automatically generated Home Assistant Configuration for the Eltako Integration (https://github.com/grimmpp/home-assistant-eltako)
+# Generated at {datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")} and by: 'EnOcean Device Manager':
+{AppInfo.get_app_info_as_str(prefix='# ')}#
+# Hints:
+# * The auto-generation considers all devices which are marked with 'Export to HA' = True. 
+# * Decentralized devices are entered into the list under devices for every gateway. If you are using more than one gateway you probably want to have those only once listed. Please remove "dupplicated" entries.
+# * FAM14 gatways can be easily exchanged by FGW14-USB gateways. You just need to change the value of 'device_type' from 'fam14' to 'fgw14usb'.
+# * 'id' of the gateways are random and are just counted up. You can simply change them if needed. Just ensure that they are unique and not specified more than once. 
+#
+"""
+        
+
     def generate_ha_config(self, device_list:list[Device]) -> str:
         ha_platforms = set([str(d.ha_platform) for d in device_list if d.ha_platform is not None])
         fam14s = [d for d in device_list if d.is_fam14() and d.use_in_ha]
         devices = [d for d in device_list if not d.is_fam14() and d.use_in_ha]
 
-        out = f"{DOMAIN}:\n"
+        out = self.get_description()
+        out += "\n"
+        out += f"{DOMAIN}:\n"
         out += f"  {CONF_GERNERAL_SETTINGS}:\n"
         out += f"    {CONF_FAST_STATUS_CHANGE}: False\n"
         out += f"    {CONF_SHOW_DEV_ID_IN_DEV_NAME}: False\n"
@@ -102,7 +123,7 @@ class HomeAssistantConfigurationGenerator():
     
     def save_as_yaml_to_file(self, filename:str):
         msg = f"Export Home Assistant configuration into {filename}"
-        self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'color': 'red', 'log-level': 'DEBUG'})
+        self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'color': 'red', 'log-level': 'INFO'})
         
         config_str = self.generate_ha_config(
             self.data_manager.devices.values()

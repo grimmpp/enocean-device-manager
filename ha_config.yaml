@@ -1,3 +1,23 @@
+
+# DESCRIPTION:
+#
+# This is an automatically generated Home Assistant Configuration for the Eltako Integration (https://github.com/grimmpp/home-assistant-eltako)
+# Generated at 2024-02-09 22:27:57.400574 and by: 'EnOcean Device Manager':
+# Name: eo-man
+# Version: 0.1.5
+# Summary: Tool to managed EnOcean Devices and to generate Home Assistant Configuration.
+# Home-Page: https://github.com/grimmpp/enocean-device-manager
+# Author: Philipp Grimm
+# License: MIT License
+# Requires-Python: >=3.7
+#
+# Hints:
+# * The auto-generation considers all devices which are marked with 'Export to HA' = True. 
+# * Decentralized devices are entered into the list under devices for every gateway. If you are using more than one gateway you probably want to have those only once listed. Please remove "dupplicated" entries.
+# * FAM14 gatways can be easily exchanged by FGW14-USB gateways. You just need to change the value of 'device_type' from 'fam14' to 'fgw14usb'.
+# * 'id' of the gateways are random and are just counted up. You can simply change them if needed. Just ensure that they are unique and not specified more than once. 
+#
+
 eltako:
   general_settings:
     fast_status_change: False
@@ -34,6 +54,17 @@ eltako:
           id: 00-00-B0-06
         time_closes: 25
         time_opens: 25
+
+
+      sensor:
+      - id: 05-1E-83-15
+        name: Weather Station 05-1E-83-15
+        eep: 
+
+
+      - id: FF-E2-35-90
+        name: unknown
+        eep: 
 
 
       binary_sensor:
@@ -120,17 +151,6 @@ eltako:
         sender: 
           eep: A5-38-08
           id: 00-00-B0-0A
-
-
-      sensor:
-      - id: 05-1E-83-15
-        name: Weather Station 05-1E-83-15
-        eep: 
-
-
-      - id: FF-E2-35-90
-        name: unknown
-        eep: 
 
 
 logger:

@@ -36,7 +36,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/eo_man",
             "console": "integratedTerminal",
-            "args": ["--app_config", "${workspaceFolder}/demo.eodm", "--ha_config", "${workspaceFolder}/ha_config.yaml"],
+            "args": ["-v", "--app_config", "${workspaceFolder}/demo.eodm", "--ha_config", "${workspaceFolder}/ha_config.yaml"],
             "justMyCode": true
         },
         {

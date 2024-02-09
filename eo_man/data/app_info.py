@@ -26,27 +26,27 @@ class ApplicationInfo():
                 with open(filename, 'r', encoding='utf-8') as file:
                     for l in file.readlines():
                         if l.startswith('Name:'):
-                            app_info['name'] = l.split(':')[1].strip()
+                            app_info['name'] = l.split(':',1)[1].strip()
                         elif l.startswith('Version:'):
-                            app_info['version'] = l.split(':')[1].strip()
+                            app_info['version'] = l.split(':',1)[1].strip()
                         elif l.startswith('Summary:'):
-                            app_info['summary'] = l.split(':')[1].strip()
+                            app_info['summary'] = l.split(':',1)[1].strip()
                         elif l.startswith('Home-page:'):
-                            app_info['home-page'] = l.split(':')[1].strip()
+                            app_info['home-page'] = l.split(':',1)[1].strip()
                         elif l.startswith('Author:'):
-                            app_info['author'] = l.split(':')[1].strip()
+                            app_info['author'] = l.split(':',1)[1].strip()
                         elif l.startswith('License:'):
-                            app_info['license'] = l.split(':')[1].strip()
+                            app_info['license'] = l.split(':',1)[1].strip()
                         elif l.startswith('Requires-Python:'):
-                            app_info['requires-python'] = l.split(':')[1].strip()
+                            app_info['requires-python'] = l.split(':',1)[1].strip()
             
         return app_info
                         
     @classmethod
-    def get_app_info_as_str(cls) -> str:
+    def get_app_info_as_str(cls, separator:str='\n', prefix:str='') -> str:
         result = ''
         for k, v in cls.get_app_info().items():
-            result += f"{k.title()}: {v}\n"
+            result += f"{prefix}{k.title()}: {v}{separator}"
         return result
 
     @classmethod
