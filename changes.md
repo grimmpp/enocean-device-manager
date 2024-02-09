@@ -9,6 +9,7 @@
 * Introduced tests
 * Introduced cli commands
 * Added possibility to only use command line to generate Home Assistant Configuration
+* Application info added
 
 ## v0.1.4 Bug fixed in python package
 * Bug in python package fixed
