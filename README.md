@@ -43,6 +43,19 @@ For update you can execute:
 ## Bugs and Features 
 Please open [issues](/issues) if you encounter bugs or if you have ideas for new features. Also quite a lot of devices are not yet supported.
 
+## Run unittests
+`pytest tests`
+
+## Install pre-commit hook to ensure unittests are executed before each commit
+1. Install package `pip install pre-commit`
+2. Config git: `pre-commit install`
+
+## Build wheel package
+`python setup.py bdist_wheel`
+
+## Install built wheel pacage
+`pip install dist/eo_man-VERSION-py3-none-any.whl` use `--force-reinstall` if you want to overwrite an existing version.
+
 # Contribution and Support to this Project
 I'm really happy to provide a more and more growing Home Assistant Eltako Integration and tools like this which extend this automation corner even more. The size of this integration is getting much bigger than the use cases I've realized at home, the variety of supported devices is increasing and the stability of the integraiton is getting to a professional level. On the other side it is getting hard to keep this level of development speed and operational quality. I'm about to build up a professional development and testing environment so that the quality can even improved and futher features can still be delivered in a short time frame. You can support this activity in sending devices and/or money.
 
