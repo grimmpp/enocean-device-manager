@@ -5,21 +5,21 @@ class ApplicationInfo():
     app_info:dict[str:str]=None
 
     @classmethod
-    def get_app_info(cls):
+    def get_app_info(cls, filename:str=None):
         
         if not cls.app_info:
-            filename = None
-            parent_folder = os.path.join(os.path.dirname(__file__), '..', '..')
-            for f in os.listdir(parent_folder):
-                if os.path.isdir(os.path.join(parent_folder, f)):
-                    # for installed package => get info from package metadata folder
-                    if f.startswith('eo_man-') and f.endswith('.dist-info'):
-                        filename = os.path.join(parent_folder, f, 'METADATA')
-                        break
-                    # for development environment => get info from built package (needs to be built first)
-                    if 'eo_man.egg-info' in f:
-                        filename = os.path.join(parent_folder, f, 'PKG-INFO')
-                        break
+            if not filename:
+                parent_folder = os.path.join(os.path.dirname(__file__), '..', '..')
+                for f in os.listdir(parent_folder):
+                    if os.path.isdir(os.path.join(parent_folder, f)):
+                        # for installed package => get info from package metadata folder
+                        if f.startswith('eo_man-') and f.endswith('.dist-info'):
+                            filename = os.path.join(parent_folder, f, 'METADATA')
+                            break
+                        # for development environment => get info from built package (needs to be built first)
+                        if 'eo_man.egg-info' in f:
+                            filename = os.path.join(parent_folder, f, 'PKG-INFO')
+                            break
             
             app_info = {}
             if filename and os.path.isfile(filename):
