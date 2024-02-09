@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/eo_man",
             "console": "integratedTerminal",
-            "args": ["--app_config", "${workspaceFolder}/demo.eodm"],
+            "args": ["-v", "--app_config", "${workspaceFolder}/demo.eodm"],
             "justMyCode": true
         },
         {
@@ -22,7 +22,7 @@
             "justMyCode": true
         },
         {
-            "name": "Python: CLI Manual",
+            "name": "Python: CLI Help",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/eo_man",

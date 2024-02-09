@@ -11,9 +11,10 @@ sys.path.append(file_dir)
 __import__(PACKAGE_NAME)
 __package__ = PACKAGE_NAME
 
-from eo_man import load_dep_homeassistant
+from eo_man import load_dep_homeassistant, LOGGER
 load_dep_homeassistant()
 
+from .data.app_info import ApplicationInfo
 from .data.data_manager import DataManager
 from .data.ha_config_generator import HomeAssistantConfigurationGenerator
 from .view.main_panel import MainPanel
@@ -28,16 +29,19 @@ def cli_argument():
         description=
 """EnOcean Device Manager (https://github.com/grimmpp/enocean-device-manager) allows you to managed your EnOcean devices and to generate 
 Home Assistant Configurations for the Home Assistant Eltako Integration (https://github.com/grimmpp/home-assistant-eltako).""")
-    p.add_argument("--app_config", help="Filename of stored application configuration. Filename must end with '.eodm'.", default=None)
-    p.add_argument("--ha_config", help="Filename for Home Assistant Configuration for Eltako Integration. By passing the filename it will disable the GUI and only generate the Home Assistant configuration.")
+    p.add_argument('-v', '--verbose', help="Logs all messages.", action='store_true')
+    p.add_argument('-c', "--app_config", help="Filename of stored application configuration. Filename must end with '.eodm'.", default=None)
+    p.add_argument('-ha', "--ha_config", help="Filename for Home Assistant Configuration for Eltako Integration. By passing the filename it will disable the GUI and only generate the Home Assistant Configuration file.")
     return p.parse_args()
 
 
-def init_logger(app_bus:AppBus):
+def init_logger(app_bus:AppBus, log_level:int=logging.INFO):
     logging.basicConfig(format='%(message)s ', level=logging.INFO)
+    global LOGGER
     LOGGER = logging.getLogger(PACKAGE_NAME)
-    LOGGER.setLevel(logging.DEBUG)
-    LOGGER.info("Start Application eo-man")
+    LOGGER.setLevel(log_level)
+    LOGGER.info("Start Application eo_man")
+    LOGGER.info(ApplicationInfo.get_app_info_as_str())
     # add print log messages for log message view on command line as debug
     def print_log_event(e:dict):
         log_level = e.get('log-level', 'INFO')
@@ -48,15 +52,18 @@ def init_logger(app_bus:AppBus):
 
 
 def main():
+    opts = cli_argument()
+
+    if hasattr(opts, 'help') and opts.help:
+        return
+    
     # init application message BUS
     app_bus = AppBus()
 
-    init_logger(app_bus)
+    init_logger(app_bus, logging.DEBUG if opts.verbose else logging.INFO)
 
     # init DATA MANAGER
     data_manager = DataManager(app_bus)
-
-    opts = cli_argument()
 
     # initially load from file application data
     if opts.app_config and opts.app_config.endswith('.eodm'):
