@@ -1,0 +1,10 @@
+repos: 
+- repo: local
+  hooks:
+  - id: tests
+    name: run tests
+#    entry: python -m unittest discover
+    entry: pytest tests
+    language: python
+    types: [python]
+    stages: [commit]

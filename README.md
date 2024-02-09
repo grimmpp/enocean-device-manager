@@ -20,28 +20,41 @@ For further steps it is planned to extend the support for changing the data whic
 
 ## Install python package in virtual environment (Recommended)
 1. Create virtual python environment: `python.exe -m venv .\.venv`
-2. Install application: `.\.venv\Scripts\pip.exe install eo-man  --force-reinstall` (Package available under pypi: [eo-man](https://pypi.org/project/eo-man/))
-3. Run application: `.\.venv\Scripts\python.exe -m eo-man`
+2. Install application: `.\.venv\Scripts\pip.exe install eo_man  --force-reinstall` (Package available under pypi: [eo_man](https://pypi.org/project/eo-man/))
+3. Run application: `.\.venv\Scripts\python.exe -m eo_man`
 
 ## Install python package in gloabl environment
-1. Install application: `pip.exe install eo-man` (Package available under pypi: [eo-man](https://pypi.org/project/eo-man/))
-2. Run application: `python.exe -m eo-man`
+1. Install application: `pip.exe install eo_man` (Package available under pypi: [eo_man](https://pypi.org/project/eo-man/))
+2. Run application: `python.exe -m eo_man`
 
 ## Install source code from this repository and run the App (alternative)
 1. Clone/Download the repo.
 2. Change into the repo directory.
 3. Create virtual environment for python: `python.exe -m venv .venv`
 4. Install dependencies: `.\.venv\Scripts\python.exe setup.py install`
-5. Start the app: `.\.venv\Scripts\python.exe -m eo-man` or `.\.venv\Scripts\python.exe -m eo-man demo.eodm` (Directly loads demo data)
+5. Start the app: `.\.venv\Scripts\python.exe -m eo_man` or `.\.venv\Scripts\python.exe -m eo_man demo.eodm` (Directly loads demo data)
 
 For update you can execute:
 1. `git pull` (Gets newest state of the code)
 2. Optionally change branch: `git checkout BRANCH_NAME`
 3. Reinstall`.\.venv\Scripts\python.exe setup.py install --force`
-4. Run app: `.\.venv\Scripts\python.exe -m eo-man`
+4. Run app: `.\.venv\Scripts\python.exe -m eo_man`
 
 ## Bugs and Features 
 Please open [issues](/issues) if you encounter bugs or if you have ideas for new features. Also quite a lot of devices are not yet supported.
+
+## Run unittests
+`pytest tests`
+
+## Install pre-commit hook to ensure unittests are executed before each commit
+1. Install package `pip install pre-commit`
+2. Config git: `pre-commit install`
+
+## Build wheel package
+`python setup.py bdist_wheel`
+
+## Install built wheel pacage
+`pip install dist/eo_man-VERSION-py3-none-any.whl` use `--force-reinstall` if you want to overwrite an existing version.
 
 # Contribution and Support to this Project
 I'm really happy to provide a more and more growing Home Assistant Eltako Integration and tools like this which extend this automation corner even more. The size of this integration is getting much bigger than the use cases I've realized at home, the variety of supported devices is increasing and the stability of the integraiton is getting to a professional level. On the other side it is getting hard to keep this level of development speed and operational quality. I'm about to build up a professional development and testing environment so that the quality can even improved and futher features can still be delivered in a short time frame. You can support this activity in sending devices and/or money.

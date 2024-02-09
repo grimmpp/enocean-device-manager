@@ -8,8 +8,8 @@ from tkinter.tix import IMAGETEXT
 from PIL import Image, ImageTk
 from idlelib.tooltip import Hovertip
 
-from data.data_manager import DataManager
-from view.menu_presenter import MenuPresenter
+from ..data.data_manager import DataManager
+from ..view.menu_presenter import MenuPresenter
 
 
 class ToolBar():

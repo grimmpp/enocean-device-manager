@@ -1,6 +1,5 @@
 ﻿aiocoap==0.4.7
 eltako14bus==0.0.45
-eo-man==0.1rc0
 numpy==1.26.3
 pillow==10.2.0
 pyserial==3.5
@@ -9,5 +8,3 @@ PyYAML==6.0.1
 StrEnum==0.4.15
 termcolor==2.4.0
 tkinterhtml==0.7
-tzdata==2023.4
-tzlocal==5.2

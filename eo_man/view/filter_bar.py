@@ -2,13 +2,14 @@ import tkinter as tk
 from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
-from data.const import CONF_EEP
-from data.filter import DataFilter
 
-from view.checklistcombobox import ChecklistCombobox
+from .checklistcombobox import ChecklistCombobox
 
-from controller.app_bus import AppBus, AppBusEventType
-from data.data_manager import DataManager, EEP_MAPPING, get_eep_names
+from ..controller.app_bus import AppBus, AppBusEventType
+from ..data.data_manager import DataManager
+from ..data import data_helper
+from ..data.const import CONF_EEP
+from ..data.filter import DataFilter
 
 
 class FilterBar():
@@ -76,7 +77,7 @@ class FilterBar():
         l = Label(f, text="Device Type:")
         l.grid(row=0, column=col, padx=(0,3), sticky=W)
 
-        values = sorted(set([info['hw-type'] for info in EEP_MAPPING]))
+        values = sorted(set([info['hw-type'] for info in data_helper.EEP_MAPPING]))
         self.cb_device_type = ChecklistCombobox(f, values=values, width="14") 
         self.cb_device_type.grid(row=1, column=col, padx=(0,3) )
         self.cb_device_type.bind('<Return>', self.apply_filter)
@@ -87,7 +88,7 @@ class FilterBar():
         l = Label(f, text="Device EEP:")
         l.grid(row=0, column=col, padx=(0,3), sticky=W)
 
-        values = get_eep_names()
+        values = data_helper.get_eep_names()
         self.cb_device_eep = ChecklistCombobox(f, values=values, width="14") 
         self.cb_device_eep.grid(row=1, column=col, padx=(0,3))
         self.cb_device_eep.bind('<Return>', self.apply_filter)
@@ -184,7 +185,7 @@ class FilterBar():
             # self.apply_filter()
 
 
-    def select_ChecklistCombobox(self, widget:ChecklistCombobox, values:[str]):
+    def select_ChecklistCombobox(self, widget:ChecklistCombobox, values:list[str]):
         widget.set(', '.join(values))
         for i in range(0,len(widget.checkbuttons)):
             widget.variables[i].set( 1 if widget.checkbuttons[i].cget('text') in values else 0 )
@@ -202,7 +203,7 @@ class FilterBar():
     def reset_filter(self):
         self.app_bus.fire_event(AppBusEventType.SET_DATA_TABLE_FILTER, None)
 
-    def get_str_array(self, widget:Widget) -> [str]:
+    def get_str_array(self, widget:Widget) -> list[str]:
         widget_value = ''
         try:
             widget_value = widget.get()

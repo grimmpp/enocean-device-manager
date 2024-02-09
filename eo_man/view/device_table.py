@@ -9,15 +9,17 @@ from tkinter import filedialog
 from tkinter.tix import IMAGETEXT
 from PIL import Image, ImageTk
 from idlelib.tooltip import Hovertip
-from controller.app_bus import AppBus, AppBusEventType
-from data.const import *
-from data.homeassistant_const import CONF_ID, CONF_NAME
+
+from ..controller.app_bus import AppBus, AppBusEventType
+from ..data.const import *
+from ..data.homeassistant.const import CONF_ID, CONF_NAME
+from ..data.filter import DataFilter
+from ..data.data_manager import DataManager, Device
+from ..data import data_helper
 
 from eltakobus.util import b2s
 from eltakobus.eep import EEP
 from eltakobus.message import EltakoMessage, RPSMessage, Regular1BSMessage, Regular4BSMessage, EltakoWrappedRPS
-from data.data_manager import DataManager, Device, add_addresses, a2s
-from data.filter import DataFilter
 
 
 class DeviceTable():
@@ -224,7 +226,7 @@ class DeviceTable():
 
         if type(message) in [RPSMessage, Regular1BSMessage, Regular4BSMessage, EltakoWrappedRPS]:
             if isinstance(message.address, int):
-                adr = a2s(message.address)
+                adr = data_helper.a2s(message.address)
             else: 
                 adr = b2s(message.address)
 

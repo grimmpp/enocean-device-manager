@@ -1,20 +1,25 @@
-import tkinter as tk
+import logging
 import os
+import sys
+import copy
+
+import tkinter as tk
 from tkinter import *
 from tkinter import ttk
-from controller.app_bus import AppBus, AppBusEventType
 
-from data.data_manager import DataManager
-from view import DEFAULT_WINDOW_TITLE
-from view.device_details import DeviceDetails
+from ..controller.app_bus import AppBus, AppBusEventType
 
-from view.device_table import DeviceTable
-from view.filter_bar import FilterBar
-from view.log_output import LogOutputPanel
-from view.menu_presenter import MenuPresenter
-from view.serial_communication_bar import SerialConnectionBar
-from view.status_bar import StatusBar
-from view.tool_bar import ToolBar
+from ..data.data_manager import DataManager
+
+from ..view import DEFAULT_WINDOW_TITLE
+from ..view.device_details import DeviceDetails
+from ..view.device_table import DeviceTable
+from ..view.filter_bar import FilterBar
+from ..view.log_output import LogOutputPanel
+from ..view.menu_presenter import MenuPresenter
+from ..view.serial_communication_bar import SerialConnectionBar
+from ..view.status_bar import StatusBar
+from ..view.tool_bar import ToolBar
 
 class MainPanel():
 
@@ -68,6 +73,8 @@ class MainPanel():
 
         StatusBar(main, app_bus, data_manager, row=row_status_bar)
 
+        main.after(1, lambda: main.focus_force())
+
         ## start main loop
         main.mainloop()
 
@@ -83,11 +90,17 @@ class MainPanel():
         self.main.config(bg="lightgrey")
         self.main.protocol("WM_DELETE_WINDOW", self.on_closing)
         filename = os.path.join(os.path.dirname(__file__), '..', 'icons', 'Faenza-system-search.png')
-        self.main.wm_iconphoto(False, tk.PhotoImage(file=filename))
+        # icon next to title in window frame
+        # self.main.wm_iconphoto(False, tk.PhotoImage(file=filename))
+        # icon in taskbar
+        icon = tk.PhotoImage(file=filename)
+        self.main.iconphoto(True, icon, icon)
+        # self.main.iconbitmap(bitmap=filename.replace('.png', '.icon'))
 
     def on_loaded(self) -> None:
         self.app_bus.fire_event(AppBusEventType.WINDOW_LOADED, {})
 
     def on_closing(self) -> None:
         self.app_bus.fire_event(AppBusEventType.WINDOW_CLOSED, {})
+        logging.info("Close Application eo-man")
         self.main.destroy()

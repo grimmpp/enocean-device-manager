@@ -7,13 +7,15 @@ from tkinter import ttk
 from tkinter.tix import IMAGETEXT
 from PIL import Image, ImageTk
 from idlelib.tooltip import Hovertip
-from controller.app_bus import AppBus, AppBusEventType
-from data.const import *
-from data.homeassistant_const import CONF_ID, CONF_NAME
 
 from eltakobus.device import SensorInfo, KeyFunction
 from eltakobus.util import b2s
-from data.data_manager import DataManager, Device, EEP_MAPPING
+
+from ..data.data_manager import DataManager, Device
+from ..data import data_helper
+from ..controller.app_bus import AppBus, AppBusEventType
+from ..data.const import *
+from ..data.homeassistant.const import CONF_ID, CONF_NAME
 
 
 class DeviceDetails():
@@ -113,7 +115,7 @@ class DeviceDetails():
         l.grid(row=c_row, column=0, sticky=W, padx=3)
 
         self.cb_device_type = ttk.Combobox(f, width="20") 
-        self.cb_device_type['values'] = list(set([t['hw-type'] for t in EEP_MAPPING]))
+        self.cb_device_type['values'] = list(set([t['hw-type'] for t in data_helper.EEP_MAPPING]))
         self.cb_device_type.grid(row=c_row, column=1, sticky=W+E)
         self.cb_device_type.set(device.device_type if device.device_type else '')
         self.cb_device_type.bind('<Return>', lambda e, d=device: self.update_device(d))
@@ -146,7 +148,7 @@ class DeviceDetails():
         l.grid(row=c_row, column=0, sticky=W, padx=3)
 
         self.cb_device_eep = ttk.Combobox(f, width="20") 
-        self.cb_device_eep['values'] = sorted(set([t[CONF_EEP] for t in EEP_MAPPING]))
+        self.cb_device_eep['values'] = sorted(set([t[CONF_EEP] for t in data_helper.EEP_MAPPING]))
         self.cb_device_eep.grid(row=c_row, column=1, sticky=W+E)
         self.cb_device_eep.set(device.eep if device.eep else '')
         self.cb_device_eep.bind('<Return>', lambda e, d=device: self.update_device(d))

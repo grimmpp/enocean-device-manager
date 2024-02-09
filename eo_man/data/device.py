@@ -4,10 +4,10 @@ from eltakobus.device import BusObject, FAM14
 from eltakobus.message import *
 from eltakobus.eep import *
 
-from data.homeassistant_const import CONF_ID, CONF_DEVICE, CONF_DEVICES, CONF_NAME, CONF_PLATFORM, CONF_TYPE, CONF_DEVICE_CLASS, CONF_TEMPERATURE_UNIT, UnitOfTemperature, Platform
+from homeassistant.const import CONF_ID, CONF_DEVICE, CONF_DEVICES, CONF_NAME, CONF_PLATFORM, CONF_TYPE, CONF_DEVICE_CLASS, CONF_TEMPERATURE_UNIT, UnitOfTemperature, Platform
 
-from data.data_helper import *
-from data.const import *
+from .data_helper import *
+from .const import *
 
 class Device():
     """Data representation of a device"""
@@ -23,7 +23,7 @@ class Device():
     comment:str = ""
     base_id:str=None
     bus_device:bool=False
-    memory_entries:[SensorInfo]=[]  # only used for bus devices
+    memory_entries:list[SensorInfo]=[]  # only used for bus devices
 
     # vars for ha
     use_in_ha:bool=False
@@ -43,7 +43,7 @@ class Device():
                  name:str=None, 
                  comment:str=None, 
                  base_id:str=None, 
-                 memory_entries:[SensorInfo]=[]):
+                 memory_entries:list[SensorInfo]=[]):
         
         self.address = address
         self.bus_device = bus_device

@@ -1,9 +1,10 @@
 
+import os
 from termcolor import colored
 
-from data.const import *
+from .const import *
+from homeassistant.const import CONF_ID, CONF_DEVICE, CONF_DEVICES, CONF_NAME, CONF_PLATFORM, CONF_TYPE, CONF_DEVICE_CLASS, CONF_TEMPERATURE_UNIT, UnitOfTemperature, Platform
 
-from data.homeassistant_const import CONF_ID, CONF_DEVICE, CONF_DEVICES, CONF_NAME, CONF_PLATFORM, CONF_TYPE, CONF_DEVICE_CLASS, CONF_TEMPERATURE_UNIT, UnitOfTemperature, Platform
 from eltakobus.device import BusObject, FAM14, SensorInfo, KeyFunction
 from eltakobus.message import *
 from eltakobus.eep import *
@@ -92,7 +93,7 @@ def get_name_from_key_function_name(kf: KeyFunction) -> str:
 class BusObjectHelper():
 
     @classmethod
-    def find_sensors(cls, sensors:[SensorInfo], dev_id: int, channel:int, in_func_group: int) -> [SensorInfo]:
+    def find_sensors(cls, sensors:list[SensorInfo], dev_id: int, channel:int, in_func_group: int) -> list[SensorInfo]:
         result = []
         for s in sensors: 
             if s.dev_id == dev_id and s.channel == channel and s.in_func_group == in_func_group:
@@ -100,7 +101,7 @@ class BusObjectHelper():
         return result
 
     @classmethod
-    def find_sensor(cls, sensors:[SensorInfo], dev_id: int, channel:int, in_func_group: int) -> SensorInfo:
+    def find_sensor(cls, sensors:list[SensorInfo], dev_id: int, channel:int, in_func_group: int) -> SensorInfo:
         l = cls.find_sensors(sensors, dev_id, channel, in_func_group)
         if len(l) > 0:
             return l[0]
@@ -111,8 +112,18 @@ def add_addresses(adr1:str, adr2:str) -> str:
     _adr2 = int.from_bytes( AddressExpression.parse(adr2)[0], 'big')
     return a2s(_adr1 + _adr2)
     
-def print_memory_entires(sensors: [SensorInfo]) -> None:
+def print_memory_entires(sensors: list[SensorInfo]) -> None:
     for _s in sensors:
         s:SensorInfo = _s
         print(f"{s.memory_line}: {b2s(s.sensor_id, ' ')} {hex(s.key)} {hex(s.key_func)} {hex(s.channel)} (FG: {s.in_func_group})")
         
+
+def get_application_version() -> str:
+    filename = os.path.join(os.path.dirname(__file__), '..', '..', 'eo_man.egg-info', 'PKG-INFO')
+    if os.path.isfile(filename):
+        with open(filename, 'r', encoding="utf8") as f:
+            lines = f.read().splitlines()
+        for l in lines:
+            if l.startswith('Version: '):
+                return l[len('Version: '):]
+    return 'unknown'

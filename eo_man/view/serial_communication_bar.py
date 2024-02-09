@@ -2,9 +2,10 @@ import tkinter as tk
 from tkinter import *
 from tkinter import ttk
 from idlelib.tooltip import Hovertip
-from controller.app_bus import AppBus, AppBusEventType
-from controller.serial_controller import SerialController
-from data.data_manager import DataManager, Device
+
+from ..controller.app_bus import AppBus, AppBusEventType
+from ..controller.serial_controller import SerialController
+from ..data.data_manager import DataManager, Device
 
 class SerialConnectionBar():
 

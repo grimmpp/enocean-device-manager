@@ -1,25 +1,18 @@
-from controller.app_bus import AppBus, AppBusEventType
+import os
 from termcolor import colored
 import logging
 
-import os
-from data.application_data import ApplicationData
+from ..controller.app_bus import AppBus, AppBusEventType
+from . import data_helper 
+from .device import Device 
+from .application_data import ApplicationData
+from .filter import DataFilter
+from .const import *
+from homeassistant.const import CONF_ID, CONF_DEVICES, CONF_NAME
 
-from data.filter import DataFilter
-os.environ.setdefault('SKIPP_IMPORT_HOME_ASSISTANT', "True")
-import sys
-# caution: path[0] is reserved for script path (or '' in REPL)
-# sys.path.insert(1, 'C:\\Users\\automation\\Documents\\home-assistant-eltako')
-# from custom_components.eltako.const import *
-from data.const import *
-
-from data.homeassistant_const import CONF_ID, CONF_DEVICES, CONF_NAME
-# from eltakobus.message import *
-# from eltakobus.eep import *
-from eltakobus.util import b2s
-
-from data.data_helper import *
-from data.device import Device 
+from eltakobus.util import AddressExpression, b2s
+from eltakobus.eep import EEP
+from eltakobus.message import RPSMessage, Regular1BSMessage, Regular4BSMessage, EltakoMessage
 
 class DataManager():
     """Manages EnOcean Devices"""
@@ -32,6 +25,7 @@ class DataManager():
         self.app_bus.add_event_handler(AppBusEventType.SET_DATA_TABLE_FILTER, self.set_current_data_filter_handler)
         self.app_bus.add_event_handler(AppBusEventType.REMOVED_DATA_TABLE_FILTER, self.remove_current_data_filter_handler)
         
+        self.application_version = data_helper.get_application_version()
         self.devices:dict[str:Device] = {}
         self.data_fitlers:dict[str:DataFilter] = {}
         self.selected_data_filter_name:DataFilter = None
@@ -66,7 +60,7 @@ class DataManager():
         self.devices = {}
 
 
-    def load_data_filters(self, filters:[DataFilter]):
+    def load_data_filters(self, filters:list[DataFilter]):
         for f in filters.values():
             self.add_filter(f)
 
@@ -85,7 +79,11 @@ class DataManager():
 
 
     def load_application_data_from_file(self, filename:str):
-        app_data:ApplicationData = ApplicationData.read_from_file(filename)
+        # if filename.endswith('.eodm'):
+        #     app_data:ApplicationData = ApplicationData.read_from_file(filename)
+        # elif filename.endswith('.yaml'):
+        #     app_data:ApplicationData = ApplicationData.read_from_yaml_file(filename)
+        app_data:ApplicationData = ApplicationData.read_from_yaml_file(filename)
         
         self.load_data_filters(app_data.data_filters)
         self.selected_data_filter_name = app_data.selected_data_filter_name
@@ -97,15 +95,23 @@ class DataManager():
             self.app_bus.fire_event(AppBusEventType.SET_DATA_TABLE_FILTER, self.data_fitlers[self.selected_data_filter_name])
 
         self.load_devices(app_data.devices)
+        return app_data
 
 
     def write_application_data_to_file(self, filename:str):
         app_data = ApplicationData()
+        app_data.application_version = self.application_version
         app_data.data_filters = self.data_fitlers
         app_data.devices = self.devices
         app_data.selected_data_filter_name = self.selected_data_filter_name
 
-        ApplicationData.write_to_file(filename, app_data)
+        # if filename.endswith('.eodm'):
+        #     ApplicationData.write_to_file(filename, app_data)
+        # elif filename.endswith('.yaml'):
+        #     ApplicationData.write_to_yaml_file(filename, app_data)
+        # else:
+        #     raise Exception('unknow file type')
+        ApplicationData.write_to_yaml_file(filename, app_data)
 
 
     def _serial_callback_handler(self, data:dict):
@@ -150,7 +156,7 @@ class DataManager():
             
         return None
     
-    def get_sensors_configured_in_a_device(self, device:Device) -> [Device]:
+    def get_sensors_configured_in_a_device(self, device:Device) -> list[Device]:
         """returns all sensors configured in a device"""
         sensors = []
 
@@ -164,14 +170,14 @@ class DataManager():
                     sensors.append(self.devices[m.sensor_id_str])
 
                 else:
-                    m_ext_id = add_addresses(m.sensor_id_str, device.base_id)
+                    m_ext_id = data_helper.add_addresses(m.sensor_id_str, device.base_id)
                     if m_ext_id in self.devices:
                         sensors.append(self.devices[m_ext_id])
 
         return sensors
     
     
-    def get_devices_containing_sensor_in_config(self, sensor:Device) ->[Device]:
+    def get_devices_containing_sensor_in_config(self, sensor:Device) ->list[Device]:
         """returns all devices which contain the given sensor in its config"""
         devices = []
 
@@ -189,7 +195,7 @@ class DataManager():
         return devices
 
 
-    def get_related_devices(self, device_external_id:str) -> [Device]:
+    def get_related_devices(self, device_external_id:str) -> list[Device]:
         """returns a list of all devices in which a sensor is entered or sensors which are configured inside an device."""
         if device_external_id is None or device_external_id == '' or device_external_id == 'Distributed Devices':
             return []
@@ -219,7 +225,7 @@ class DataManager():
         if (local_adr + base_adr) > 0xFFFFFFFF:
             return None
 
-        ext_id = a2s(local_adr + base_adr)
+        ext_id = data_helper.a2s(local_adr + base_adr)
         if ext_id in self.devices:
             return self.devices[ext_id]
         
@@ -250,93 +256,4 @@ class DataManager():
         return None, None
 
 
-    def generate_ha_config(self) -> str:
-        ha_platforms = set([str(d.ha_platform) for d in self.devices.values() if d.ha_platform is not None])
-        fam14s = [d for d in self.devices.values() if d.is_fam14() and d.use_in_ha]
-        devices = [d for d in self.devices.values() if not d.is_fam14() and d.use_in_ha]
-
-        out = f"{DOMAIN}:\n"
-        out += f"  {CONF_GERNERAL_SETTINGS}:\n"
-        out += f"    {CONF_FAST_STATUS_CHANGE}: False\n"
-        out += f"    {CONF_SHOW_DEV_ID_IN_DEV_NAME}: False\n"
-        out += f"\n"
-        
-        fam14_id = 0
-        # add fam14 gateways
-        for d in fam14s:
-            fam14:Device = d
-            fam14_id += 1
-            out += f"  {CONF_GATEWAY}:\n"
-            out += f"  - {CONF_ID}: {fam14_id}\n"
-            gw_fam14 = GatewayDeviceType.GatewayEltakoFAM14.value
-            gw_fgw14usb = GatewayDeviceType.GatewayEltakoFGW14USB.value
-            out += f"    {CONF_DEVICE_TYPE}: {gw_fam14}   # you can simply change {gw_fam14} to {gw_fgw14usb}\n"
-            out += f"    {CONF_BASE_ID}: {fam14.external_id}\n"
-            out += f"    # {CONF_COMMENT}: {fam14.comment}\n"
-            out += f"    {CONF_DEVICES}:\n"
-
-            for platform in ha_platforms:
-                out += f"      {platform}:\n"
-                for _d in [d for d in devices if d.ha_platform == platform]:
-                    device:Device = _d
-                    # devices
-                    if device.base_id == fam14.external_id:
-                        out += self.config_section_from_device_to_string(device, True, 0) + "\n\n"
-                    elif 'sensor' in platform:
-                        out += self.config_section_from_device_to_string(device, True, 0) + "\n\n"
-        # logs
-        out += "logger:\n"
-        out += "  default: info\n"
-        out += "  logs:\n"
-        out += f"    {DOMAIN}: info\n"
-
-        return out
-
-
-
-    def config_section_from_device_to_string(self, device:Device, is_list:bool, space_count:int=0) -> str:
-        out = ""
-        spaces = space_count*" " + "        "
-
-        if device.comment:
-            out += spaces + f"# {device.comment}\n"
-        
-        rel_devs = [f"{d.name} (Type: {d.device_type}, Adr: {d.address})" for d in self.get_related_devices(device.external_id)]
-        if len(rel_devs):
-            out += spaces + f"# Related devices: {', '.join(rel_devs)}\n"
-            
-        info = find_device_info_by_device_type(device.device_type)
-        if info and 'PCT14-key-function' in info:
-            kf = info['PCT14-key-function']
-            fg = info['PCT14-function-group']
-            out += spaces[:-2] + f"  # Use 'Write HA senders to devices' button or enter manually sender id in PCT14 into function group {fg} with function {kf} \n"    
-        out += spaces[:-2] + f"- {CONF_ID}: {device.address}\n"
-        out += spaces[:-2] + f"  {CONF_NAME}: {device.name}\n"
-        out += spaces[:-2] + f"  {CONF_EEP}: {device.eep}\n"
-
-        out += self.export_additional_fields(device.additional_fields, space_count)
-        
-        return out
     
-    def export_additional_fields(self, additional_fields:dict, space_count:int=0) -> str:
-        out = ""
-        spaces = space_count*" " + "        "
-        for key in additional_fields.keys():
-            value = additional_fields[key]
-            if isinstance(value, str) or isinstance(value, int):
-                if key not in [CONF_COMMENT, CONF_REGISTERED_IN]:
-                    if isinstance(value, str) and '?' in value:
-                        value += " # <= NEED TO BE COMPLETED!!!"
-                    out += f"{spaces}{key}: {value}\n"
-            elif isinstance(value, dict):
-                out += f"{spaces}{key}: \n"
-                out += self.export_additional_fields(value, space_count+2)
-        return out
-    
-    def save_as_yaml_to_flie(self, filename:str):
-        logging.info(colored(f"\nStore config into {filename}", 'red', attrs=['bold']))
-        
-        config_str = self.generate_config()
-
-        with open(filename, 'w', encoding="utf-8") as f:
-            print(config_str, file=f)

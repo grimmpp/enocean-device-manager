@@ -4,6 +4,8 @@ from tkinter import ttk
 import webbrowser
 from tkinterhtml import HtmlFrame
 
+from ..data.app_info import ApplicationInfo as AppInfo
+
 
 class AboutWindow():
 
@@ -16,27 +18,29 @@ class AboutWindow():
         l = tk.Label(popup, text="About Device Manager", font='Arial 14 bold')
         l.pack(side=TOP, fill="x", pady=10)
 
-        l = tk.Label(popup, text="Version: 0.0.0", anchor="w")
+        l = tk.Label(popup, text="Version: "+AppInfo.get_version(), anchor="w")
         l.pack(side=TOP, fill="x", pady=2, padx=5)
 
         text = "GitHub: grimmpp/enocean-device-manager"
         l = tk.Label(popup, text=text, fg="blue", cursor="hand2", anchor="w")
         l.pack(side=TOP, fill="x", pady=2, padx=5)
-        l.bind("<Button-1>", lambda e: self.callback("https://github.com/grimmpp/enocean-device-manager"))
+        l.bind("<Button-1>", lambda e: self.callback(AppInfo.get_home_page()))
 
         text = "Report a bug or ask for features!"
         l = tk.Label(popup, text=text, fg="blue", cursor="hand2", anchor="w")
         l.pack(side=TOP, fill="x", pady=2, padx=5)
-        l.bind("<Button-1>", lambda e: self.callback("https://github.com/grimmpp/enocean-device-manager/issues"))
+        l.bind("<Button-1>", lambda e: self.callback(AppInfo.get_home_page()+"/issues"))
 
-        l = tk.Label(popup, text="Author: Philipp Grimm", anchor="w")
+        l = tk.Label(popup, text="Author: "+AppInfo.get_author(), anchor="w")
         l.pack(side=TOP, fill="x", pady=2, padx=5)
 
-        l = tk.Label(popup, text="License: MIT License", anchor="w")
+        l = tk.Label(popup, text="License: "+AppInfo.get_license(), anchor="w")
         l.pack(side=TOP, fill="x", pady=2, padx=5)
 
         b = ttk.Button(popup, text="OK", command=popup.destroy)
+        b.bind('<Return>', lambda e: popup.destroy())
         b.pack(side=TOP, fill="x", pady=(10,2), padx=10 )
+        b.focus()
 
         popup.wm_attributes('-toolwindow', 'True')
         popup.resizable (width=False, height=False)

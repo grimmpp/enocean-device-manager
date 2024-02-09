@@ -18,16 +18,18 @@ with open('LICENSE', encoding="utf-8") as f:
 required = ['eltako14bus==0.0.45', 'pyserial', 'pyserial-asyncio', 'aiocoap', 
             # 'homeassistant', 
             'pyyaml', 
-            'termcolor', 'strenum', 'pillow', 'numpy', 'tzlocal', 'tkinterhtml']
+            'termcolor', 'strenum', 'pillow', 'numpy',
+            # 'tzlocal', 
+            'tkinterhtml']
 
 setup(
-    name='eo-man',
-    version='0.1.4',
-    package_dir={'eo-man':"eo-man"},
+    name='eo_man',
+    version='0.1.5',
+    package_dir={'eo_man':"eo_man"},
     # packages=find_packages("./eo-man"),
     #package_data={'': ['*.png']},
     package_data={'': ['icons/*']},
-    package=["eo-man"],
+    package=["eo_man"],
     include_package_data=True,
     install_requires=required,
     author="Philipp Grimm",
