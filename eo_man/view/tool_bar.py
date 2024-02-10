@@ -1,15 +1,11 @@
 import tkinter as tk
 import os
-from pathlib import Path
 from tkinter import *
-from tkinter import ttk
-from tkinter import filedialog
-from tkinter.tix import IMAGETEXT
 from PIL import Image, ImageTk
 from idlelib.tooltip import Hovertip
 
-from ..data.data_manager import DataManager
-from ..view.menu_presenter import MenuPresenter
+from .sponsor_button import SponsorButton
+from .menu_presenter import MenuPresenter
 
 
 class ToolBar():
@@ -26,6 +22,8 @@ class ToolBar():
         b = self._create_img_button(f, "Open file", "../icons/Oxygen480-status-folder-open.png", menu_presenter.load_file)
         b = self._create_img_button(f, "Export Home Assistant Configuration", "../icons/Home_Assistant_Logo.png", menu_presenter.export_ha_config)
 
+        SponsorButton(f).pack(side=RIGHT, padx=2, pady=2)
+
     def _create_img_button(self, f:Frame, tooltip:str, img_filename:str, command) -> Button:
 
         img = Image.open(os.path.join(os.path.dirname(__file__), img_filename))
@@ -36,3 +34,4 @@ class ToolBar():
         b.image = eimg
         b.pack(side=LEFT, padx=2, pady=2)
         return b
+    

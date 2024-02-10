@@ -3,7 +3,7 @@ repos:
   hooks:
   - id: tests
     name: run tests
-#    entry: python -m unittest discover
+    #entry: python -m unittest discover
     entry: pytest tests
     language: python
     types: [python]

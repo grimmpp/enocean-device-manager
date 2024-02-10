@@ -4,6 +4,8 @@ from tkinter import ttk
 import webbrowser
 from tkinterhtml import HtmlFrame
 
+from .sponsor_button import SponsorButton
+
 from ..data.app_info import ApplicationInfo as AppInfo
 
 
@@ -37,10 +39,14 @@ class AboutWindow():
         l = tk.Label(popup, text="License: "+AppInfo.get_license(), anchor="w")
         l.pack(side=TOP, fill="x", pady=2, padx=5)
 
+        b = SponsorButton(popup)
+        b.pack(side=TOP, pady=(8,0), padx=5)
+        b.focus()
+
         b = ttk.Button(popup, text="OK", command=popup.destroy)
         b.bind('<Return>', lambda e: popup.destroy())
         b.pack(side=TOP, fill="x", pady=(10,2), padx=10 )
-        b.focus()
+        # b.focus()
 
         popup.wm_attributes('-toolwindow', 'True')
         popup.resizable (width=False, height=False)
@@ -49,7 +55,7 @@ class AboutWindow():
 
         # center
         w = 300
-        h = 220
+        h = 250
         x = main.winfo_x() + main.winfo_width()/2 - w/2
         y = main.winfo_y() + main.winfo_height()/2 - h/2
         popup.geometry('%dx%d+%d+%d' % (w, h, x, y))
