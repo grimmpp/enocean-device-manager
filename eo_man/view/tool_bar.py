@@ -3,9 +3,11 @@ import os
 from tkinter import *
 from PIL import Image, ImageTk
 from idlelib.tooltip import Hovertip
+import webbrowser
 
-from .sponsor_button import SponsorButton
+from .donation_button import DonationButton
 from .menu_presenter import MenuPresenter
+from ..icons.image_gallary import ImageGallery
 
 
 class ToolBar():
@@ -17,21 +19,21 @@ class ToolBar():
         f = Frame(main, bd=1)#, relief=SUNKEN)
         f.grid(row=row, column=0, columnspan=1, sticky=W+E+N+S, pady=2, padx=2)
 
-        b = self._create_img_button(f, "Save to current file", "../icons/Oxygen480-actions-document-save.png", menu_presenter.save_file )
-        b = self._create_img_button(f, "Save as file", "../icons/Oxygen480-actions-document-save-as.png", lambda: menu_presenter.save_file(save_as=True) )
-        b = self._create_img_button(f, "Open file", "../icons/Oxygen480-status-folder-open.png", menu_presenter.load_file)
-        b = self._create_img_button(f, "Export Home Assistant Configuration", "../icons/Home_Assistant_Logo.png", menu_presenter.export_ha_config)
+        b = self._create_img_button(f, "Save to current file", ImageGallery.get_save_file_icon(), menu_presenter.save_file )
+        b = self._create_img_button(f, "Save as file", ImageGallery.get_save_file_as_icon(), lambda: menu_presenter.save_file(save_as=True) )
+        b = self._create_img_button(f, "Open file", ImageGallery.get_open_folder_icon(), menu_presenter.load_file)
+        b = self._create_img_button(f, "Export Home Assistant Configuration", ImageGallery.get_ha_logo(), menu_presenter.export_ha_config)
 
-        SponsorButton(f).pack(side=RIGHT, padx=2, pady=2)
 
-    def _create_img_button(self, f:Frame, tooltip:str, img_filename:str, command) -> Button:
+        # placed at the right end
+        b = DonationButton(f, relief=GROOVE, small_icon=True).pack(side=RIGHT, padx=(0,2), pady=2)
+        b = self._create_img_button(f, "EnOcean Device Manager Documentation", ImageGallery.get_help_icon(), menu_presenter.open_eo_man_documentation)
+        b.pack(side=RIGHT, padx=(0,2), pady=2)
 
-        img = Image.open(os.path.join(os.path.dirname(__file__), img_filename))
-        img = img.resize((24, 24), Image.LANCZOS)
-        eimg = ImageTk.PhotoImage(img)
-        b = Button(f, image=eimg, relief=FLAT, command=command)
+    def _create_img_button(self, f:Frame, tooltip:str, image:ImageTk.PhotoImage, command) -> Button:
+        b = Button(f, image=image, relief=GROOVE, command=command)
         Hovertip(b,tooltip,300)
-        b.image = eimg
-        b.pack(side=LEFT, padx=2, pady=2)
+        b.image = image
+        b.pack(side=LEFT, padx=(2,0), pady=2)
         return b
     

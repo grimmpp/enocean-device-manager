@@ -3,6 +3,7 @@
 ## v0.1.6 
 * Sponsor button added
 * Docs updated with system requirements
+* Added links to documentation
 
 ## v0.1.5 Refactoring + Basic Features (GOAL: Stability)
 * Improved imports incl. homeassistant mock

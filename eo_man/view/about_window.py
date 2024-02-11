@@ -4,7 +4,7 @@ from tkinter import ttk
 import webbrowser
 from tkinterhtml import HtmlFrame
 
-from .sponsor_button import SponsorButton
+from .donation_button import DonationButton
 
 from ..data.app_info import ApplicationInfo as AppInfo
 
@@ -28,6 +28,11 @@ class AboutWindow():
         l.pack(side=TOP, fill="x", pady=2, padx=5)
         l.bind("<Button-1>", lambda e: self.callback(AppInfo.get_home_page()))
 
+        text = "EnOcean Device Manager Documentation"
+        l = tk.Label(popup, text=text, fg="blue", cursor="hand2", anchor="w")
+        l.pack(side=TOP, fill="x", pady=2, padx=5)
+        l.bind("<Button-1>", lambda e: self.callback(r"https://github.com/grimmpp/enocean-device-manager/tree/main/docs"))
+
         text = "Report a bug or ask for features!"
         l = tk.Label(popup, text=text, fg="blue", cursor="hand2", anchor="w")
         l.pack(side=TOP, fill="x", pady=2, padx=5)
@@ -39,7 +44,7 @@ class AboutWindow():
         l = tk.Label(popup, text="License: "+AppInfo.get_license(), anchor="w")
         l.pack(side=TOP, fill="x", pady=2, padx=5)
 
-        b = SponsorButton(popup)
+        b = DonationButton(popup)
         b.pack(side=TOP, pady=(8,0), padx=5)
         b.focus()
 
@@ -55,7 +60,7 @@ class AboutWindow():
 
         # center
         w = 300
-        h = 250
+        h = 276
         x = main.winfo_x() + main.winfo_width()/2 - w/2
         y = main.winfo_y() + main.winfo_height()/2 - h/2
         popup.geometry('%dx%d+%d+%d' % (w, h, x, y))
@@ -63,4 +68,4 @@ class AboutWindow():
         main.wait_window(popup)
 
     def callback(self, url):
-        webbrowser.open_new(url)
+        webbrowser.open(url)

@@ -1,17 +1,19 @@
 import os
-from pathlib import Path
 import threading
 from tkinter import *
 from tkinter import filedialog
 import logging
+import webbrowser
 
 from ..controller.app_bus import AppBus, AppBusEventType
 
 from ..data.data_manager import DataManager
 from ..data.ha_config_generator import HomeAssistantConfigurationGenerator
 
-from ..view.about_window import AboutWindow
-from ..view import DEFAULT_WINDOW_TITLE
+from ..icons.image_gallary import ImageGallery
+
+from .about_window import AboutWindow
+from . import DEFAULT_WINDOW_TITLE
 
 class MenuPresenter():
 
@@ -23,20 +25,44 @@ class MenuPresenter():
         self.remember_latest_filename = ""
 
         self.menu_bar = Menu(main)
-        filemenu = Menu(self.menu_bar, tearoff=0)
+        filemenu = Menu(self.menu_bar, tearoff=False)
+        self.menu_bar.add_cascade(menu=filemenu, 
+                                  label="File", 
+                                  underline=0, 
+                                  accelerator="ALT+F")
         # filemenu.add_command(label="New")
-        filemenu.add_command(label="Load File...", command=self.load_file, accelerator="Ctrl+O")
-        filemenu.add_command(label="Import From File...", command=self.import_from_file, accelerator="Ctrl+I")
+        filemenu.add_command(label="Load File...", 
+                            #  image=ImageGallery.get_open_folder_icon(size=(16,16)),
+                            #  compound=LEFT,
+                             command=self.load_file, 
+                             accelerator="Ctrl+O")
+        filemenu.add_command(label="Import From File...", 
+                             command=self.import_from_file, 
+                             accelerator="Ctrl+I")
         filemenu.add_separator()
-        filemenu.add_command(label="Export Home Assistant Configuration", command=self.export_ha_config, accelerator="Ctrl+E")
-        filemenu.add_command(label="Export Home Assistant Configuration as ...", command=lambda: self.export_ha_config(save_as=True), accelerator="Ctrl+SHIFT+E")
+        filemenu.add_command(label="Export Home Assistant Configuration", 
+                            #  image=ImageGallery.get_ha_logo(size=(16,16)), 
+                            #  compound=LEFT, 
+                             command=self.export_ha_config, 
+                             accelerator="Ctrl+E")
+        filemenu.add_command(label="Export Home Assistant Configuration as ...", 
+                            #  image=ImageGallery.get_ha_logo(size=(16,16)), 
+                            #  compound=LEFT, 
+                             command=lambda: self.export_ha_config(save_as=True), 
+                             accelerator="Ctrl+SHIFT+E")
         filemenu.add_separator()
-        filemenu.add_command(label="Save", command=self.save_file, accelerator="Ctrl+S")
-        filemenu.add_command(label="Save as...", command=lambda: self.save_file(save_as=True), accelerator="Ctrl+SHIFT+S")
-        # filemenu.add_command(label="Close")
+        filemenu.add_command(label="Save", 
+                            #  image=ImageGallery.get_save_file_icon(),
+                            #  compound=LEFT,
+                             command=self.save_file, 
+                             accelerator="Ctrl+S")
+        filemenu.add_command(label="Save as...", 
+                             image=ImageGallery.get_save_file_as_icon(),
+                             compound=LEFT,
+                             command=lambda: self.save_file(save_as=True), 
+                             accelerator="Ctrl+SHIFT+S")
         filemenu.add_separator()
         filemenu.add_command(label="Exit", command=main.quit, accelerator="ALT+F4")
-        self.menu_bar.add_cascade(label="File", menu=filemenu)
         
         # editmenu = Menu(self.menu_bar, tearoff=0)
         # editmenu.add_command(label="Undo")
@@ -48,13 +74,40 @@ class MenuPresenter():
         # editmenu.add_command(label="Select All")
         # self.menu_bar.add_cascade(label="Edit", menu=editmenu)
 
-        helpmenu = Menu(self.menu_bar, tearoff=0)
-        # helpmenu.add_command(label="Help Index")
-        helpmenu.add_command(label="About...", command=lambda: AboutWindow(main), accelerator="F1")
+        helpmenu = Menu(self.menu_bar, tearoff=False)
         self.menu_bar.add_cascade(label="Help", menu=helpmenu)
+        
+        docsmenu = Menu(helpmenu, tearoff=False)
+        helpmenu.add_cascade(menu=docsmenu, 
+                             label="Documentation")
+        docsmenu.add_command(label="EnOcean Device Manager ...", 
+                             command=self.open_eo_man_documentation)
+        docsmenu.add_separator()
+        docsmenu.add_command(label="Home Assistant Eltako Integration ...", 
+                             command=lambda: webbrowser.open_new(r"https://github.com/grimmpp/home-assistant-eltako/tree/main/docs"))
+
+        reposmenu = Menu(helpmenu, tearoff=0)
+        helpmenu.add_cascade(menu=reposmenu, 
+                             label="GitHub Repositories")
+        reposmenu.add_command(label="EnOcean Device Manager ...", 
+                              command=lambda: webbrowser.open_new(r"https://github.com/grimmpp/enocean-device-manager"))
+        reposmenu.add_separator()
+        reposmenu.add_command(label="Home Assistant Eltako Integration ...", 
+                              command=lambda: webbrowser.open_new(r"https://github.com/grimmpp/home-assistant-eltako"))
+        reposmenu.add_separator()
+        reposmenu.add_command(label="Eltako14Bus Communication Library ...", 
+                              command=lambda: webbrowser.open_new(r"https://github.com/grimmpp/eltako14bus"))
+
+        helpmenu.add_command(label="About...", 
+                            #  image=ImageGallery.get_about_icon(size=(16,16)),
+                            #  compound=LEFT,
+                             command=lambda: AboutWindow(main), 
+                             accelerator="F1")
+        
 
         main.config(menu=self.menu_bar)
 
+        # add shortcuts globally
         main.bind('<Control-o>', lambda e: self.load_file())
         main.bind('<Control-i>', lambda e: self.import_from_file())
         main.bind('<Control-e>', lambda e: self.export_ha_config())
@@ -162,3 +215,5 @@ class MenuPresenter():
             logging.exception(msg, exc_info=True)
 
         
+    def open_eo_man_documentation(self):
+        webbrowser.open_new(r"https://github.com/grimmpp/enocean-device-manager/tree/main/docs")
