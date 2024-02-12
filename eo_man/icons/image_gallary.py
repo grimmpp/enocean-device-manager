@@ -39,5 +39,9 @@ class ImageGallery():
         return ImageGallery.get_image("paypal_me_badge.png", size)
     
     @classmethod
-    def get_about_icon(cls, size:tuple[int:int]=(214,20)) -> ImageTk.PhotoImage:
+    def get_about_icon(cls, size:tuple[int:int]=(32,32)) -> ImageTk.PhotoImage:
         return ImageGallery.get_image("Breathe-about.png", size)
+
+    @classmethod
+    def get_github_icon(cls, size:tuple[int:int]=(32,32)) -> ImageTk.PhotoImage:
+        return ImageGallery.get_image("github_icon.png", size)

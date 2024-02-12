@@ -1,8 +1,10 @@
 import tkinter as tk
-from tkinter import *
 from tkinter import ttk
+from tkinter import *
+from tkinter.font import *
 import webbrowser
 from tkinterhtml import HtmlFrame
+from idlelib.tooltip import Hovertip
 
 from .donation_button import DonationButton
 
@@ -14,35 +16,27 @@ class AboutWindow():
     def __init__(self, main:Tk):
         popup = Toplevel(main)
         popup.wm_title("About")
+        self.popup = popup
 
-        f = Frame(popup)
+        self.label_font = Font(name="Arial", underline=True, size=10)
 
-        l = tk.Label(popup, text="About Device Manager", font='Arial 14 bold')
+        l = tk.Label(popup, text="About EnOcean Device Manager", font='Arial 14 bold')
         l.pack(side=TOP, fill="x", pady=10)
 
-        l = tk.Label(popup, text="Version: "+AppInfo.get_version(), anchor="w")
+        l = tk.Label(popup, text="Version: "+AppInfo.get_version(), font="Arial 10", anchor="w")
         l.pack(side=TOP, fill="x", pady=2, padx=5)
 
-        text = "GitHub: grimmpp/enocean-device-manager"
-        l = tk.Label(popup, text=text, fg="blue", cursor="hand2", anchor="w")
-        l.pack(side=TOP, fill="x", pady=2, padx=5)
-        l.bind("<Button-1>", lambda e: self.callback(AppInfo.get_home_page()))
+        self.get_label_link(text="PyPI: Package Name: "+__package__.split('.')[0], link=r"https://pypi.org/project/eo-man")
+        
+        self.get_label_link(text="GitHub: grimmpp/enocean-device-manager", link=AppInfo.get_home_page())
 
-        text = "EnOcean Device Manager Documentation"
-        l = tk.Label(popup, text=text, fg="blue", cursor="hand2", anchor="w")
-        l.pack(side=TOP, fill="x", pady=2, padx=5)
-        l.bind("<Button-1>", lambda e: self.callback(r"https://github.com/grimmpp/enocean-device-manager/tree/main/docs"))
+        self.get_label_link(text="GitHub: EnOcean Device Manager Documentation", link=r"https://github.com/grimmpp/enocean-device-manager/tree/main/docs")
 
-        text = "Report a bug or ask for features!"
-        l = tk.Label(popup, text=text, fg="blue", cursor="hand2", anchor="w")
-        l.pack(side=TOP, fill="x", pady=2, padx=5)
-        l.bind("<Button-1>", lambda e: self.callback(AppInfo.get_home_page()+"/issues"))
+        self.get_label_link(text="GitHub: Report a bug or ask for features!", link=AppInfo.get_home_page()+"/issues")
 
-        l = tk.Label(popup, text="Author: "+AppInfo.get_author(), anchor="w")
-        l.pack(side=TOP, fill="x", pady=2, padx=5)
+        self.get_label_link(text="Author: "+AppInfo.get_author(), link=r"https://github.com/grimmpp")
 
-        l = tk.Label(popup, text="License: "+AppInfo.get_license(), anchor="w")
-        l.pack(side=TOP, fill="x", pady=2, padx=5)
+        self.get_label_link(text="License - "+AppInfo.get_license(), link=r"https://github.com/grimmpp/enocean-device-manager/blob/main/LICENSE")
 
         b = DonationButton(popup)
         b.pack(side=TOP, pady=(8,0), padx=5)
@@ -59,8 +53,8 @@ class AboutWindow():
         popup.grab_set()
 
         # center
-        w = 300
-        h = 276
+        w = 340
+        h = 310
         x = main.winfo_x() + main.winfo_width()/2 - w/2
         y = main.winfo_y() + main.winfo_height()/2 - h/2
         popup.geometry('%dx%d+%d+%d' % (w, h, x, y))
@@ -69,3 +63,12 @@ class AboutWindow():
 
     def callback(self, url):
         webbrowser.open(url)
+
+    def get_label_link(self, text:str, link:str, tooltip:str=None) -> Label:
+        if tooltip is None:
+            tooltip=link
+
+        l = tk.Label(self.popup, text=text, fg="blue", font=self.label_font, cursor="hand2", anchor="w")
+        l.pack(side=TOP, fill="x", pady=2, padx=5)
+        l.bind("<Button-1>", lambda e: self.callback(link))
+        Hovertip(l,tooltip,300)

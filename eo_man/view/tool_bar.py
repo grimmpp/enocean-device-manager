@@ -27,7 +27,9 @@ class ToolBar():
 
         # placed at the right end
         b = DonationButton(f, relief=GROOVE, small_icon=True).pack(side=RIGHT, padx=(0,2), pady=2)
-        b = self._create_img_button(f, "EnOcean Device Manager Documentation", ImageGallery.get_help_icon(), menu_presenter.open_eo_man_documentation)
+        b = self._create_img_button(f, "GitHub.com: EnOcean Device Manager Repository", ImageGallery.get_github_icon(), menu_presenter.open_eo_man_repo)
+        b.pack(side=RIGHT, padx=(0,2), pady=2)
+        b = self._create_img_button(f, "GitHub.com: EnOcean Device Manager Documentation", ImageGallery.get_help_icon(), menu_presenter.open_eo_man_documentation)
         b.pack(side=RIGHT, padx=(0,2), pady=2)
 
     def _create_img_button(self, f:Frame, tooltip:str, image:ImageTk.PhotoImage, command) -> Button:

@@ -93,7 +93,7 @@ class MenuPresenter():
                               command=lambda: webbrowser.open_new(r"https://github.com/grimmpp/enocean-device-manager"))
         reposmenu.add_separator()
         reposmenu.add_command(label="Home Assistant Eltako Integration ...", 
-                              command=lambda: webbrowser.open_new(r"https://github.com/grimmpp/home-assistant-eltako"))
+                              command=self.open_eo_man_repo)
         reposmenu.add_separator()
         reposmenu.add_command(label="Eltako14Bus Communication Library ...", 
                               command=lambda: webbrowser.open_new(r"https://github.com/grimmpp/eltako14bus"))
@@ -214,6 +214,8 @@ class MenuPresenter():
             self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
             logging.exception(msg, exc_info=True)
 
+    def open_eo_man_repo(self):
+        webbrowser.open_new(r"https://github.com/grimmpp/enocean-device-manager")
         
     def open_eo_man_documentation(self):
         webbrowser.open_new(r"https://github.com/grimmpp/enocean-device-manager/tree/main/docs")
