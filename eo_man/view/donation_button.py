@@ -14,7 +14,7 @@ class DonationButton(Button):
         else:
             image = ImageGallery.get_paypal_me_icon()
         
-        super().__init__(master, image=image, relief=kw.get('relief', FLAT), command=self.open_payapl_me)
+        super().__init__(master, image=image, relief=kw.get('relief', FLAT), cursor="hand2", command=self.open_payapl_me)
         self.image = image
 
         Hovertip(self,"Donate to support this project!",300)

@@ -5,6 +5,8 @@
 * Docs updated with system requirements
 * Added links to documentation
 * Improved look and feel
+* About window improved
+* Icons to menu added
 
 ## v0.1.5 Refactoring + Basic Features (GOAL: Stability)
 * Improved imports incl. homeassistant mock

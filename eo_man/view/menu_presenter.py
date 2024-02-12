@@ -24,88 +24,98 @@ class MenuPresenter():
         self.ha_conf_gen = HomeAssistantConfigurationGenerator(app_bus, data_manager)
         self.remember_latest_filename = ""
 
-        self.menu_bar = Menu(main)
-        filemenu = Menu(self.menu_bar, tearoff=False)
-        self.menu_bar.add_cascade(menu=filemenu, 
-                                  label="File", 
-                                  underline=0, 
-                                  accelerator="ALT+F")
+        menu_bar = Menu(main)
+        file_menu = Menu(menu_bar, tearoff=False)
+        
         # filemenu.add_command(label="New")
-        filemenu.add_command(label="Load File...", 
-                            #  image=ImageGallery.get_open_folder_icon(size=(16,16)),
-                            #  compound=LEFT,
-                             command=self.load_file, 
-                             accelerator="Ctrl+O")
-        filemenu.add_command(label="Import From File...", 
-                             command=self.import_from_file, 
-                             accelerator="Ctrl+I")
-        filemenu.add_separator()
-        filemenu.add_command(label="Export Home Assistant Configuration", 
-                            #  image=ImageGallery.get_ha_logo(size=(16,16)), 
-                            #  compound=LEFT, 
-                             command=self.export_ha_config, 
-                             accelerator="Ctrl+E")
-        filemenu.add_command(label="Export Home Assistant Configuration as ...", 
-                            #  image=ImageGallery.get_ha_logo(size=(16,16)), 
-                            #  compound=LEFT, 
-                             command=lambda: self.export_ha_config(save_as=True), 
-                             accelerator="Ctrl+SHIFT+E")
-        filemenu.add_separator()
-        filemenu.add_command(label="Save", 
-                            #  image=ImageGallery.get_save_file_icon(),
-                            #  compound=LEFT,
-                             command=self.save_file, 
-                             accelerator="Ctrl+S")
-        filemenu.add_command(label="Save as...", 
-                             image=ImageGallery.get_save_file_as_icon(),
+        load_file_icon = ImageGallery.get_open_folder_icon(size=(16,16))
+        file_menu.add_command(label="Load File...", 
+                              image=load_file_icon,
+                              compound=LEFT,
+                              command=self.load_file, 
+                              accelerator="Ctrl+O")
+        file_menu.add_command(label="Import From File...", 
+                              image=load_file_icon,
+                              compound=LEFT,
+                              command=self.import_from_file, 
+                              accelerator="Ctrl+I")
+        file_menu.add_separator()
+        ha_icon = ImageGallery.get_ha_logo(size=(16,16))
+        file_menu.add_command(label="Export Home Assistant Configuration", 
+                              image=ha_icon, 
+                              compound=LEFT, 
+                              command=self.export_ha_config, 
+                              accelerator="Ctrl+E")
+        file_menu.add_command(label="Export Home Assistant Configuration as ...", 
+                              image=ha_icon, 
+                              compound=LEFT, 
+                              command=lambda: self.export_ha_config(save_as=True), 
+                              accelerator="Ctrl+SHIFT+E")
+        file_menu.add_separator()
+        save_icon = ImageGallery.get_save_file_icon((16,16))
+        file_menu.add_command(label="Save", 
+                              image=save_icon,
+                              compound=LEFT,
+                              command=self.save_file, 
+                              accelerator="Ctrl+S")
+        save_as_icon = ImageGallery.get_save_file_as_icon((16,16))
+        file_menu.add_command(label="Save as...", 
+                             image=save_as_icon,
                              compound=LEFT,
                              command=lambda: self.save_file(save_as=True), 
                              accelerator="Ctrl+SHIFT+S")
-        filemenu.add_separator()
-        filemenu.add_command(label="Exit", command=main.quit, accelerator="ALT+F4")
-        
-        # editmenu = Menu(self.menu_bar, tearoff=0)
-        # editmenu.add_command(label="Undo")
-        # editmenu.add_separator()
-        # editmenu.add_command(label="Cut")
-        # editmenu.add_command(label="Copy")
-        # editmenu.add_command(label="Paste")
-        # editmenu.add_command(label="Delete")
-        # editmenu.add_command(label="Select All")
-        # self.menu_bar.add_cascade(label="Edit", menu=editmenu)
+        file_menu.add_separator()
+        file_menu.add_command(label="Exit", command=main.quit, accelerator="ALT+F4")
 
-        helpmenu = Menu(self.menu_bar, tearoff=False)
-        self.menu_bar.add_cascade(label="Help", menu=helpmenu)
+        menu_bar.add_cascade(menu=file_menu, 
+                                  label="File",
+                                  accelerator="ALT+F")
         
-        docsmenu = Menu(helpmenu, tearoff=False)
-        helpmenu.add_cascade(menu=docsmenu, 
+
+        help_menu = Menu(menu_bar, tearoff=False)
+        menu_bar.add_cascade(label="Help", menu=help_menu)
+        
+        github_icon = ImageGallery.get_github_icon((16,16))
+        docs_menu = Menu(help_menu, tearoff=False)
+        help_menu.add_cascade(menu=docs_menu, 
                              label="Documentation")
-        docsmenu.add_command(label="EnOcean Device Manager ...", 
+        docs_menu.add_command(label="EnOcean Device Manager ...", 
+                             image=github_icon,
+                             compound=LEFT,
                              command=self.open_eo_man_documentation)
-        docsmenu.add_separator()
-        docsmenu.add_command(label="Home Assistant Eltako Integration ...", 
+        docs_menu.add_separator()
+        docs_menu.add_command(label="Home Assistant Eltako Integration ...", 
+                             image=github_icon,
+                             compound=LEFT,
                              command=lambda: webbrowser.open_new(r"https://github.com/grimmpp/home-assistant-eltako/tree/main/docs"))
 
-        reposmenu = Menu(helpmenu, tearoff=0)
-        helpmenu.add_cascade(menu=reposmenu, 
+        repos_menu = Menu(help_menu, tearoff=0)
+        help_menu.add_cascade(menu=repos_menu, 
                              label="GitHub Repositories")
-        reposmenu.add_command(label="EnOcean Device Manager ...", 
+        repos_menu.add_command(label="EnOcean Device Manager ...", 
+                              image=github_icon,
+                              compound=LEFT,
                               command=lambda: webbrowser.open_new(r"https://github.com/grimmpp/enocean-device-manager"))
-        reposmenu.add_separator()
-        reposmenu.add_command(label="Home Assistant Eltako Integration ...", 
-                              command=self.open_eo_man_repo)
-        reposmenu.add_separator()
-        reposmenu.add_command(label="Eltako14Bus Communication Library ...", 
-                              command=lambda: webbrowser.open_new(r"https://github.com/grimmpp/eltako14bus"))
+        repos_menu.add_separator()
+        repos_menu.add_command(label="Home Assistant Eltako Integration ...", 
+                               image=github_icon,
+                               compound=LEFT,
+                               command=self.open_eo_man_repo)
+        repos_menu.add_separator()
+        repos_menu.add_command(label="Eltako14Bus Communication Library ...", 
+                               image=github_icon,
+                               compound=LEFT,
+                               command=lambda: webbrowser.open_new(r"https://github.com/grimmpp/eltako14bus"))
 
-        helpmenu.add_command(label="About...", 
-                            #  image=ImageGallery.get_about_icon(size=(16,16)),
-                            #  compound=LEFT,
-                             command=lambda: AboutWindow(main), 
-                             accelerator="F1")
+        about_icon = ImageGallery.get_about_icon((16,16))
+        help_menu.add_command(label="About...", 
+                              image=about_icon,
+                              compound=LEFT,
+                              command=lambda: AboutWindow(main), 
+                              accelerator="F1")
         
 
-        main.config(menu=self.menu_bar)
+        main.config(menu=menu_bar)
 
         # add shortcuts globally
         main.bind('<Control-o>', lambda e: self.load_file())
