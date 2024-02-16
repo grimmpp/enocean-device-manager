@@ -188,7 +188,7 @@ class SerialController():
         else:
             return BusObject(response, bus=self._serial_bus)
 
-    async def enumerate_bus(self) -> Iterator[BusObject]:
+    async def enumerate_bus(self) -> Iterator[BusObject]: # type: ignore
         """Search the bus for devices, yield bus objects for every match"""
 
         for i in range(1, 256):

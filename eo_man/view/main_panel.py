@@ -47,6 +47,7 @@ class MainPanel():
 
         ## init presenters
         mp = MenuPresenter(main, app_bus, data_manager)
+        
         ToolBar(main, mp, row=row_button_bar)
         SerialConnectionBar(main, app_bus, data_manager, row=row_serial_con_bar)
         FilterBar(main, app_bus, data_manager, row=row_filter_bar)

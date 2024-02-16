@@ -1,6 +1,17 @@
 # Change Log
 
-## v0.1.5 Reefactoring + Basic Features (GOAL: Stability)
+## v0.1.6 Sensor Values are evaluated
+* Sensor values are displayed in command line
+* Sponsor button added
+* Docs updated with system requirements
+* Added links to documentation
+* Improved look and feel
+* About window improved
+* Icons to menu added
+* Unmapped devices are moved to FAM14 after connection.
+* Error handling added for serial connection.
+
+## v0.1.5 Refactoring + Basic Features (GOAL: Stability)
 * Improved imports incl. homeassistant mock
 * Changed application output format to yaml. **=> Braking Change**
 * Refactored Home Assistant Configuration Exporter

@@ -65,8 +65,31 @@ class Device():
         # return self.address.startswith('00-00-00-')            
 
     @classmethod
-    async def async_get_bus_device_by_natvice_bus_object(cls, device: BusObject, fam14: FAM14, channel:int=1):
+    def merge_devices(cls, device1, device2):
+        d1:Device = device1
+        d2:Device = device2
 
+        if d1.external_id != d2.external_id: return None
+
+        d1.address = d2.address
+        d1.channel = d2.channel
+        d1.dev_size = d2.dev_size
+        d1.device_type = d2.device_type
+        d1.version = d2.version
+        if d1.name == 'unknown': d1.name = d2.name
+        if d1.comment is None or d1.comment == '': d1.comment = d2.comment
+        d1.base_id = d2.base_id
+        d1.memory_entries = d2.memory_entries
+        if not d1.bus_device: d1.bus_device = d2.bus_device
+        if d1.key_function is None or d1.key_function == '': d1.key_function = d2.key_function
+        d1.use_in_ha = d2.use_in_ha
+
+        for k,v in d2.additional_fields.items():
+            if k not in d1.additional_fields:
+                d1.additional_fields[k] = v
+
+    @classmethod
+    async def async_get_bus_device_by_natvice_bus_object(cls, device: BusObject, fam14: FAM14, channel:int=1):
         bd = Device()
         bd.additional_fields = {}
         id = device.address + channel -1
@@ -128,6 +151,7 @@ class Device():
     def get_decentralized_device_by_telegram(cls, msg: RPSMessage):
         bd = Device()
         bd.address = b2s( msg.address )
+        bd.bus_device = False
         bd.base_id = '00-00-00-00'
         bd.device_type = 'unknown'
         bd.version = 'unknown'
@@ -136,6 +160,19 @@ class Device():
             bd.external_id = b2s( msg.address )
         else:
             bd.external_id = 'unknown'
+        bd.name = 'unknown'
+        return bd
+    
+    @classmethod
+    def get_centralized_device_by_telegram(cls, msg: RPSMessage, base_id:str, external_id:str):
+        bd = Device()
+        bd.bus_device = True
+        bd.address = b2s( msg.address )
+        bd.base_id = base_id
+        bd.external_id = external_id
+        bd.device_type = 'unknown'
+        bd.version = 'unknown'
+        bd.comment = ''
         bd.name = 'unknown'
         return bd
     
