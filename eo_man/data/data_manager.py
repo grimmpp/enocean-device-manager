@@ -12,7 +12,7 @@ from homeassistant.const import CONF_ID, CONF_DEVICES, CONF_NAME
 
 from eltakobus.util import AddressExpression, b2s
 from eltakobus.eep import EEP
-from eltakobus.message import RPSMessage, Regular1BSMessage, Regular4BSMessage, EltakoMessage
+from eltakobus.message import RPSMessage, Regular1BSMessage, Regular4BSMessage, EltakoMessage, EltakoWrappedRPS,EltakoWrapped4BS
 
 class DataManager():
     """Manages EnOcean Devices"""
@@ -119,13 +119,19 @@ class DataManager():
         current_base_id:str = data['base_id']
 
         # self.add_sensor_from_wireless_telegram(message)
-        if type(message) in [RPSMessage, Regular1BSMessage, Regular4BSMessage]:
-            if int.from_bytes(message.address, "big") > 0X0000FFFF:
+        if type(message) in [EltakoWrappedRPS,EltakoWrapped4BS, RPSMessage, Regular1BSMessage, Regular4BSMessage]:
+            if int.from_bytes(message.address, "big") > 0X000000FF:
                 a = b2s(message.address)
                 if a not in self.devices:
                     decentralized_device = Device.get_decentralized_device_by_telegram(message)
                     self.devices[a] = decentralized_device
                     self.app_bus.fire_event(AppBusEventType.UPDATE_SENSOR_REPRESENTATION, decentralized_device)
+            elif current_base_id:
+                external_id = data_helper.a2s( int.from_bytes(AddressExpression.parse(current_base_id)[0], 'big') +  int.from_bytes(message.address, 'big') )
+                if external_id not in self.devices:
+                    centralized_device = Device.get_centralized_device_by_telegram(message, current_base_id, external_id)
+                    self.devices[centralized_device] = centralized_device
+                    self.app_bus.fire_event(AppBusEventType.UPDATE_DEVICE_REPRESENTATION, centralized_device)
 
 
     async def _async_device_detected_handler(self, data):
@@ -147,6 +153,24 @@ class DataManager():
                     if _bd.external_id not in self.devices or not self.devices[_bd.external_id].bus_device:
                         self.devices[_bd.external_id] = _bd
                         self.app_bus.fire_event(AppBusEventType.UPDATE_SENSOR_REPRESENTATION, _bd)
+
+                # if a new gateway was detected check if there are already devices detected which should be moved as child nodes under the newly detected gateway.
+                if bd.is_fam14():
+                    await self._find_and_update_devices_belonging_to_gateway(bd.base_id)
+
+
+    async def _find_and_update_devices_belonging_to_gateway(self, base_id:str):
+        """Check all devices which are not detected as bus device (decentral/wireless device) if it belong to a gateway."""
+        base_id_int = int.from_bytes( AddressExpression.parse(base_id)[0], 'big' )
+        for d in self.devices.values():
+            if not d.bus_device and d.base_id == '00-00-00-00':
+                adr_int = int.from_bytes( AddressExpression.parse(d.address)[0], 'big' )
+                if 0 < (adr_int - base_id_int) and (adr_int - base_id_int) < 0xFF:
+                    d.address = data_helper.a2s(adr_int - base_id_int)
+                    d.bus_device = True
+                    d.base_id = base_id
+
+                    self.app_bus.fire_event(AppBusEventType.UPDATE_DEVICE_REPRESENTATION, d)
 
 
     def get_device_by_id(self, device_id:str):

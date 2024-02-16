@@ -7,6 +7,7 @@
 * Improved look and feel
 * About window improved
 * Icons to menu added
+* Unmapped devices are moved to FAM14 after connection.
 
 ## v0.1.5 Refactoring + Basic Features (GOAL: Stability)
 * Improved imports incl. homeassistant mock
