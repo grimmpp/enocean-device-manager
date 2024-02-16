@@ -25,7 +25,9 @@ jobs:
           pip install pytest build wheel
 
       - name: Run tests
-        run: pytest tests
+        run: |
+          pip install -r requirements.txt
+          pytest tests
 
       - name: Build package
         run: python -m build
