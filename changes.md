@@ -1,6 +1,7 @@
 # Change Log
 
-## v0.1.6 
+## v0.1.6 Sensor Values are evaluated
+* Sensor values are displayed in command line
 * Sponsor button added
 * Docs updated with system requirements
 * Added links to documentation
@@ -8,6 +9,7 @@
 * About window improved
 * Icons to menu added
 * Unmapped devices are moved to FAM14 after connection.
+* Error handling added for serial connection.
 
 ## v0.1.5 Refactoring + Basic Features (GOAL: Stability)
 * Improved imports incl. homeassistant mock
