@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.1.7 F2SR14 Support
+* Support for F4SR14 added
+* Update Button added
+
 ## v0.1.6 Sensor Values are evaluated
 * Sensor values are displayed in command line
 * Sponsor button added

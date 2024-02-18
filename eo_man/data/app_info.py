@@ -1,8 +1,11 @@
 import os
+import requests
 
 class ApplicationInfo():
 
     app_info:dict[str:str]=None
+    pypi_info_latest_versino:dict=None
+    pypi_info_current_version:dict=None
 
     @classmethod
     def get_app_info(cls, filename:str=None):
@@ -39,9 +42,31 @@ class ApplicationInfo():
                             app_info['license'] = l.split(':',1)[1].strip()
                         elif l.startswith('Requires-Python:'):
                             app_info['requires-python'] = l.split(':',1)[1].strip()
+
+                # get latest version
+                cls.pypi_info_latest_versino = cls._get_info_from_pypi()
+                app_info['lastest_available_version'] = cls.pypi_info_latest_versino.get('info', {}).get('version', None)
+                # get current/installed version
+                if app_info['version'] is not None and app_info['version'] != '':
+                    cls.pypi_info_current_version = cls._get_info_from_pypi(app_info['version'])
             
         return app_info
                         
+    @classmethod
+    def _get_info_from_pypi(cls, version:str=''):
+        if version is not None and version != '':
+            if not version.startswith('/') and not version.endswith('/'):
+                version = version + '/'
+
+        url = f"https://pypi.org/pypi/eo-man/{version}json"
+
+        response = requests.get(url)
+        if response.status_code == 200:
+            return response.json()
+            
+        return {}
+
+
     @classmethod
     def get_app_info_as_str(cls, separator:str='\n', prefix:str='') -> str:
         result = ''
@@ -76,3 +101,11 @@ class ApplicationInfo():
     @classmethod
     def get_requires_python(cls) -> str:
         return cls.get_app_info().get('requires-python', 'unknown')
+    
+    @classmethod
+    def get_lastest_available_version(cls) -> str:
+        return cls.get_app_info().get('lastest_available_version', 'unknown')
+
+    @classmethod
+    def is_version_up_to_date(cls) -> bool:
+        return cls.pypi_info_current_version['info']['version'] == cls.pypi_info_latest_versino['info']['version']

@@ -1,6 +1,9 @@
 import os
 from PIL import Image, ImageTk
 
+# icon list
+# https://commons.wikimedia.org/wiki/Comparison_of_icon_sets
+
 class ImageGallery():
 
     @classmethod
@@ -45,3 +48,7 @@ class ImageGallery():
     @classmethod
     def get_github_icon(cls, size:tuple[int:int]=(32,32)) -> ImageTk.PhotoImage:
         return ImageGallery.get_image("github_icon.png", size)
+    
+    @classmethod
+    def get_software_update_available_icon(cls, size:tuple[int:int]=(32,32)) -> ImageTk.PhotoImage:
+        return ImageGallery.get_image("Software-update-available.png", size)

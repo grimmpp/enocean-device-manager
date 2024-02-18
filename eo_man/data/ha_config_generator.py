@@ -60,14 +60,15 @@ class HomeAssistantConfigurationGenerator():
             out += f"    {CONF_DEVICES}:\n"
 
             for platform in ha_platforms:
-                out += f"      {platform}:\n"
-                for _d in [d for d in devices if d.ha_platform == platform]:
-                    device:Device = _d
-                    # devices
-                    if device.base_id == fam14.external_id:
-                        out += self.config_section_from_device_to_string(device, True, 0) + "\n\n"
-                    elif 'sensor' in platform:
-                        out += self.config_section_from_device_to_string(device, True, 0) + "\n\n"
+                if platform != '':
+                    out += f"      {platform}:\n"
+                    for _d in [d for d in devices if d.ha_platform == platform]:
+                        device:Device = _d
+                        # devices
+                        if device.base_id == fam14.external_id:
+                            out += self.config_section_from_device_to_string(device, True, 0) + "\n\n"
+                        elif 'sensor' in platform:
+                            out += self.config_section_from_device_to_string(device, True, 0) + "\n\n"
         # logs
         out += "logger:\n"
         out += "  default: info\n"

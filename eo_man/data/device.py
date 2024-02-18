@@ -117,35 +117,40 @@ class Device():
         if bd.dev_size > 1:
             bd.name += f" ({bd.channel}/{bd.dev_size})"
 
-        info:dict = find_device_info_by_device_type(bd.device_type)
+        Device.set_suggest_ha_config(bd)
+
+        return bd
+    
+    @classmethod
+    def set_suggest_ha_config(cls, device):
+        id = int.from_bytes( AddressExpression.parse(device.address)[0], 'big')
+        info:dict = find_device_info_by_device_type(device.device_type)
         if info is not None:
-            bd.use_in_ha = True
-            bd.ha_platform = info[CONF_TYPE]
-            bd.eep = info.get(CONF_EEP, None)
+            device.use_in_ha = True
+            device.ha_platform = info[CONF_TYPE]
+            device.eep = info.get(CONF_EEP, None)
 
             if info.get('sender_eep', None):
-                bd.additional_fields['sender'] = {
+                device.additional_fields['sender'] = {
                     CONF_ID: a2s( SENDER_BASE_ID + id ),
                     CONF_EEP: info.get('sender_eep')
                 }
 
             if info[CONF_TYPE] == Platform.COVER:
-                bd.additional_fields[CONF_DEVICE_CLASS] = 'shutter'
-                bd.additional_fields[CONF_TIME_CLOSES] = 25
-                bd.additional_fields[CONF_TIME_OPENS] = 25
+                device.additional_fields[CONF_DEVICE_CLASS] = 'shutter'
+                device.additional_fields[CONF_TIME_CLOSES] = 25
+                device.additional_fields[CONF_TIME_OPENS] = 25
 
             if info[CONF_TYPE] == Platform.CLIMATE:
-                bd.additional_fields[CONF_TEMPERATURE_UNIT] = f"'{UnitOfTemperature.KELVIN}'"
-                bd.additional_fields[CONF_MIN_TARGET_TEMPERATURE] = 16
-                bd.additional_fields[CONF_MAX_TARGET_TEMPERATURE] = 25
-                thermostat = BusObjectHelper.find_sensor(bd.memory_entries, device.address, channel, in_func_group=1)
+                device.additional_fields[CONF_TEMPERATURE_UNIT] = f"'{UnitOfTemperature.KELVIN}'"
+                device.additional_fields[CONF_MIN_TARGET_TEMPERATURE] = 16
+                device.additional_fields[CONF_MAX_TARGET_TEMPERATURE] = 25
+                thermostat = BusObjectHelper.find_sensor(device.memory_entries, device.address, device.channel, in_func_group=1)
                 if thermostat:
-                    bd.additional_fields[CONF_ROOM_THERMOSTAT] = {}
-                    bd.additional_fields[CONF_ROOM_THERMOSTAT][CONF_ID] = b2s(thermostat.sensor_id)
-                    bd.additional_fields[CONF_ROOM_THERMOSTAT][CONF_EEP] = A5_10_06.eep_string   #TODO: derive EEP from switch/sensor function
+                    device.additional_fields[CONF_ROOM_THERMOSTAT] = {}
+                    device.additional_fields[CONF_ROOM_THERMOSTAT][CONF_ID] = b2s(thermostat.sensor_id)
+                    device.additional_fields[CONF_ROOM_THERMOSTAT][CONF_EEP] = A5_10_06.eep_string   #TODO: derive EEP from switch/sensor function
                 #TODO: cooling_mode
-
-        return bd
     
     @classmethod
     def get_decentralized_device_by_telegram(cls, msg: RPSMessage):
