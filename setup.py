@@ -1,8 +1,7 @@
 import os
 from setuptools import setup, find_packages
 from distutils.core import setup
-import shutil
-import re
+
 
 
 base_dir = os.path.dirname(__file__)
@@ -24,7 +23,7 @@ required = ['eltako14bus==0.0.45', 'pyserial', 'pyserial-asyncio', 'aiocoap',
 
 setup(
     name='eo_man',
-    version='0.1.6',
+    version='0.1.7',
     package_dir={'eo_man':"eo_man"},
     # packages=find_packages("./eo-man"),
     #package_data={'': ['*.png']},

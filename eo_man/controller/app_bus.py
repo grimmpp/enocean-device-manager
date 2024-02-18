@@ -17,6 +17,7 @@ class AppBusEventType(Enum):
     SET_DATA_TABLE_FILTER = 13          # applies data filter to data table
     ADDED_DATA_TABLE_FILTER = 14                # adds data filter to application data
     REMOVED_DATA_TABLE_FILTER = 15             # remove data filter from application data
+    RELOAD = 16
 
 class AppBus():
 

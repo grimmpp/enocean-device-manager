@@ -3,10 +3,12 @@ import threading
 from tkinter import *
 from tkinter import filedialog
 import logging
+from tkinter import messagebox
 import webbrowser
 
 from ..controller.app_bus import AppBus, AppBusEventType
 
+from ..data.device import Device
 from ..data.data_manager import DataManager
 from ..data.ha_config_generator import HomeAssistantConfigurationGenerator
 
@@ -71,6 +73,12 @@ class MenuPresenter():
                                   label="File",
                                   accelerator="ALT+F")
         
+
+        ha_menu = Menu(menu_bar, tearoff=False)
+        menu_bar.add_cascade(label="Home Assistant", menu=ha_menu)
+        ha_menu.add_command(label="Reset to suggested HA properties.",
+                            command=self.reset_to_suggested_ha_properties)
+
 
         help_menu = Menu(menu_bar, tearoff=False)
         menu_bar.add_cascade(label="Help", menu=help_menu)
@@ -224,8 +232,21 @@ class MenuPresenter():
             self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
             logging.exception(msg, exc_info=True)
 
+
+    def reset_to_suggested_ha_properties(self):
+        yes = messagebox.askyesno("Reset to suggested HA properties.", "Do you want to reset Home Assistant relevant properties of all devices to initial values?")
+        if yes:
+            for d in self.data_manager.devices.values():
+                Device.set_suggest_ha_config(d)
+                if d.is_bus_device():
+                    self.app_bus.fire_event(AppBusEventType.UPDATE_DEVICE_REPRESENTATION, d)
+                else:
+                    self.app_bus.fire_event(AppBusEventType.UPDATE_SENSOR_REPRESENTATION, d)
+
     def open_eo_man_repo(self):
         webbrowser.open_new(r"https://github.com/grimmpp/enocean-device-manager")
         
     def open_eo_man_documentation(self):
         webbrowser.open_new(r"https://github.com/grimmpp/enocean-device-manager/tree/main/docs")
+
+    

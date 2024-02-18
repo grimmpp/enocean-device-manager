@@ -1,13 +1,19 @@
+import threading
 import tkinter as tk
 import os
 from tkinter import *
+from tkinter import messagebox
 from PIL import Image, ImageTk
 from idlelib.tooltip import Hovertip
 import webbrowser
+import subprocess
+
+from eo_man import LOGGER
 
 from .donation_button import DonationButton
 from .menu_presenter import MenuPresenter
 from ..icons.image_gallary import ImageGallery
+from ..data.app_info import ApplicationInfo as AppInfo
 
 
 class ToolBar():
@@ -32,6 +38,12 @@ class ToolBar():
         b = self._create_img_button(f, "GitHub: EnOcean Device Manager Documentation", ImageGallery.get_help_icon(), menu_presenter.open_eo_man_documentation)
         b.pack(side=RIGHT, padx=(0,2), pady=2)
 
+        if not AppInfo.is_version_up_to_date():
+            new_v = AppInfo.get_lastest_available_version()
+            b = self._create_img_button(f, f"New Software Version 'v{new_v}' is available.", ImageGallery.get_software_update_available_icon(), self.show_how_to_update)
+            b.pack(side=RIGHT, padx=(0,2), pady=2)
+
+
     def _create_img_button(self, f:Frame, tooltip:str, image:ImageTk.PhotoImage, command) -> Button:
         b = Button(f, image=image, relief=GROOVE, cursor="hand2", command=command)
         Hovertip(b,tooltip,300)
@@ -39,3 +51,16 @@ class ToolBar():
         b.pack(side=LEFT, padx=(2,0), pady=2)
         return b
     
+    def show_how_to_update(self):
+        base_path = os.environ.get('VIRTUAL_ENV', '')
+        if base_path != '':
+            base_path = os.path.join(base_path, 'Scripts')
+        
+        new_version = AppInfo.get_lastest_available_version()
+        
+        msg  = f"A new version 'v{new_version}' of 'EnOcean Device Manager' is available. \n\n"
+        msg += f"You can update this application by entering \n"
+        msg += f"'{os.path.join(base_path, 'pip')}' install eo_man --upgrade'\n"
+        msg += f"into the command line."
+
+        messagebox.showinfo("Update Available", msg)
