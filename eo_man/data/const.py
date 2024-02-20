@@ -82,7 +82,7 @@ class GatewayDeviceType(str, Enum):
     GatewayEltakoFAM14 = 'fam14'
     GatewayEltakoFGW14USB = 'fgw14usb'
     GatewayEltakoFAMUSB = 'fam-usb'     # ESP2 transceiver: https://www.eltako.com/en/product/professional-standard-en/three-phase-energy-meters-and-one-phase-energy-meters/fam-usb/
-    EnOceanUSB300 = 'enocean-usb300'    # not yet supported
+    GatewayEnOceanUSB300 = 'enocean-usb300'    # not yet supported
 
     @classmethod
     def find(cls, value):
@@ -107,5 +107,5 @@ BAUD_RATE_DEVICE_TYPE_MAPPING: dict = {
     GatewayDeviceType.GatewayEltakoFAM14: 57600,
     GatewayDeviceType.GatewayEltakoFGW14USB: 57600,
     GatewayDeviceType.GatewayEltakoFAMUSB: 9600,
-    GatewayDeviceType.EnOceanUSB300: 57600,
+    GatewayDeviceType.GatewayEnOceanUSB300: 57600,
 }

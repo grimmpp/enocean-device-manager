@@ -1,14 +1,10 @@
-import os
-from termcolor import colored
-import logging
-
 from ..controller.app_bus import AppBus, AppBusEventType
 from . import data_helper 
 from .device import Device 
 from .application_data import ApplicationData
 from .filter import DataFilter
 from .const import *
-from homeassistant.const import CONF_ID, CONF_DEVICES, CONF_NAME
+from .app_info import ApplicationInfo as AppInfo
 
 from eltakobus.util import AddressExpression, b2s
 from eltakobus.eep import EEP
@@ -24,9 +20,12 @@ class DataManager():
         self.app_bus.add_event_handler(AppBusEventType.LOAD_FILE, self._reset)
         self.app_bus.add_event_handler(AppBusEventType.SET_DATA_TABLE_FILTER, self.set_current_data_filter_handler)
         self.app_bus.add_event_handler(AppBusEventType.REMOVED_DATA_TABLE_FILTER, self.remove_current_data_filter_handler)
-        
-        self.application_version = data_helper.get_application_version()
+        self.app_bus.add_event_handler(AppBusEventType.ASYNC_TRANCEIVER_DETECTED, self._async_tranceiver_detected)
+
+        # devices
         self.devices:dict[str:Device] = {}
+
+        # filter
         self.data_fitlers:dict[str:DataFilter] = {}
         self.selected_data_filter_name:DataFilter = None
 
@@ -100,7 +99,7 @@ class DataManager():
 
     def write_application_data_to_file(self, filename:str):
         app_data = ApplicationData()
-        app_data.application_version = self.application_version
+        app_data.application_version = AppInfo.get_version()
         app_data.data_filters = self.data_fitlers
         app_data.devices = self.devices
         app_data.selected_data_filter_name = self.selected_data_filter_name
@@ -132,6 +131,23 @@ class DataManager():
                     centralized_device = Device.get_centralized_device_by_telegram(message, current_base_id, external_id)
                     self.devices[centralized_device] = centralized_device
                     self.app_bus.fire_event(AppBusEventType.UPDATE_DEVICE_REPRESENTATION, centralized_device)
+
+
+    async def _async_tranceiver_detected(self, data):
+        base_id = data['base_id']
+        if data.get('type', None) is not None:
+            gw_device = Device(address=base_id,
+                             bus_device=False,
+                             external_id=base_id,
+                             base_id=base_id,
+                             name=f"{data['type']} ({base_id})",
+                             device_type=f"{data['type']} (Wireless Tranceiver)",
+                             use_in_ha=True
+                             )
+            if gw_device.external_id not in self.devices:
+                self.devices[gw_device.external_id] = gw_device
+                self.app_bus.fire_event(AppBusEventType.UPDATE_SENSOR_REPRESENTATION, gw_device)
+
 
 
     async def _async_device_detected_handler(self, data):

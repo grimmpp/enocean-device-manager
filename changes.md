@@ -1,5 +1,10 @@
 # Change Log
 
+## v0.1.8 Wireless Tranceiver Support
+* Reset suggested HA settings added
+* Support for FAM-USB. Is now detected as gateway and contained in HA config 
+* **Experimental** Support for USB300. CODE CLEANUP HEAVILY NEEDED!!!
+
 ## v0.1.7 F2SR14 Support
 * Support for F4SR14 added
 * Update Button added

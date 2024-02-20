@@ -1,21 +1,16 @@
 import tkinter as tk
-import os
 import copy
-from pathlib import Path
 from tkinter import *
 from tkinter import ttk
-from tkinter.tix import IMAGETEXT
-from PIL import Image, ImageTk
-from idlelib.tooltip import Hovertip
 
 from eltakobus.device import SensorInfo, KeyFunction
 from eltakobus.util import b2s
+from eltakobus.eep import EEP
 
 from ..data.data_manager import DataManager, Device
 from ..data import data_helper
 from ..controller.app_bus import AppBus, AppBusEventType
 from ..data.const import *
-from ..data.homeassistant.const import CONF_ID, CONF_NAME
 
 
 class DeviceDetails():
@@ -83,8 +78,19 @@ class DeviceDetails():
         self._update_text_field(self.text_address, device.address)
         self.text_address.bind('<Return>', lambda e, d=device: self.update_device(d))
 
+        # base id
+        c_row += 1
+        l = Label(f, text="Base Id")
+        l.grid(row=c_row, column=0, sticky=W, padx=3)
 
-        # address
+        self.text_address = Entry(f)
+        self.text_address.insert(END, "00-00-00-00")
+        self.text_address.config(state=DISABLED)
+        self.text_address.grid(row=c_row, column=1, sticky=W+E)
+        self._update_text_field(self.text_address, device.base_id)
+        # self.text_address.bind('<Return>', lambda e, d=device: self.update_device(d))
+
+        # external address
         c_row += 1
         l = Label(f, text="External Id")
         l.grid(row=c_row, column=0, sticky=W, padx=3)
@@ -118,10 +124,14 @@ class DeviceDetails():
         self.cb_device_type['values'] = list(set([t['hw-type'] for t in data_helper.EEP_MAPPING]))
         self.cb_device_type.grid(row=c_row, column=1, sticky=W+E)
         self.cb_device_type.set(device.device_type if device.device_type else '')
-        self.cb_device_type.bind('<Return>', lambda e, d=device: self.update_device(d))
+        if device.is_gateway():
+            self.cb_device_type.config(state=DISABLED)
+        else:
+            self.cb_device_type.bind('<Return>', lambda e, d=device: self.update_device(d))
 
 
-        # device type
+
+        # Key Function
         c_row += 1
         l = Label(f, text="Key Function (for Sensor)")
         l.grid(row=c_row, column=0, sticky=W, padx=3)
@@ -147,8 +157,9 @@ class DeviceDetails():
         l = Label(f, text="Device EEP")
         l.grid(row=c_row, column=0, sticky=W, padx=3)
 
+        
         self.cb_device_eep = ttk.Combobox(f, width="20") 
-        self.cb_device_eep['values'] = sorted(set([t[CONF_EEP] for t in data_helper.EEP_MAPPING]))
+        self.cb_device_eep['values'] = data_helper.get_all_eep_names()
         self.cb_device_eep.grid(row=c_row, column=1, sticky=W+E)
         self.cb_device_eep.set(device.eep if device.eep else '')
         self.cb_device_eep.bind('<Return>', lambda e, d=device: self.update_device(d))

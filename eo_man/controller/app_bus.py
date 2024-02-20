@@ -15,9 +15,9 @@ class AppBusEventType(Enum):
     LOAD_FILE = 11
     WRITE_SENDER_IDS_TO_DEVICES_STATUS = 12
     SET_DATA_TABLE_FILTER = 13          # applies data filter to data table
-    ADDED_DATA_TABLE_FILTER = 14                # adds data filter to application data
-    REMOVED_DATA_TABLE_FILTER = 15             # remove data filter from application data
-    RELOAD = 16
+    ADDED_DATA_TABLE_FILTER = 14        # adds data filter to application data
+    REMOVED_DATA_TABLE_FILTER = 15      # remove data filter from application data
+    ASYNC_TRANCEIVER_DETECTED = 17      # type:str (FAM-USB), base_id:str 00-00-00-00
 
 class AppBus():
 
