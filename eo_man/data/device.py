@@ -43,6 +43,7 @@ class Device():
                  name:str=None, 
                  comment:str=None, 
                  base_id:str=None, 
+                 use_in_ha:bool=False,
                  memory_entries:list[SensorInfo]=[]):
         
         self.address = address
@@ -55,10 +56,29 @@ class Device():
         self.name = name
         self.comment = comment
         self.base_id = base_id
+        self.use_in_ha = use_in_ha
         self.memory_entries = memory_entries
 
     def is_fam14(self) -> bool:
-        return self.external_id == self.base_id
+        return FAM14.__name__ in self.device_type
+
+    def is_fam_usb(self) -> bool:
+        return 'FAM-USB' in self.device_type or 'FAM_USB' in self.device_type
+    
+    def is_fgw14_usb(self) -> bool:
+        return 'FGW14_USB' in self.device_type
+
+    def is_usb300(self) -> bool:
+        return 'USB300' in self.device_type
+
+    def is_gateway(self) -> bool:
+        return self.is_wired_gateway() or self.is_wireless_tranceiver()
+    
+    def is_wired_gateway(self) -> bool:
+        return self.is_fam14() or self.is_fgw14_usb()
+
+    def is_wireless_tranceiver(self) -> bool:
+        return self.is_usb300() or self.is_fam_usb() or 'Wireless Tranceiver' in self.device_type
     
     def is_bus_device(self) -> bool:
         return self.bus_device
@@ -83,6 +103,7 @@ class Device():
         if not d1.bus_device: d1.bus_device = d2.bus_device
         if d1.key_function is None or d1.key_function == '': d1.key_function = d2.key_function
         d1.use_in_ha = d2.use_in_ha
+        d1.eep = d2.eep
 
         for k,v in d2.additional_fields.items():
             if k not in d1.additional_fields:
@@ -104,7 +125,6 @@ class Device():
         bd.bus_device = True
         if isinstance(device, FAM14):
             bd.external_id = bd.base_id
-            bd.use_in_ha = True
         else:
             bd.external_id = a2s( (await fam14.get_base_id_in_int()) + id )
         bd.memory_entries = [m for m in (await device.get_all_sensors()) if b2s(m.dev_adr) == bd.address]
@@ -114,10 +134,15 @@ class Device():
         bd.name = f"{bd.device_type} {bd.address}"
         if bd.is_fam14():
             bd.name = f"{bd.device_type} {bd.external_id}"
+        
         if bd.dev_size > 1:
             bd.name += f" ({bd.channel}/{bd.dev_size})"
 
         Device.set_suggest_ha_config(bd)
+
+        if bd.device_type == BusObject.__name__:
+            bd.device_type = "unknown"
+            bd.name = f"unknown device  {bd.address}"
 
         return bd
     
@@ -126,8 +151,8 @@ class Device():
         id = int.from_bytes( AddressExpression.parse(device.address)[0], 'big')
         info:dict = find_device_info_by_device_type(device.device_type)
         if info is not None:
-            device.use_in_ha = True
-            device.ha_platform = info[CONF_TYPE]
+            device.use_in_ha = device.device_type != BusObject.__name__
+            device.ha_platform = info.get(CONF_TYPE, None)
             device.eep = info.get(CONF_EEP, None)
 
             if info.get('sender_eep', None):
@@ -136,12 +161,12 @@ class Device():
                     CONF_EEP: info.get('sender_eep')
                 }
 
-            if info[CONF_TYPE] == Platform.COVER:
+            if info.get(CONF_TYPE, None) == Platform.COVER:
                 device.additional_fields[CONF_DEVICE_CLASS] = 'shutter'
                 device.additional_fields[CONF_TIME_CLOSES] = 25
                 device.additional_fields[CONF_TIME_OPENS] = 25
 
-            if info[CONF_TYPE] == Platform.CLIMATE:
+            if info.get(CONF_TYPE, None) == Platform.CLIMATE:
                 device.additional_fields[CONF_TEMPERATURE_UNIT] = f"'{UnitOfTemperature.KELVIN}'"
                 device.additional_fields[CONF_MIN_TARGET_TEMPERATURE] = 16
                 device.additional_fields[CONF_MAX_TARGET_TEMPERATURE] = 25
@@ -183,9 +208,12 @@ class Device():
     
     @classmethod
     async def async_get_decentralized_device_by_sensor_info(cls, sensor_info:SensorInfo, device: BusObject, fam14: FAM14, channel:int=1):
+        return cls.get_decentralized_device_by_sensor_info(sensor_info, (await fam14.get_base_id()) )
+    
+    @classmethod 
+    def get_decentralized_device_by_sensor_info(cls, sensor_info:SensorInfo, base_id:str='00-00-00-00'):
         bd = Device()
         bd.address = sensor_info.sensor_id_str
-        bd.base_id = await fam14.get_base_id()
         bd.comment = ''
         bd.key_function = KeyFunction(sensor_info.key_func).name
         bd.eep = get_eep_from_key_function_name(sensor_info.key_func)
@@ -223,8 +251,10 @@ class Device():
             bd.name = 'Weather Station ' + sensor_info.sensor_id_str
 
         if sensor_info.sensor_id_str.startswith('00-00-'):
-            bd.external_id = a2s( int.from_bytes(sensor_info.sensor_id, "big") + (await fam14.get_base_id_in_int()) )
+            bd.external_id = a2s( int.from_bytes(sensor_info.sensor_id, "big") + int.from_bytes(AddressExpression.parse(base_id)[0], 'big') )
+            bd.base_id = base_id
         else:
             bd.external_id = sensor_info.sensor_id_str
+            bd.base_id = '00-00-00-00'
         bd.version = 'unknown'
         return bd

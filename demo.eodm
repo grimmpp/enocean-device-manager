@@ -19,14 +19,14 @@ data_filters:
     name: Smart Home
 devices:
   05-1E-83-15: !!python/object:eo_man.data.device.Device
-    address: 05-1E-83-15
+    address: 00-00-00-00
     base_id: 00-00-00-00
     bus_device: false
     channel: 1
     comment: ''
     dev_size: 1
     device_type: Weather Station
-    eep: ''
+    eep: A5_04_02
     external_id: 05-1E-83-15
     ha_platform: sensor
     key_function: FWG14MS_WEATHER_STATION
@@ -36,7 +36,7 @@ devices:
     version: unknown
   FE-DB-0A-10: !!python/object:eo_man.data.device.Device
     address: FE-DB-0A-10
-    base_id: FF-CD-60-80
+    base_id: 00-00-00-00
     bus_device: false
     channel: 1
     comment: ''
@@ -44,16 +44,17 @@ devices:
     device_type: Button
     eep: F6-02-01
     external_id: FE-DB-0A-10
-    ha_platform: !!python/object/apply:homeassistant.const.Platform
-    - binary_sensor
+    ha_platform: !!python/object/apply:builtins.getattr
+    - &id001 !!python/name:homeassistant.const.Platform ''
+    - BINARY_SENSOR
     key_function: DIRECTION_PUSH_BUTTON_BOTTOM_ON
-    memory_entries: &id001 []
+    memory_entries: &id002 []
     name: Button FE-DB-0A-10
     use_in_ha: true
     version: unknown
   FE-DB-0A-1B: !!python/object:eo_man.data.device.Device
     address: FE-DB-0A-1B
-    base_id: FF-CD-60-80
+    base_id: 00-00-00-00
     bus_device: false
     channel: 1
     comment: ''
@@ -61,16 +62,17 @@ devices:
     device_type: Button
     eep: F6-02-01
     external_id: FE-DB-0A-1B
-    ha_platform: !!python/object/apply:homeassistant.const.Platform
-    - binary_sensor
+    ha_platform: !!python/object/apply:builtins.getattr
+    - *id001
+    - BINARY_SENSOR
     key_function: DIRECTION_PUSH_BUTTON_BOTTOM_ON
-    memory_entries: *id001
+    memory_entries: *id002
     name: Button FE-DB-0A-1B
     use_in_ha: true
     version: unknown
   FE-DB-DA-04: !!python/object:eo_man.data.device.Device
     address: FE-DB-DA-04
-    base_id: FF-CD-60-80
+    base_id: 00-00-00-00
     bus_device: false
     channel: 1
     comment: ''
@@ -78,16 +80,17 @@ devices:
     device_type: Button
     eep: F6-02-01
     external_id: FE-DB-DA-04
-    ha_platform: !!python/object/apply:homeassistant.const.Platform
-    - binary_sensor
+    ha_platform: !!python/object/apply:builtins.getattr
+    - *id001
+    - BINARY_SENSOR
     key_function: DIRECTION_PUSH_BUTTON_BOTTOM_ON
-    memory_entries: *id001
+    memory_entries: *id002
     name: Button FE-DB-DA-04
     use_in_ha: true
     version: unknown
   FF-81-41-07: !!python/object:eo_man.data.device.Device
     address: FF-81-41-07
-    base_id: FF-CD-60-80
+    base_id: 00-00-00-00
     bus_device: false
     channel: 1
     comment: ''
@@ -95,16 +98,17 @@ devices:
     device_type: Button
     eep: F6-02-01
     external_id: FF-81-41-07
-    ha_platform: !!python/object/apply:homeassistant.const.Platform
-    - binary_sensor
+    ha_platform: !!python/object/apply:builtins.getattr
+    - *id001
+    - BINARY_SENSOR
     key_function: DIRECTION_PUSH_BUTTON_BOTTOM_ON
-    memory_entries: *id001
+    memory_entries: *id002
     name: Button FF-81-41-07
     use_in_ha: true
     version: unknown
   FF-86-B0-8A: !!python/object:eo_man.data.device.Device
     address: FF-86-B0-8A
-    base_id: FF-CD-60-80
+    base_id: 00-00-00-00
     bus_device: false
     channel: 1
     comment: ''
@@ -114,13 +118,13 @@ devices:
     external_id: FF-86-B0-8A
     ha_platform: ''
     key_function: SWITCHING_STATE_FROM_CONTROLLER
-    memory_entries: *id001
+    memory_entries: *id002
     name: HA Contoller FF-86-B0-8A
     use_in_ha: false
     version: unknown
   FF-86-B0-8B: !!python/object:eo_man.data.device.Device
     address: FF-86-B0-8B
-    base_id: FF-CD-60-80
+    base_id: 00-00-00-00
     bus_device: false
     channel: 1
     comment: ''
@@ -130,13 +134,13 @@ devices:
     external_id: FF-86-B0-8B
     ha_platform: ''
     key_function: SWITCHING_STATE_FROM_CONTROLLER
-    memory_entries: *id001
+    memory_entries: *id002
     name: HA Contoller FF-86-B0-8B
     use_in_ha: false
     version: unknown
   FF-86-B0-8C: !!python/object:eo_man.data.device.Device
     address: FF-86-B0-8C
-    base_id: FF-CD-60-80
+    base_id: 00-00-00-00
     bus_device: false
     channel: 1
     comment: ''
@@ -146,7 +150,7 @@ devices:
     external_id: FF-86-B0-8C
     ha_platform: ''
     key_function: SWITCHING_STATE_FROM_CONTROLLER
-    memory_entries: *id001
+    memory_entries: *id002
     name: HA Contoller FF-86-B0-8C
     use_in_ha: false
     version: unknown
@@ -159,7 +163,9 @@ devices:
     comment: ''
     dev_size: 1
     device_type: FAM14
+    eep: null
     external_id: FF-CD-60-80
+    ha_platform: null
     key_function: ''
     memory_entries: []
     name: FAM14 FF-CD-60-80
@@ -179,7 +185,9 @@ devices:
     device_type: FMZ14
     eep: M5-38-08
     external_id: FF-CD-60-81
-    ha_platform: light
+    ha_platform: !!python/object/apply:builtins.getattr
+    - *id001
+    - LIGHT
     key_function: ''
     memory_entries: []
     name: FMZ14 00-00-00-01
@@ -202,7 +210,9 @@ devices:
     device_type: FSB14
     eep: G5-3F-7F
     external_id: FF-CD-60-85
-    ha_platform: cover
+    ha_platform: !!python/object/apply:builtins.getattr
+    - *id001
+    - COVER
     key_function: ''
     memory_entries:
     - !!python/object:eltakobus.device.SensorInfo
@@ -239,8 +249,9 @@ devices:
     device_type: FSB14
     eep: G5-3F-7F
     external_id: FF-CD-60-86
-    ha_platform: !!python/object/apply:homeassistant.const.Platform
-    - cover
+    ha_platform: !!python/object/apply:builtins.getattr
+    - *id001
+    - COVER
     key_function: ''
     memory_entries: []
     name: FSB14 00-00-00-06 (2/2)
@@ -260,8 +271,9 @@ devices:
     device_type: FSR14_4x
     eep: M5-38-08
     external_id: FF-CD-60-87
-    ha_platform: !!python/object/apply:homeassistant.const.Platform
-    - light
+    ha_platform: !!python/object/apply:builtins.getattr
+    - *id001
+    - LIGHT
     key_function: ''
     memory_entries:
     - !!python/object:eltakobus.device.SensorInfo
@@ -365,8 +377,9 @@ devices:
     device_type: FSR14_4x
     eep: M5-38-08
     external_id: FF-CD-60-88
-    ha_platform: !!python/object/apply:homeassistant.const.Platform
-    - light
+    ha_platform: !!python/object/apply:builtins.getattr
+    - *id001
+    - LIGHT
     key_function: ''
     memory_entries:
     - !!python/object:eltakobus.device.SensorInfo
@@ -456,8 +469,9 @@ devices:
     device_type: FSR14_4x
     eep: M5-38-08
     external_id: FF-CD-60-89
-    ha_platform: !!python/object/apply:homeassistant.const.Platform
-    - light
+    ha_platform: !!python/object/apply:builtins.getattr
+    - *id001
+    - LIGHT
     key_function: ''
     memory_entries:
     - !!python/object:eltakobus.device.SensorInfo
@@ -561,8 +575,9 @@ devices:
     device_type: FSR14_4x
     eep: M5-38-08
     external_id: FF-CD-60-8A
-    ha_platform: !!python/object/apply:homeassistant.const.Platform
-    - light
+    ha_platform: !!python/object/apply:builtins.getattr
+    - *id001
+    - LIGHT
     key_function: ''
     memory_entries:
     - !!python/object:eltakobus.device.SensorInfo
@@ -619,10 +634,13 @@ devices:
     comment: ''
     dev_size: 1
     device_type: FGW14_USB
+    eep: null
     external_id: FF-CD-60-D0
+    ha_platform: null
     key_function: ''
     memory_entries: []
     name: FGW14_USB 00-00-00-50
+    use_in_ha: true
     version: 1.10.0.0
   FF-CD-70-82: !!python/object:eo_man.data.device.Device
     address: 00-00-10-02
@@ -634,10 +652,11 @@ devices:
     device_type: FTS14EM Button
     eep: F6-02-01
     external_id: FF-CD-70-82
-    ha_platform: !!python/object/apply:homeassistant.const.Platform
-    - binary_sensor
+    ha_platform: !!python/object/apply:builtins.getattr
+    - *id001
+    - BINARY_SENSOR
     key_function: UNIVERSAL_PUSH_BUTTON_ES
-    memory_entries: *id001
+    memory_entries: *id002
     name: FTS14EM Button 00-00-10-02
     use_in_ha: true
     version: unknown
@@ -651,10 +670,11 @@ devices:
     device_type: FTS14EM Button
     eep: F6-02-01
     external_id: FF-CD-70-A6
-    ha_platform: !!python/object/apply:homeassistant.const.Platform
-    - binary_sensor
+    ha_platform: !!python/object/apply:builtins.getattr
+    - *id001
+    - BINARY_SENSOR
     key_function: UNIVERSAL_PUSH_BUTTON_ES
-    memory_entries: *id001
+    memory_entries: *id002
     name: FTS14EM Button 00-00-10-26
     use_in_ha: true
     version: unknown
@@ -670,7 +690,7 @@ devices:
     external_id: FF-CE-10-85
     ha_platform: ''
     key_function: OPERATIONS_COMMAND_WITH_TIME_VALUE_TRASMISSION_FROM_CONTROLLER
-    memory_entries: *id001
+    memory_entries: *id002
     name: HA Contoller 00-00-B0-05
     use_in_ha: false
     version: unknown
@@ -686,7 +706,7 @@ devices:
     external_id: FF-CE-10-87
     ha_platform: ''
     key_function: SWITCHING_STATE_FROM_CONTROLLER
-    memory_entries: *id001
+    memory_entries: *id002
     name: HA Contoller 00-00-B0-07
     use_in_ha: false
     version: unknown
@@ -706,4 +726,4 @@ devices:
     name: unknown
     use_in_ha: true
     version: unknown
-selected_data_filter_name: Buttons
+selected_data_filter_name: null

@@ -30,12 +30,23 @@ class HomeAssistantConfigurationGenerator():
 # * 'id' of the gateways are random and are just counted up. You can simply change them if needed. Just ensure that they are unique and not specified more than once. 
 #
 """
-        
+
+    def get_gateway_by(self, gw_d:Device) -> GatewayDeviceType:
+        gw_type = None
+        if gw_d.is_fam14():
+            gw_type = GatewayDeviceType.GatewayEltakoFAM14.value
+        elif gw_d.is_fgw14_usb():
+            gw_type = GatewayDeviceType.GatewayEltakoFGW14USB.value
+        elif gw_d.is_fam_usb():
+            gw_type = GatewayDeviceType.GatewayEltakoFAMUSB.value
+        elif gw_d.is_usb300():
+            gw_type = GatewayDeviceType.GatewayEnOceanUSB300.value
+        return gw_type
 
     def generate_ha_config(self, device_list:list[Device]) -> str:
         ha_platforms = set([str(d.ha_platform) for d in device_list if d.ha_platform is not None])
-        fam14s = [d for d in device_list if d.is_fam14() and d.use_in_ha]
-        devices = [d for d in device_list if not d.is_fam14() and d.use_in_ha]
+        gateways = [d for d in device_list if d.is_gateway() and d.use_in_ha]
+        devices = [d for d in device_list if not d.is_gateway() and d.use_in_ha]
 
         out = self.get_description()
         out += "\n"
@@ -45,30 +56,29 @@ class HomeAssistantConfigurationGenerator():
         out += f"    {CONF_SHOW_DEV_ID_IN_DEV_NAME}: False\n"
         out += f"\n"
         
-        fam14_id = 0
+        global_gw_id = 0
         # add fam14 gateways
-        for d in fam14s:
-            fam14:Device = d
-            fam14_id += 1
+        for gw_d in gateways:
+            global_gw_id += 1
             out += f"  {CONF_GATEWAY}:\n"
-            out += f"  - {CONF_ID}: {fam14_id}\n"
+            out += f"  - {CONF_ID}: {global_gw_id}\n"
+
             gw_fam14 = GatewayDeviceType.GatewayEltakoFAM14.value
             gw_fgw14usb = GatewayDeviceType.GatewayEltakoFGW14USB.value
-            out += f"    {CONF_DEVICE_TYPE}: {gw_fam14}   # you can simply change {gw_fam14} to {gw_fgw14usb}\n"
-            out += f"    {CONF_BASE_ID}: {fam14.external_id}\n"
-            out += f"    # {CONF_COMMENT}: {fam14.comment}\n"
+            
+            gw_type = self.get_gateway_by(gw_d)
+            out += f"    {CONF_DEVICE_TYPE}: {gw_type}   # you can simply change {gw_fam14} to {gw_fgw14usb}\n"
+            out += f"    {CONF_BASE_ID}: {gw_d.external_id}\n"
+            out += f"    # {CONF_COMMENT}: {gw_d.comment}\n"
             out += f"    {CONF_DEVICES}:\n"
 
             for platform in ha_platforms:
                 if platform != '':
                     out += f"      {platform}:\n"
-                    for _d in [d for d in devices if d.ha_platform == platform]:
-                        device:Device = _d
-                        # devices
-                        if device.base_id == fam14.external_id:
-                            out += self.config_section_from_device_to_string(device, True, 0) + "\n\n"
-                        elif 'sensor' in platform:
-                            out += self.config_section_from_device_to_string(device, True, 0) + "\n\n"
+                    for device in devices:
+                        if device.ha_platform == platform:
+                            # add devices
+                            out += self.config_section_from_device_to_string(gw_d, device, True, 0) + "\n\n"
         # logs
         out += "logger:\n"
         out += "  default: info\n"
@@ -79,7 +89,7 @@ class HomeAssistantConfigurationGenerator():
 
 
 
-    def config_section_from_device_to_string(self, device:Device, is_list:bool, space_count:int=0) -> str:
+    def config_section_from_device_to_string(self, gateway:Device, device:Device, is_list:bool, space_count:int=0) -> str:
         out = ""
         spaces = space_count*" " + "        "
 
@@ -99,19 +109,23 @@ class HomeAssistantConfigurationGenerator():
             kf = info['PCT14-key-function']
             fg = info['PCT14-function-group']
             out += spaces[:-2] + f"  # Use 'Write HA senders to devices' button or enter manually sender id in PCT14 into function group {fg} with function {kf} \n"    
-        out += spaces[:-2] + f"- {CONF_ID}: {device.address}\n"
+        adr = device.address if gateway.is_wired_gateway() else device.external_id
+        out += spaces[:-2] + f"- {CONF_ID}: {adr}\n"
         out += spaces[:-2] + f"  {CONF_NAME}: {device.name}\n"
         out += spaces[:-2] + f"  {CONF_EEP}: {device.eep}\n"
 
-        out += self.export_additional_fields(device.additional_fields, space_count)
+        out += self.export_additional_fields(gateway, device.additional_fields, space_count)
         
         return out
     
-    def export_additional_fields(self, additional_fields:dict, space_count:int=0) -> str:
+
+    def export_additional_fields(self, gateway:Device, additional_fields:dict, space_count:int=0, parent_key:str=None) -> str:
         out = ""
         spaces = space_count*" " + "        "
         for key in additional_fields.keys():
             value = additional_fields[key]
+            if parent_key in ['sender'] and key == 'id' and gateway.is_wireless_tranceiver():
+                value = data_helper.a2s( int("0x"+value[-2:], base=16) + data_helper.a2i(gateway.base_id) )
             if isinstance(value, str) or isinstance(value, int):
                 if key not in [CONF_COMMENT, CONF_REGISTERED_IN]:
                     if isinstance(value, str) and '?' in value:
@@ -119,9 +133,10 @@ class HomeAssistantConfigurationGenerator():
                     out += f"{spaces}{key}: {value}\n"
             elif isinstance(value, dict):
                 out += f"{spaces}{key}: \n"
-                out += self.export_additional_fields(value, space_count+2)
+                out += self.export_additional_fields(gateway, value, space_count+2, key)
         return out
     
+
     def save_as_yaml_to_file(self, filename:str):
         msg = f"Export Home Assistant configuration into {filename}"
         self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'color': 'red', 'log-level': 'INFO'})

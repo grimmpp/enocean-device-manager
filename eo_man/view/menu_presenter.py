@@ -240,8 +240,13 @@ class MenuPresenter():
                 Device.set_suggest_ha_config(d)
                 if d.is_bus_device():
                     self.app_bus.fire_event(AppBusEventType.UPDATE_DEVICE_REPRESENTATION, d)
-                else:
-                    self.app_bus.fire_event(AppBusEventType.UPDATE_SENSOR_REPRESENTATION, d)
+                
+                    for me in d.memory_entries:
+                        s = Device.get_decentralized_device_by_sensor_info(me, d.base_id)
+                        if s.external_id in self.data_manager.devices:
+                            Device.merge_devices(self.data_manager.devices[s.external_id], s)
+                            self.app_bus.fire_event(AppBusEventType.UPDATE_SENSOR_REPRESENTATION, s)
+
 
     def open_eo_man_repo(self):
         webbrowser.open_new(r"https://github.com/grimmpp/enocean-device-manager")

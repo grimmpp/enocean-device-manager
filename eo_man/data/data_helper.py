@@ -14,6 +14,10 @@ from eltakobus.util import b2s, AddressExpression
 SENDER_BASE_ID = 0x0000B000
 
 EEP_MAPPING = [
+    {'hw-type': 'BusObject', CONF_EEP: 'unknown', CONF_TYPE: 'unknown', 'description': 'unknown bus device'},
+    {'hw-type': 'FAM14', 'description': 'Bus Gateway'},
+    {'hw-type': 'FGW14_USB', 'description': 'Bus Gateway'},
+
     {'hw-type': 'FTS14EM', CONF_EEP: 'F6-02-01', CONF_TYPE: Platform.BINARY_SENSOR, 'description': 'Rocker switch', 'address_count': 1},
     {'hw-type': 'FTS14EM', CONF_EEP: 'F6-02-02', CONF_TYPE: Platform.BINARY_SENSOR, 'description': 'Rocker switch', 'address_count': 1},
     {'hw-type': 'FTS14EM', CONF_EEP: 'F6-10-00', CONF_TYPE: Platform.BINARY_SENSOR, 'description': 'Window handle', 'address_count': 1},
@@ -49,19 +53,18 @@ ORG_MAPPING = {
 
 SENSOR_MESSAGE_TYPES = [EltakoWrappedRPS, EltakoWrapped4BS, RPSMessage, Regular4BSMessage, Regular1BSMessage, EltakoMessage]
 
-def get_subclasses(cls):
-    for subclass in cls.__subclasses__():
-        yield from get_subclasses(subclass)
-        yield subclass
 
+def get_all_eep_names():
+    subclasses = set()
+    work = [EEP]
+    while work:
+        parent = work.pop()
+        for child in parent.__subclasses__():
+            if child not in subclasses:
+                subclasses.add(child)
+                work.append(child)
+    return sorted(set([s.__name__.upper() for s in subclasses if len(s.__name__) == 8 and s.__name__.count('_') == 2]))
 
-def get_eep_names():
-    eep_list = []
-    eep_classes = get_subclasses(EEP)
-    for c in eep_classes:
-        if len(c.__name__) == 8 and c.__name__.count('_') == 2:
-            eep_list.append(c.__name__.replace('_','-').upper())
-    return sorted(set(eep_list))
 
 def a2s(address:int, length:int=4):
     """address to string"""
@@ -90,6 +93,8 @@ def get_name_from_key_function_name(kf: KeyFunction) -> str:
         return substr
     return ""
 
+def a2i(address:str):
+    return int.from_bytes(AddressExpression.parse(address)[0], 'big')
 
 class BusObjectHelper():
 
@@ -118,13 +123,3 @@ def print_memory_entires(sensors: list[SensorInfo]) -> None:
         s:SensorInfo = _s
         print(f"{s.memory_line}: {b2s(s.sensor_id, ' ')} {hex(s.key)} {hex(s.key_func)} {hex(s.channel)} (FG: {s.in_func_group})")
         
-
-def get_application_version() -> str:
-    filename = os.path.join(os.path.dirname(__file__), '..', '..', 'eo_man.egg-info', 'PKG-INFO')
-    if os.path.isfile(filename):
-        with open(filename, 'r', encoding="utf8") as f:
-            lines = f.read().splitlines()
-        for l in lines:
-            if l.startswith('Version: '):
-                return l[len('Version: '):]
-    return 'unknown'

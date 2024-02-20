@@ -6,7 +6,7 @@
     "configurations": [
         {
             "name": "Python: Main Window with Demo Data",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/eo_man",
             "console": "integratedTerminal",
@@ -15,7 +15,7 @@
         },
         {
             "name": "Python: Main Window",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/eo_man",
             "console": "integratedTerminal",
@@ -23,7 +23,7 @@
         },
         {
             "name": "Python: CLI Help",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/eo_man",
             "console": "integratedTerminal",
@@ -32,7 +32,7 @@
         },
         {
             "name": "Python: CLI load demo and store ha config",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/eo_man",
             "console": "integratedTerminal",
@@ -41,7 +41,7 @@
         },
         {
             "name": "Python: Debug Tests",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${file}",
             "purpose": ["debug-test"],

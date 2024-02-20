@@ -31,7 +31,7 @@ class SerialConnectionBar():
 
         self.cb_device_type = ttk.Combobox(f, state="readonly", width="12") 
         self.cb_device_type.pack(side=tk.LEFT, padx=(0, 5), pady=5)
-        self.cb_device_type['values'] = ['FAM14', 'FGW14-USB', 'FAM-USB']
+        self.cb_device_type['values'] = ['FAM14', 'FGW14-USB', 'FAM-USB', 'USB300']
         self.cb_device_type.set(self.cb_device_type['values'][0])
         self.cb_device_type.bind('<<ComboboxSelected>>', self.on_device_type_changed)
 
@@ -129,7 +129,7 @@ class SerialConnectionBar():
             self.b_detect.config(state=DISABLED)
             self.cb_device_type.config(state=DISABLED)
             
-            if self.serial_cntr.is_fam14_connection_active():
+            if self.cb_device_type.get() == 'FAM14' and self.serial_cntr.is_fam14_connection_active():
                 self.b_scan.config(state=NORMAL)
                 self.b_sync_ha_sender.config(state=NORMAL)
             else:

@@ -88,7 +88,7 @@ class FilterBar():
         l = Label(f, text="Device EEP:")
         l.grid(row=0, column=col, padx=(0,3), sticky=W)
 
-        values = data_helper.get_eep_names()
+        values = data_helper.get_all_eep_names()
         self.cb_device_eep = ChecklistCombobox(f, values=values, width="14") 
         self.cb_device_eep.grid(row=1, column=col, padx=(0,3))
         self.cb_device_eep.bind('<Return>', self.apply_filter)

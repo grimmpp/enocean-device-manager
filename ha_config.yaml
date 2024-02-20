@@ -2,14 +2,15 @@
 # DESCRIPTION:
 #
 # This is an automatically generated Home Assistant Configuration for the Eltako Integration (https://github.com/grimmpp/home-assistant-eltako)
-# Generated at 2024-02-09 22:27:57.400574 and by: 'EnOcean Device Manager':
-# Name: eo-man
+# Generated at 2024-02-19 16:19:16.295059 and by: 'EnOcean Device Manager':
+# Name: eo_man
 # Version: 0.1.5
 # Summary: Tool to managed EnOcean Devices and to generate Home Assistant Configuration.
 # Home-Page: https://github.com/grimmpp/enocean-device-manager
 # Author: Philipp Grimm
 # License: MIT License
 # Requires-Python: >=3.7
+# Lastest_Available_Version: 0.1.7
 #
 # Hints:
 # * The auto-generation considers all devices which are marked with 'Export to HA' = True. 
@@ -29,7 +30,6 @@ eltako:
     base_id: FF-CD-60-80
     # comment: 
     devices:
-      :
       cover:
         # Related devices: HA Contoller 00-00-B0-05 (Type: Smart Home, Adr: 00-00-B0-05)
         # Use 'Write HA senders to devices' button or enter manually sender id in PCT14 into function group 2 with function 31 
@@ -57,51 +57,14 @@ eltako:
 
 
       sensor:
-      - id: 05-1E-83-15
+      - id: 00-00-00-00
         name: Weather Station 05-1E-83-15
-        eep: 
+        eep: A5_04_02
 
 
       - id: FF-E2-35-90
         name: unknown
         eep: 
-
-
-      binary_sensor:
-        # Related devices: FSR14_4x 00-00-00-07 (1/4) (Type: FSR14_4x, Adr: 00-00-00-07), FSR14_4x 00-00-00-08 (2/4) (Type: FSR14_4x, Adr: 00-00-00-08), FSR14_4x 00-00-00-09 (3/4) (Type: FSR14_4x, Adr: 00-00-00-09), FSR14_4x 00-00-00-0A (4/4) (Type: FSR14_4x, Adr: 00-00-00-0A)
-      - id: FE-DB-0A-10
-        name: Button FE-DB-0A-10
-        eep: F6-02-01
-
-
-        # Related devices: FSR14_4x 00-00-00-07 (1/4) (Type: FSR14_4x, Adr: 00-00-00-07), FSR14_4x 00-00-00-08 (2/4) (Type: FSR14_4x, Adr: 00-00-00-08), FSR14_4x 00-00-00-09 (3/4) (Type: FSR14_4x, Adr: 00-00-00-09), FSR14_4x 00-00-00-0A (4/4) (Type: FSR14_4x, Adr: 00-00-00-0A)
-      - id: FE-DB-0A-1B
-        name: Button FE-DB-0A-1B
-        eep: F6-02-01
-
-
-        # Related devices: FSR14_4x 00-00-00-07 (1/4) (Type: FSR14_4x, Adr: 00-00-00-07), FSR14_4x 00-00-00-08 (2/4) (Type: FSR14_4x, Adr: 00-00-00-08), FSR14_4x 00-00-00-09 (3/4) (Type: FSR14_4x, Adr: 00-00-00-09), FSR14_4x 00-00-00-0A (4/4) (Type: FSR14_4x, Adr: 00-00-00-0A)
-      - id: FE-DB-DA-04
-        name: Button FE-DB-DA-04
-        eep: F6-02-01
-
-
-        # Related devices: FSR14_4x 00-00-00-08 (2/4) (Type: FSR14_4x, Adr: 00-00-00-08)
-      - id: FF-81-41-07
-        name: Button FF-81-41-07
-        eep: F6-02-01
-
-
-        # Related devices: FSR14_4x 00-00-00-07 (1/4) (Type: FSR14_4x, Adr: 00-00-00-07)
-      - id: 00-00-10-02
-        name: FTS14EM Button 00-00-10-02
-        eep: F6-02-01
-
-
-        # Related devices: FSR14_4x 00-00-00-09 (3/4) (Type: FSR14_4x, Adr: 00-00-00-09)
-      - id: 00-00-10-26
-        name: FTS14EM Button 00-00-10-26
-        eep: F6-02-01
 
 
       light:
@@ -151,6 +114,172 @@ eltako:
         sender: 
           eep: A5-38-08
           id: 00-00-B0-0A
+
+
+      binary_sensor:
+        # Related devices: FSR14_4x 00-00-00-07 (1/4) (Type: FSR14_4x, Adr: 00-00-00-07), FSR14_4x 00-00-00-08 (2/4) (Type: FSR14_4x, Adr: 00-00-00-08), FSR14_4x 00-00-00-09 (3/4) (Type: FSR14_4x, Adr: 00-00-00-09), FSR14_4x 00-00-00-0A (4/4) (Type: FSR14_4x, Adr: 00-00-00-0A)
+      - id: FE-DB-0A-10
+        name: Button FE-DB-0A-10
+        eep: F6-02-01
+
+
+        # Related devices: FSR14_4x 00-00-00-07 (1/4) (Type: FSR14_4x, Adr: 00-00-00-07), FSR14_4x 00-00-00-08 (2/4) (Type: FSR14_4x, Adr: 00-00-00-08), FSR14_4x 00-00-00-09 (3/4) (Type: FSR14_4x, Adr: 00-00-00-09), FSR14_4x 00-00-00-0A (4/4) (Type: FSR14_4x, Adr: 00-00-00-0A)
+      - id: FE-DB-0A-1B
+        name: Button FE-DB-0A-1B
+        eep: F6-02-01
+
+
+        # Related devices: FSR14_4x 00-00-00-07 (1/4) (Type: FSR14_4x, Adr: 00-00-00-07), FSR14_4x 00-00-00-08 (2/4) (Type: FSR14_4x, Adr: 00-00-00-08), FSR14_4x 00-00-00-09 (3/4) (Type: FSR14_4x, Adr: 00-00-00-09), FSR14_4x 00-00-00-0A (4/4) (Type: FSR14_4x, Adr: 00-00-00-0A)
+      - id: FE-DB-DA-04
+        name: Button FE-DB-DA-04
+        eep: F6-02-01
+
+
+        # Related devices: FSR14_4x 00-00-00-08 (2/4) (Type: FSR14_4x, Adr: 00-00-00-08)
+      - id: FF-81-41-07
+        name: Button FF-81-41-07
+        eep: F6-02-01
+
+
+        # Related devices: FSR14_4x 00-00-00-07 (1/4) (Type: FSR14_4x, Adr: 00-00-00-07)
+      - id: 00-00-10-02
+        name: FTS14EM Button 00-00-10-02
+        eep: F6-02-01
+
+
+        # Related devices: FSR14_4x 00-00-00-09 (3/4) (Type: FSR14_4x, Adr: 00-00-00-09)
+      - id: 00-00-10-26
+        name: FTS14EM Button 00-00-10-26
+        eep: F6-02-01
+
+
+  gateway:
+  - id: 2
+    device_type: fgw14usb   # you can simply change fam14 to fgw14usb
+    base_id: FF-CD-60-D0
+    # comment: 
+    devices:
+      cover:
+        # Related devices: HA Contoller 00-00-B0-05 (Type: Smart Home, Adr: 00-00-B0-05)
+        # Use 'Write HA senders to devices' button or enter manually sender id in PCT14 into function group 2 with function 31 
+      - id: 00-00-00-05
+        name: FSB14 00-00-00-05 (1/2)
+        eep: G5-3F-7F
+        device_class: shutter
+        sender: 
+          eep: H5-3F-7F
+          id: 00-00-B0-05
+        time_closes: 25
+        time_opens: 25
+
+
+        # Use 'Write HA senders to devices' button or enter manually sender id in PCT14 into function group 2 with function 31 
+      - id: 00-00-00-06
+        name: FSB14 00-00-00-06 (2/2)
+        eep: G5-3F-7F
+        device_class: shutter
+        sender: 
+          eep: H5-3F-7F
+          id: 00-00-B0-06
+        time_closes: 25
+        time_opens: 25
+
+
+      sensor:
+      - id: 00-00-00-00
+        name: Weather Station 05-1E-83-15
+        eep: A5_04_02
+
+
+      - id: FF-E2-35-90
+        name: unknown
+        eep: 
+
+
+      light:
+      - id: 00-00-00-01
+        name: FMZ14 00-00-00-01
+        eep: M5-38-08
+        sender: 
+          eep: A5-38-08
+          id: 00-00-B0-01
+
+
+        # Related devices: FTS14EM Button 00-00-10-02 (Type: FTS14EM Button, Adr: 00-00-10-02), HA Contoller FF-86-B0-8A (Type: Smart Home, Adr: FF-86-B0-8A), Button FE-DB-0A-1B (Type: Button, Adr: FE-DB-0A-1B), Button FE-DB-DA-04 (Type: Button, Adr: FE-DB-DA-04), HA Contoller 00-00-B0-07 (Type: Smart Home, Adr: 00-00-B0-07), Button FE-DB-0A-10 (Type: Button, Adr: FE-DB-0A-10)
+        # Use 'Write HA senders to devices' button or enter manually sender id in PCT14 into function group 2 with function 51 
+      - id: 00-00-00-07
+        name: FSR14_4x 00-00-00-07 (1/4)
+        eep: M5-38-08
+        sender: 
+          eep: A5-38-08
+          id: 00-00-B0-07
+
+
+        # Related devices: Button FF-81-41-07 (Type: Button, Adr: FF-81-41-07), HA Contoller FF-86-B0-8B (Type: Smart Home, Adr: FF-86-B0-8B), Button FE-DB-0A-1B (Type: Button, Adr: FE-DB-0A-1B), Button FE-DB-DA-04 (Type: Button, Adr: FE-DB-DA-04), Button FE-DB-0A-10 (Type: Button, Adr: FE-DB-0A-10)
+        # Use 'Write HA senders to devices' button or enter manually sender id in PCT14 into function group 2 with function 51 
+      - id: 00-00-00-08
+        name: FSR14_4x 00-00-00-08 (2/4)
+        eep: M5-38-08
+        sender: 
+          eep: A5-38-08
+          id: 00-00-B0-08
+
+
+        # Related devices: FTS14EM Button 00-00-10-26 (Type: FTS14EM Button, Adr: 00-00-10-26), HA Contoller FF-86-B0-8C (Type: Smart Home, Adr: FF-86-B0-8C), Button FE-DB-0A-1B (Type: Button, Adr: FE-DB-0A-1B), Button FE-DB-DA-04 (Type: Button, Adr: FE-DB-DA-04), Button FE-DB-0A-10 (Type: Button, Adr: FE-DB-0A-10), HA Contoller 00-00-B0-07 (Type: Smart Home, Adr: 00-00-B0-07)
+        # Use 'Write HA senders to devices' button or enter manually sender id in PCT14 into function group 2 with function 51 
+      - id: 00-00-00-09
+        name: FSR14_4x 00-00-00-09 (3/4)
+        eep: M5-38-08
+        sender: 
+          eep: A5-38-08
+          id: 00-00-B0-09
+
+
+        # Related devices: Button FE-DB-0A-1B (Type: Button, Adr: FE-DB-0A-1B), Button FE-DB-DA-04 (Type: Button, Adr: FE-DB-DA-04), Button FE-DB-0A-10 (Type: Button, Adr: FE-DB-0A-10)
+        # Use 'Write HA senders to devices' button or enter manually sender id in PCT14 into function group 2 with function 51 
+      - id: 00-00-00-0A
+        name: FSR14_4x 00-00-00-0A (4/4)
+        eep: M5-38-08
+        sender: 
+          eep: A5-38-08
+          id: 00-00-B0-0A
+
+
+      binary_sensor:
+        # Related devices: FSR14_4x 00-00-00-07 (1/4) (Type: FSR14_4x, Adr: 00-00-00-07), FSR14_4x 00-00-00-08 (2/4) (Type: FSR14_4x, Adr: 00-00-00-08), FSR14_4x 00-00-00-09 (3/4) (Type: FSR14_4x, Adr: 00-00-00-09), FSR14_4x 00-00-00-0A (4/4) (Type: FSR14_4x, Adr: 00-00-00-0A)
+      - id: FE-DB-0A-10
+        name: Button FE-DB-0A-10
+        eep: F6-02-01
+
+
+        # Related devices: FSR14_4x 00-00-00-07 (1/4) (Type: FSR14_4x, Adr: 00-00-00-07), FSR14_4x 00-00-00-08 (2/4) (Type: FSR14_4x, Adr: 00-00-00-08), FSR14_4x 00-00-00-09 (3/4) (Type: FSR14_4x, Adr: 00-00-00-09), FSR14_4x 00-00-00-0A (4/4) (Type: FSR14_4x, Adr: 00-00-00-0A)
+      - id: FE-DB-0A-1B
+        name: Button FE-DB-0A-1B
+        eep: F6-02-01
+
+
+        # Related devices: FSR14_4x 00-00-00-07 (1/4) (Type: FSR14_4x, Adr: 00-00-00-07), FSR14_4x 00-00-00-08 (2/4) (Type: FSR14_4x, Adr: 00-00-00-08), FSR14_4x 00-00-00-09 (3/4) (Type: FSR14_4x, Adr: 00-00-00-09), FSR14_4x 00-00-00-0A (4/4) (Type: FSR14_4x, Adr: 00-00-00-0A)
+      - id: FE-DB-DA-04
+        name: Button FE-DB-DA-04
+        eep: F6-02-01
+
+
+        # Related devices: FSR14_4x 00-00-00-08 (2/4) (Type: FSR14_4x, Adr: 00-00-00-08)
+      - id: FF-81-41-07
+        name: Button FF-81-41-07
+        eep: F6-02-01
+
+
+        # Related devices: FSR14_4x 00-00-00-07 (1/4) (Type: FSR14_4x, Adr: 00-00-00-07)
+      - id: 00-00-10-02
+        name: FTS14EM Button 00-00-10-02
+        eep: F6-02-01
+
+
+        # Related devices: FSR14_4x 00-00-00-09 (3/4) (Type: FSR14_4x, Adr: 00-00-00-09)
+      - id: 00-00-10-26
+        name: FTS14EM Button 00-00-10-26
+        eep: F6-02-01
 
 
 logger:
