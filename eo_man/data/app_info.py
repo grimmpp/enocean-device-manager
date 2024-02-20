@@ -108,4 +108,14 @@ class ApplicationInfo():
 
     @classmethod
     def is_version_up_to_date(cls) -> bool:
-        return cls.pypi_info_current_version['info']['version'] == cls.pypi_info_latest_versino['info']['version']
+        cv = cls.get_app_info().get('version', '0.0.0') 
+        lv = cls.pypi_info_latest_versino['info']['version']
+
+        for i in range(0,3):
+            l = int(lv.split('.')[i])
+            c = int(cv.split('.')[i])
+            if l > c:
+                return False
+            elif c > l:
+                return True
+        return True
