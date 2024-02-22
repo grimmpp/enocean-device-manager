@@ -13,9 +13,11 @@ from eltakobus import *
 from eltakobus.device import *
 from eltakobus.locking import buslocked, UNLOCKED
 from eltakobus.message import Regular4BSMessage
-from controller.esp3_serial_com import ESP3SerialCommunicator
+from .esp3_serial_com import ESP3SerialCommunicator
 
-from data.device import Device
+from ..data import data_helper
+from ..data.device import Device
+from ..data.const import GatewayDeviceType
 
 from .app_bus import AppBusEventType, AppBus
 
@@ -26,6 +28,7 @@ class SerialController():
         self.app_bus = app_bus
         self._serial_bus = None
         self.current_base_id:str = None
+        self.port_mapping = None
 
         self.app_bus.add_event_handler(AppBusEventType.WINDOW_CLOSED, self.on_window_closed)
     
@@ -33,31 +36,24 @@ class SerialController():
     def on_window_closed(self, data) -> None:
         self.kill_serial_connection_before_exit()
 
-    def get_serial_ports(self, device_type:str) ->list[str]:
+
+    def get_serial_ports(self, device_type:str, force_reload:bool=False) ->list[str]:
+        if force_reload or self.port_mapping is None:
+            self.port_mapping = self._get_gateway2serial_port_mapping()
+
         if device_type == 'FAM14':
-            return self.get_serial_ports_for_fam14()
+            return self.port_mapping[GatewayDeviceType.GatewayEltakoFAM14.value]
         elif device_type == 'FGW14-USB':
-            return self.get_serial_ports_for_fgw14usb()
+            return self.port_mapping[GatewayDeviceType.GatewayEltakoFGW14USB.value]
         elif device_type == 'FAM-USB':
-            return self.get_serial_ports_for_famusb()
+            return self.port_mapping[GatewayDeviceType.GatewayEltakoFAMUSB.value]
         elif device_type == 'USB300':
-            return self.get_serial_ports_for_usb300()
+            return self.port_mapping[GatewayDeviceType.GatewayEnOceanUSB300.value]
         else:
             return []
-
-    def get_serial_ports_for_fam14(self) -> list[str]:
-        return self._get_serial_ports(baudrate=57600, test_fam14=True)
     
-    def get_serial_ports_for_fgw14usb(self) -> list[str]:
-        return self._get_serial_ports(baudrate=57600, test_fam14=False)
-    
-    def get_serial_ports_for_famusb(self) -> list[str]:
-        return self._get_serial_ports(baudrate=9600, test_fam14=False, test_famusb=True)
 
-    def get_serial_ports_for_usb300(self) -> list[str]:
-        return self._get_serial_ports(baudrate=57600, test_fam14=False, test_usb300=True)
-
-    def _get_serial_ports(self, baudrate:int=57600, test_fam14:bool=True, test_famusb:bool=False, test_usb300:bool=False) -> list[str]:
+    def _get_gateway2serial_port_mapping(self) -> dict[str:list[str]]:
         """ Lists serial port names
 
             :raises EnvironmentError:
@@ -77,48 +73,81 @@ class SerialController():
         else:
             raise EnvironmentError('Unsupported platform')
 
-        result = []
-        for port in ports:
-            try:
-                s = serial.Serial(port, baudrate=baudrate, timeout=0.2)
-                if not test_usb300: s.rs485_mode = serial.rs485.RS485Settings()
+        fam14 = GatewayDeviceType.GatewayEltakoFAM14.value
+        usb300 = GatewayDeviceType.GatewayEnOceanUSB300.value
+        famusb = GatewayDeviceType.GatewayEltakoFAMUSB.value
+        fgw14usb = GatewayDeviceType.GatewayEltakoFGW14USB.value
+        result = { fam14: [], usb300: [], famusb: [], fgw14usb: [], 'all': [] }
 
-                # test fam14
-                fam14_test_request = b'\xff\x00\xff' * 5
-                s.write(fam14_test_request)
-                fam14_test_response = s.read_until(fam14_test_request)
+        count = 0
+        for baud_rate in [9600, 57600]:
+            for port in ports:
+                count += 1
+                # take in 10 as one step and start with 10 to see directly process is running
+                progress = min(round((count/(2*256.0))*10)*10 + 10, 100)
+                self.app_bus.fire_event(AppBusEventType.DEVICE_ITERATION_PROGRESS, progress) 
 
-                # test fam-usb and fgw14-usb
-                famusb_test_request = ESP2Message(b'\xAB\x58\x00\x00\x00\x00\x00\x00\x00\x00\x00').serialize()
-                famusb_expected_response = b'\xa5Z\x8b\x98'
-                s.write(famusb_test_request)
-                famusb_test_response = s.read_until(famusb_expected_response)
+                try:
+                    # is faster to precheck with serial
+                    s = serial.Serial(port, baudrate=baud_rate, timeout=0.2)
+                    s.rs485_mode = serial.rs485.RS485Settings()
+                    s.close()
+
+                    # test usb300
+                    if baud_rate == 57600:
+                        s = ESP3SerialCommunicator(port, auto_reconnect=False)
+                        s.start()
+                        s.is_serial_connected.wait()
+
+                        if s.base_id and isinstance(s.base_id, list) and port not in result['all']:
+                            result[usb300].append(port)
+                            result['all'].append(port)
+                            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"USB300 detected on serial port {port},(baudrate: {baud_rate})", 'color':'lightgreen'})
+                            s.stop()
+                            continue
+
+                        s.stop()
+                    
+                    # test fam14, fgw14-usb and fam-usb
+                    s = RS485SerialInterfaceV2(port, baud_rate=baud_rate, delay_message=0.2, auto_reconnect=False)
+                    s.start()
+                    s.is_serial_connected.wait()
+
+                    # test fam14
+                    if s.suppress_echo and port not in result['all']:
+                        result[fam14].append(port)
+                        result['all'].append(port)
+                        self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"FAM14 detected on serial port {port},(baudrate: {baud_rate})", 'color':'lightgreen'})
+                        s.stop()
+                        continue
+
+                    # test fam-usb
+                    if baud_rate == 9600:
+                        # try to get base id of fam-usb to test if device is fam-usb
+                        base_id = asyncio.run( self.async_get_base_id_for_fam_usb(s, None) )
+                        # fam14 can answer on both baud rates but fam-usb cannot echo
+                        if base_id is not None and base_id != '00-00-00-00' and not s.suppress_echo and port not in result['all']:
+                            result[famusb].append(port)
+                            result['all'].append(port)
+                            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"FAM-USB detected on serial port {port},(baudrate: {baud_rate})", 'color':'lightgreen'})
+                            s.stop()
+                            continue
+
+                    # fgw14-usb
+                    if baud_rate == 57600:
+                        if not s.suppress_echo and port not in result['all']:
+                            result[fgw14usb].append(port)
+                            result['all'].append(port)
+                            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"FGW14-USB could be on serial port {port},(baudrate: {baud_rate})", 'color':'lightgreen'})
+                            s.stop()
+                            continue
                 
-                if test_fam14 and fam14_test_request == fam14_test_response: 
-                    result.append(port)
-                    self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"FAM14 detected on serial port {port},(baudrate: {baudrate})", 'color':'lightgreen'})
-                elif fam14_test_request == fam14_test_response: 
-                    continue
+                    s.stop()
 
-                if test_famusb and famusb_test_response == famusb_expected_response:
-                    result.append(port)
-                    self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"FAM-USB detected on serial port {port},(baudrate: {baudrate})", 'color':'lightgreen'})
-                elif test_famusb:
-                    continue
-                
-                if not test_famusb and not test_fam14 and famusb_test_response == famusb_expected_response:
-                    result.append(port)
-                    self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"FGW14-USB detected on serial port {port},(baudrate: {baudrate})", 'color':'lightgreen'})
+                except (OSError, serial.SerialException) as e:
+                    pass
 
-                # TODO needs to be fixed. just for testing!!!
-                if test_usb300:
-                    result.append(port)
-                    self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"USB300 detected on serial port {port},(baudrate: {baudrate})", 'color':'lightgreen'})
-
-                s.close()
-
-            except (OSError, serial.SerialException) as e:
-                pass
+        self.app_bus.fire_event(AppBusEventType.DEVICE_ITERATION_PROGRESS, 0)
         return result
     
     def is_serial_connection_active(self) -> bool:
@@ -141,9 +170,16 @@ class SerialController():
         try:
             if not self.is_serial_connection_active():
                 if device_type == 'USB300':
-                    self._serial_bus = ESP3SerialCommunicator(serial_port, callback=lambda msg: self._send_serial_event(ESP3SerialCommunicator.convert_esp3_to_esp2_message(msg)))
+                    self._serial_bus = ESP3SerialCommunicator(serial_port, 
+                                                              callback=self._send_serial_event,
+                                                              esp2_translation_enabled=True,
+                                                              auto_reconnect=False
+                                                              )
                 else:
-                    self._serial_bus = RS485SerialInterfaceV2(serial_port, baud_rate=baudrate, callback=self._send_serial_event, delay_message=delay_message)
+                    self._serial_bus = RS485SerialInterfaceV2(serial_port, 
+                                                              baud_rate=baudrate, 
+                                                              callback=self._send_serial_event, 
+                                                              delay_message=delay_message)
                 self._serial_bus.start()
                 self._serial_bus.is_serial_connected.wait(timeout=10)
                 
@@ -198,7 +234,24 @@ class SerialController():
             logging.exception(msg, exc_info=True)
             raise e
         finally:
-            self._serial_bus.set_callback( lambda msg: self._send_serial_event(ESP3SerialCommunicator.convert_esp3_to_esp2_message(msg)) )                    
+            self._serial_bus.set_callback( self._send_serial_event )                    
+
+    async def async_get_base_id_for_fam_usb(self, fam_usb:RS485SerialInterfaceV2, callback) -> str:
+        base_id:str = None
+        try:
+            fam_usb.set_callback( None )
+            
+            # get base id
+            data = b'\xAB\x58\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+            # timeout really requires for this command sometimes 1sec!
+            response:ESP2Message = await fam_usb.exchange(ESP2Message(bytes(data)), ESP2Message, retries=3, timeout=1)
+            base_id = b2s(response.body[2:6])
+        except:
+            pass
+        finally:
+            fam_usb.set_callback( callback )
+
+        return base_id
 
     async def async_create_fam_usb_device(self):
         try:

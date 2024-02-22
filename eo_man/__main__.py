@@ -21,7 +21,6 @@ from .view.main_panel import MainPanel
 from .controller.app_bus import AppBus, AppBusEventType
 
 import logging
-from tkinter import *
 
 
 def cli_argument():
@@ -78,8 +77,7 @@ def main():
     if opts.app_config and opts.app_config.endswith('.eodm') and opts.ha_config:
         HomeAssistantConfigurationGenerator(app_bus, data_manager).save_as_yaml_to_file(opts.ha_config)
     else:
-        root = Tk()
-        MainPanel(root, app_bus, data_manager)
+        MainPanel(app_bus, data_manager)
 
 if __name__ == "__main__":
     main()

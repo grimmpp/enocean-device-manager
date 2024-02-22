@@ -14,16 +14,18 @@ with open('README.md', encoding="utf-8") as f:
 with open('LICENSE', encoding="utf-8") as f:
     license = f.read()
 
-required = ['eltako14bus==0.0.45', 'pyserial', 'pyserial-asyncio', 'aiocoap', 
+required = ['eltako14bus==0.0.46', 'requests==2.31.0', 'enocean==0.60.1', 'pyserial', 'pyserial-asyncio', 'aiocoap', 
             # 'homeassistant', 
             'pyyaml', 
             'termcolor', 'strenum', 'pillow', 'numpy',
             # 'tzlocal', 
             'tkinterhtml']
 
+
+
 setup(
     name='eo_man',
-    version='0.1.8',
+    version='0.1.9',
     package_dir={'eo_man':"eo_man"},
     # packages=find_packages("./eo-man"),
     #package_data={'': ['*.png']},

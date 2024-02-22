@@ -32,14 +32,14 @@ class FilterBar():
         self.cb_filtername.bind('<Return>', lambda e: [self.load_filter(), self.add_filter(False), self.apply_filter(e, True)] )
 
         col += 1
-        self.btn_save_filter = Button(f, text="Load", command=self.load_filter)
+        self.btn_save_filter = ttk.Button(f, text="Load", command=self.load_filter)
         self.btn_save_filter.grid(row=1, column=col, padx=(0,3))
 
         col += 1
-        self.btn_save_filter = Button(f, text="Remove", command=self.remove_filter)
+        self.btn_save_filter = ttk.Button(f, text="Remove", command=self.remove_filter)
         self.btn_save_filter.grid(row=0, column=col, padx=(0,3) )
 
-        self.btn_save_filter = Button(f, text="Add", command=self.add_filter)
+        self.btn_save_filter = ttk.Button(f, text="Add", command=self.add_filter)
         self.btn_save_filter.grid(row=1, column=col, padx=(0,3), sticky=W+E )
 
         # global filter
@@ -47,7 +47,7 @@ class FilterBar():
         l = Label(f, text="Global Filter:")
         l.grid(row=0, column=col, padx=(0,3), sticky=W)
 
-        self.global_filter = Entry(f, width="14") 
+        self.global_filter = ttk.Entry(f, width="14") 
         self.global_filter.grid(row=1, column=col, padx=(0,3) )
         self.global_filter.bind('<Return>', self.apply_filter)
         self.global_filter.bind("<KeyRelease>", lambda e: self.cb_filtername.set('') )
@@ -57,7 +57,7 @@ class FilterBar():
         l = Label(f, text="Address:")
         l.grid(row=0, column=col, padx=(0,3), sticky=W)
 
-        self.cb_device_address = Entry(f, width="14") 
+        self.cb_device_address = ttk.Entry(f, width="14") 
         self.cb_device_address.grid(row=1, column=col, padx=(0,3) )
         self.cb_device_address.bind('<Return>', self.apply_filter)
         self.cb_device_address.bind("<KeyRelease>", lambda e: self.cb_filtername.set('') )
@@ -67,7 +67,7 @@ class FilterBar():
         l = Label(f, text="External Address:")
         l.grid(row=0, column=col, padx=(0,3), sticky=W)
 
-        self.cb_external_address = Entry(f, width="14") 
+        self.cb_external_address = ttk.Entry(f, width="14") 
         self.cb_external_address.grid(row=1, column=col, padx=(0,3) )
         self.cb_external_address.bind('<Return>', self.apply_filter)
         self.cb_external_address.bind("<KeyRelease>", lambda e: self.cb_filtername.set('') )
@@ -106,11 +106,11 @@ class FilterBar():
 
         # button reset
         col += 1
-        self.btn_clear_filter = Button(f, text="Reset", command=self.reset_filter)
+        self.btn_clear_filter = ttk.Button(f, text="Reset", command=self.reset_filter)
         self.btn_clear_filter.grid(row=1, column=col, padx=(0,3) )
 
         col += 1
-        self.btn_apply_filter = Button(f, text="Apply", command=self.apply_filter)
+        self.btn_apply_filter = ttk.Button(f, text="Apply", command=self.apply_filter)
         self.btn_apply_filter.grid(row=1, column=col, padx=(0,3) )
 
         self.app_bus.add_event_handler(AppBusEventType.SET_DATA_TABLE_FILTER, self.on_set_filter_handler)

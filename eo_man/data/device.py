@@ -60,16 +60,16 @@ class Device():
         self.memory_entries = memory_entries
 
     def is_fam14(self) -> bool:
-        return FAM14.__name__ in self.device_type
+        return self.device_type is not None and FAM14.__name__ in self.device_type
 
     def is_fam_usb(self) -> bool:
-        return 'FAM-USB' in self.device_type or 'FAM_USB' in self.device_type
+        return self.device_type is not None and ('FAM-USB' in self.device_type or 'FAM_USB' in self.device_type)
     
     def is_fgw14_usb(self) -> bool:
-        return 'FGW14_USB' in self.device_type
+        return self.device_type is not None and 'FGW14_USB' in self.device_type
 
     def is_usb300(self) -> bool:
-        return 'USB300' in self.device_type
+        return self.device_type is not None and 'USB300' in self.device_type
 
     def is_gateway(self) -> bool:
         return self.is_wired_gateway() or self.is_wireless_tranceiver()
@@ -78,7 +78,7 @@ class Device():
         return self.is_fam14() or self.is_fgw14_usb()
 
     def is_wireless_tranceiver(self) -> bool:
-        return self.is_usb300() or self.is_fam_usb() or 'Wireless Tranceiver' in self.device_type
+        return self.is_usb300() or self.is_fam_usb() or (self.device_type is not None and 'Wireless Tranceiver' in self.device_type)
     
     def is_bus_device(self) -> bool:
         return self.bus_device

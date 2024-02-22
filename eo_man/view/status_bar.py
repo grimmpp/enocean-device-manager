@@ -16,7 +16,7 @@ class StatusBar():
         f = Frame(main, bd=1, relief=SUNKEN)
         f.grid(row=row, column=0, columnspan=1, sticky=W+E+N+S)
 
-        self.l_connected = Label(f, bd=1)
+        self.l_connected = Label(f, borderwidth=1)
         self.l_connected.pack(side=tk.RIGHT, padx=(5, 5), pady=2)
         self.is_connected_handler({'connected':False})
 

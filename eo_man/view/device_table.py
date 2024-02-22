@@ -1,14 +1,7 @@
 import threading
 import time
-import tkinter as tk
-import os
-from pathlib import Path
 from tkinter import *
 from tkinter import ttk
-from tkinter import filedialog
-from tkinter.tix import IMAGETEXT
-from PIL import Image, ImageTk
-from idlelib.tooltip import Hovertip
 
 from ..controller.app_bus import AppBus, AppBusEventType
 from ..data.const import *
@@ -16,14 +9,15 @@ from ..data.homeassistant.const import CONF_ID, CONF_NAME
 from ..data.filter import DataFilter
 from ..data.data_manager import DataManager, Device
 from ..data import data_helper
+from ..icons.image_gallary import ImageGallery
 
 from eltakobus.util import b2s
-from eltakobus.eep import EEP
 from eltakobus.message import EltakoMessage, RPSMessage, Regular1BSMessage, Regular4BSMessage, EltakoWrappedRPS
 
 
 class DeviceTable():
 
+    ICON_SIZE = (20,20)
     NON_BUS_DEVICE_LABEL:str="Distributed Devices"
 
     def __init__(self, main: Tk, app_bus:AppBus, data_manager:DataManager):
@@ -44,6 +38,7 @@ class DeviceTable():
         columns = ("Address", "External Address", "Device Type", "Key Function", "Comment", "Export to HA Config", "HA Platform", "Device EEP", "Sender Address", "Sender EEP")
         self.treeview = ttk.Treeview(
             self.pane,
+            show="tree headings", 
             selectmode="browse",
             yscrollcommand=yscrollbar.set,
             xscrollcommand=xscrollbar.set,
@@ -114,6 +109,7 @@ class DeviceTable():
             parent = self.NON_BUS_DEVICE_LABEL if not d.is_bus_device() else None
             self.update_device_handler(d, parent)
 
+
     def _set_data_filter_handler(self, filter):
         self.current_data_filter = filter
 
@@ -124,10 +120,12 @@ class DeviceTable():
             else:
                 self.update_device_handler(d, parent=self.NON_BUS_DEVICE_LABEL)
 
+
     def _reset(self, data):
         for item in self.treeview.get_children():
             self.treeview.delete(item)
         self.check_if_wireless_network_exists()
+
 
     def on_selected(self, event):
         device_external_id = self.treeview.focus()
@@ -154,9 +152,11 @@ class DeviceTable():
         finally:
             self.menu.grab_release()
 
+
     def insert_device(self, device:Device):
         v=("", b2s(device.address[0]), "", "")
         self.treeview.insert(parent="", index="end", text=device.id_string, values=v)
+
         
     def device_scan_status_handler(self, status:str):
         if status in ['STARTED']:
@@ -177,15 +177,31 @@ class DeviceTable():
                 text = d.name
                 comment = d.comment if d.comment is not None else "" 
                 in_ha = d.use_in_ha
-                self.treeview.insert(parent="", index=0, iid=d.external_id, text=text, values=("", "", "", "", comment, in_ha, "", "", ""), open=True)
+                self.treeview.insert(parent="", 
+                                     index=0, 
+                                     iid=d.external_id, 
+                                     text=" " + text, 
+                                     values=("", "", "", "", comment, in_ha, "", "", ""),
+                                     image=ImageGallery.get_fam14_icon(self.ICON_SIZE),
+                                     open=True)
             else:
-                self.treeview.item(d.base_id, text=d.name, values=("", "", "", "", d.comment, d.use_in_ha, "", "", "") )
+                self.treeview.item(d.base_id, 
+                                   text=" " + d.name, 
+                                   values=("", "", "", "", d.comment, d.use_in_ha, "", "", ""),
+                                   image=ImageGallery.get_fam14_icon(self.ICON_SIZE), 
+                                   open=True)
 
 
     def check_if_wireless_network_exists(self):
         id = self.NON_BUS_DEVICE_LABEL
         if not self.treeview.exists(id):
-            self.treeview.insert(parent="", index="end", iid=id, text=self.NON_BUS_DEVICE_LABEL, values=("", "", "", "", "", "", "", "", ""), open=True)
+            self.treeview.insert(parent="", 
+                                 index="end", 
+                                 iid=id, 
+                                 text=" " + self.NON_BUS_DEVICE_LABEL, 
+                                 values=("", "", "", "", "", "", "", "", ""), 
+                                 image=ImageGallery.get_wireless_icon(self.ICON_SIZE),
+                                 open=True)
 
 
     def update_device_representation_handler(self, d:Device):
@@ -206,19 +222,39 @@ class DeviceTable():
             comment = "" if d.comment is None else d.comment
             sender_adr = "" if 'sender' not in d.additional_fields else d.additional_fields['sender'][CONF_ID]
             sender_eep = "" if 'sender' not in d.additional_fields else d.additional_fields['sender'][CONF_EEP]
+            
+            if d.is_usb300():
+                image = ImageGallery.get_usb300_icon(self.ICON_SIZE)
+            elif d.is_fam_usb():
+                image = ImageGallery.get_fam_usb_icon(self.ICON_SIZE)
+            elif d.is_fgw14_usb():
+                image = ImageGallery.get_fgw14_usb_icon(self.ICON_SIZE)
+            else:
+                image = ImageGallery.get_blank(self.ICON_SIZE)
+
             _parent = d.base_id if parent is None else parent
             if not self.treeview.exists(_parent): self.add_fam14(self.data_manager.devices[_parent])
             if not self.treeview.exists(d.external_id):
-                self.treeview.insert(parent=_parent, index="end", iid=d.external_id, text=d.name, values=(d.address, d.external_id, device_type, key_func, comment, in_ha, ha_pl, eep, sender_adr, sender_eep), open=True)
+                self.treeview.insert(parent=_parent, 
+                                     index="end", 
+                                     iid=d.external_id, 
+                                     text=" " + d.name, 
+                                     values=(d.address, d.external_id, device_type, key_func, comment, in_ha, ha_pl, eep, sender_adr, sender_eep), 
+                                     open=True)
+                self.treeview.item(d.external_id, image=image)
             else:
                 # update device
-                self.treeview.item(d.external_id, text=d.name, values=(d.address, d.external_id, device_type, key_func, comment, in_ha, ha_pl, eep, sender_adr, sender_eep), open=True)
+                self.treeview.item(d.external_id, 
+                                   text=" " + d.name, 
+                                   values=(d.address, d.external_id, device_type, key_func, comment, in_ha, ha_pl, eep, sender_adr, sender_eep), 
+                                   image=image,
+                                   open=True)
                 if self.treeview.parent(d.external_id) != _parent:
                     self.treeview.move(d.external_id, _parent, 0)
         else:
             self.add_fam14(d)
-
         # self.trigger_blinking(d.external_id)
+            
 
     def _serial_callback_handler(self, data:dict):
         message:EltakoMessage = data['msg']
@@ -236,6 +272,7 @@ class DeviceTable():
                 d:Device = self.data_manager.find_device_by_local_address(adr, current_base_id)
                 if d is not None:
                     self.trigger_blinking(d.external_id)
+
 
     def trigger_blinking(self, external_id:str):
         if not self.blinking_enabled:

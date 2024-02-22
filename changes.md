@@ -1,5 +1,12 @@
 # Change Log
 
+## v0.1.9 Read Support for USB300 + Multi-Gateway Support for HA Config Export
+* Fixed compatibility of loading old application configs
+* Icons added
+* Remove Smart Home addresses as real buttons from HA export
+* Serial port detection for FAM-USB and USB300 improved.
+* TODO: Cleanup of ESP3 communication, move function into lib
+
 ## v0.1.8 Wireless Tranceiver Support
 * Reset suggested HA settings added
 * Support for FAM-USB. Is now detected as gateway and contained in HA config 
