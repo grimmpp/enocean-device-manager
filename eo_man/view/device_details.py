@@ -24,11 +24,11 @@ class DeviceDetails():
         self.app_bus.add_event_handler(AppBusEventType.SELECTED_DEVICE, self.selected_device_handler)
 
         # main
-        main_frame = Frame(main, width=370)
+        main_frame = Frame(main, width=350)
         main_frame.pack(fill=BOTH, expand=1)
 
         # canvas
-        canvas = Canvas(main_frame, width=250)
+        canvas = Canvas(main_frame, width=350)
         canvas.pack(side=LEFT, fill=BOTH, expand=1)
 
         # scrollbar
@@ -60,7 +60,7 @@ class DeviceDetails():
         l = Label(f, text="Name")
         l.grid(row=0, column=0, sticky=W, padx=3)
 
-        self.text_name = Entry(f)
+        self.text_name = ttk.Entry(f)
         self.text_name.grid(row=c_row, column=1, sticky=W+E)
         self._update_text_field(self.text_name, device.name, NORMAL)
         self.text_name.bind('<Return>', lambda e, d=device: self.update_device(d))
@@ -71,19 +71,20 @@ class DeviceDetails():
         l = Label(f, text="Address")
         l.grid(row=c_row, column=0, sticky=W, padx=3)
 
-        self.text_address = Entry(f)
+        self.text_address = ttk.Entry(f)
         self.text_address.insert(END, "00-00-00-00")
-        self.text_address.config(state=DISABLED)
+        self.text_address.config(state=NORMAL)
         self.text_address.grid(row=c_row, column=1, sticky=W+E)
         self._update_text_field(self.text_address, device.address)
-        self.text_address.bind('<Return>', lambda e, d=device: self.update_device(d))
+        # self.text_address.bind('<Return>', lambda e, d=device: self.update_device(d))
+        self.text_address.bind_all('<Key>', lambda e: [])
 
         # base id
         c_row += 1
         l = Label(f, text="Base Id")
         l.grid(row=c_row, column=0, sticky=W, padx=3)
 
-        self.text_address = Entry(f)
+        self.text_address = ttk.Entry(f)
         self.text_address.insert(END, "00-00-00-00")
         self.text_address.config(state=DISABLED)
         self.text_address.grid(row=c_row, column=1, sticky=W+E)
@@ -95,7 +96,7 @@ class DeviceDetails():
         l = Label(f, text="External Id")
         l.grid(row=c_row, column=0, sticky=W, padx=3)
 
-        self.text_ext_address = Entry(f)
+        self.text_ext_address = ttk.Entry(f)
         self.text_ext_address.insert(END, "00-00-00-00")
         self.text_ext_address.config(state=DISABLED)
         self.text_ext_address.grid(row=c_row, column=1, sticky=W+E)
@@ -108,7 +109,7 @@ class DeviceDetails():
         l = Label(f, text="Version")
         l.grid(row=c_row, column=0, sticky=W, padx=3)
 
-        self.text_version = Entry(f)
+        self.text_version = ttk.Entry(f)
         self.text_version.config(state=DISABLED)
         self.text_version.grid(row=c_row, column=1, sticky=W+E)
         self._update_text_field(self.text_version, device.version)
@@ -148,7 +149,7 @@ class DeviceDetails():
         l = Label(f, text="Comment")
         l.grid(row=c_row, column=0, sticky=W, padx=3)
 
-        self.text_comment = Entry(f)
+        self.text_comment = ttk.Entry(f)
         self.text_comment.grid(row=c_row, column=1, sticky=W+E)
         self._update_text_field(self.text_comment, device.comment, NORMAL)
         self.text_comment.bind('<Return>', lambda e, d=device: self.update_device(d))
@@ -168,7 +169,7 @@ class DeviceDetails():
         # in HA
         c_row += 1
         self.cb_export_ha_var = tk.IntVar()
-        cb = Checkbutton(f, text="Export to HA Config", variable=self.cb_export_ha_var)
+        cb = ttk.Checkbutton(f, text="Export to HA Config", variable=self.cb_export_ha_var)
         cb.grid(row=c_row, column=0, columnspan=2, padx=3, sticky=W)
         self.cb_export_ha_var.set(1 if device.use_in_ha else 0)
         cb.bind('<Return>', lambda e, d=device: self.update_device(d))

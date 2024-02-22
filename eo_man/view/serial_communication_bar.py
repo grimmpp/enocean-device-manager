@@ -8,7 +8,7 @@ from eo_man import LOGGER
 
 from ..controller.app_bus import AppBus, AppBusEventType
 from ..controller.serial_controller import SerialController
-from ..data.data_manager import DataManager, Device
+from ..data.data_manager import DataManager
 
 class SerialConnectionBar():
 
@@ -21,9 +21,9 @@ class SerialConnectionBar():
         f = LabelFrame(main, text="Serial Connection", bd=1)#, relief=SUNKEN)
         f.grid(row=row, column=0, columnspan=1, sticky=W+E+N+S, pady=(0,2), padx=2)
 
-        self.b_detect = Button(f, text="Detect Serial Ports")
+        self.b_detect = ttk.Button(f, text="Detect Serial Ports")
         self.b_detect.pack(side=tk.LEFT, padx=(5, 5), pady=5)
-        self.b_detect.config(command=self.detect_serial_ports_command)
+        self.b_detect.config(command=lambda : self.detect_serial_ports_command(force_reload=True) )
         Hovertip(self.b_detect,"Serial port detection is sometime unstable. Please try again if device was not detected.",300)
 
         l = Label(f, text="Gateway Type: ")
@@ -41,23 +41,23 @@ class SerialConnectionBar():
         self.cb_serial_ports = ttk.Combobox(f, state="readonly", width="10") 
         self.cb_serial_ports.pack(side=tk.LEFT, padx=(0, 5), pady=5)
 
-        self.b_connect = Button(f, text="Connect", state=DISABLED, command=self.toggle_serial_connection_command)
+        self.b_connect = ttk.Button(f, text="Connect", state=DISABLED, command=self.toggle_serial_connection_command)
         self.b_connect.pack(side=tk.LEFT, padx=(0, 5), pady=5)
 
         s = ttk.Separator(f, orient=VERTICAL )
         s.pack(side=tk.LEFT, padx=(0,5), pady=0, fill="y")
 
-        self.b_scan = Button(f, text="Scan for devices", state=DISABLED, command=self.scan_for_devices)
+        self.b_scan = ttk.Button(f, text="Scan for devices", state=DISABLED, command=self.scan_for_devices)
         self.b_scan.pack(side=tk.LEFT, padx=(0, 5), pady=5)
 
         self.overwrite = tk.BooleanVar()
-        self.cb_overwrite = Checkbutton(f, text="Overwrite existing values", variable=self.overwrite)
+        self.cb_overwrite = ttk.Checkbutton(f, text="Overwrite existing values", variable=self.overwrite)
         self.cb_overwrite.pack(side=tk.LEFT, padx=(0, 5), pady=5)
 
         s = ttk.Separator(f, orient=VERTICAL )
         s.pack(side=tk.LEFT, padx=(0,5), pady=0, fill="y")
 
-        self.b_sync_ha_sender = Button(f, text="Write HA senders to devices", state=DISABLED, command=self.write_ha_senders_to_devices)
+        self.b_sync_ha_sender = ttk.Button(f, text="Write HA senders to devices", state=DISABLED, command=self.write_ha_senders_to_devices)
         Hovertip(self.b_sync_ha_sender,"Ensures sender configuration for Home Assistant is written into device memory.",300)
         self.b_sync_ha_sender.pack(side=tk.LEFT, padx=(0, 5), pady=5)
 
@@ -146,13 +146,17 @@ class SerialConnectionBar():
             if not skipp_serial_port_detection: self.detect_serial_ports_command()
 
 
-    def detect_serial_ports_command(self):
+    def detect_serial_ports_command(self, force_reload:bool=False):
 
         def detect_serial_ports():
             try:
                 self.main.config(cursor="watch")    #set cursor for waiting
                 self.b_detect.config(state=DISABLED)
-                serial_ports = self.serial_cntr.get_serial_ports(self.cb_device_type.get())
+                self.cb_device_type.config(state=DISABLED)
+                self.cb_serial_ports.config(state=DISABLED)
+                serial_ports = self.serial_cntr.get_serial_ports(self.cb_device_type.get(), force_reload)
+                self.cb_device_type.config(state=NORMAL)
+                self.cb_device_type.config(state=NORMAL)
                 self.cb_serial_ports['values'] = serial_ports
                 if len(self.cb_serial_ports['values']) > 0:
                     self.cb_serial_ports.set(self.cb_serial_ports['values'][0])

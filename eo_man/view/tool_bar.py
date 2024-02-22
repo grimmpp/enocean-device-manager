@@ -1,5 +1,6 @@
 import threading
 import tkinter as tk
+from tkinter import ttk
 import os
 from tkinter import *
 from tkinter import messagebox
@@ -45,7 +46,7 @@ class ToolBar():
 
 
     def _create_img_button(self, f:Frame, tooltip:str, image:ImageTk.PhotoImage, command) -> Button:
-        b = Button(f, image=image, relief=GROOVE, cursor="hand2", command=command)
+        b = ttk.Button(f, image=image, cursor="hand2", command=command) #, relief=GROOVE)
         Hovertip(b,tooltip,300)
         b.image = image
         b.pack(side=LEFT, padx=(2,0), pady=2)

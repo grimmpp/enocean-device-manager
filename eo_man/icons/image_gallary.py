@@ -6,12 +6,28 @@ from PIL import Image, ImageTk
 
 class ImageGallery():
 
+    # is needed to keep a reference to the images otherwise they will not displayed in the icons
+    _images:dict[str:ImageTk.PhotoImage] = {}
+
     @classmethod
-    def get_image(cls, filename, size:tuple[int:int]=(32,32)):
-        img = Image.open(os.path.join(os.path.dirname(__file__), filename))
-        if size is not None:
-            img = img.resize(size, Image.LANCZOS)
-        return ImageTk.PhotoImage(img)
+    def get_image(cls, filename, size:tuple[int:int]=(32,32)) -> ImageTk.PhotoImage:
+        id = f"{filename}_{size[0]}_{size[0]}"
+        if id not in cls._images:
+            with Image.open(os.path.join(os.path.dirname(__file__), filename)) as img:
+                if size is not None:
+                    _img = img.resize(size, Image.LANCZOS)
+                img = ImageTk.PhotoImage(_img)
+                cls._images[id] = img
+
+        return cls._images[id]
+
+    @classmethod
+    def get_eo_man_logo(cls, size:tuple[int:int]=(32,32)) -> ImageTk.PhotoImage:
+        return ImageGallery.get_image("Faenza-system-search.png", size)
+
+    @classmethod
+    def get_blank(cls, size:tuple[int:int]=(32,32)) -> ImageTk.PhotoImage:
+        return ImageGallery.get_image("blank.png", size)
 
     @classmethod
     def get_ha_logo(cls, size:tuple[int:int]=(32,32)) -> ImageTk.PhotoImage:
@@ -52,3 +68,31 @@ class ImageGallery():
     @classmethod
     def get_software_update_available_icon(cls, size:tuple[int:int]=(32,32)) -> ImageTk.PhotoImage:
         return ImageGallery.get_image("Software-update-available.png", size)
+    
+    @classmethod
+    def get_fam14_icon(cls, size:tuple[int:int]=(32,32)) -> ImageTk.PhotoImage:
+        return ImageGallery.get_image("fam14.png", size)
+    
+    @classmethod
+    def get_usb300_icon(cls, size:tuple[int:int]=(32,32)) -> ImageTk.PhotoImage:
+        return ImageGallery.get_image("usb300.png", size)
+    
+    @classmethod
+    def get_fam_usb_icon(cls, size:tuple[int:int]=(32,32)) -> ImageTk.PhotoImage:
+        return ImageGallery.get_image("fam-usb2.png", size)
+    
+    @classmethod
+    def get_fgw14_usb_icon(cls, size:tuple[int:int]=(32,32)) -> ImageTk.PhotoImage:
+        return ImageGallery.get_image("fgw14-usb.png", size)
+    
+    @classmethod
+    def get_wireless_network_in_color_icon(cls, size:tuple[int:int]=(32,32)) -> ImageTk.PhotoImage:
+        return ImageGallery.get_image("wireless-network-colored.png", size)
+    
+    @classmethod
+    def get_wireless_network_icon(cls, size:tuple[int:int]=(32,32)) -> ImageTk.PhotoImage:
+        return ImageGallery.get_image("wireless-network-bw.png", size)
+    
+    @classmethod
+    def get_wireless_icon(cls, size:tuple[int:int]=(32,32)) -> ImageTk.PhotoImage:
+        return ImageGallery.get_image("wireless.png", size)

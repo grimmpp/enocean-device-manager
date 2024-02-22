@@ -1,5 +1,5 @@
 !!python/object:eo_man.data.application_data.ApplicationData
-application_version: 0.1.5
+application_version: 0.1.7
 data_filters:
   Buttons: !!python/object:eo_man.data.filter.DataFilter
     device_address_filter: []
@@ -154,6 +154,19 @@ devices:
     name: HA Contoller FF-86-B0-8C
     use_in_ha: false
     version: unknown
+  FF-BC-00-00: !!python/object:eo_man.data.device.Device
+    address: FF-BC-00-00
+    base_id: FF-BC-00-00
+    bus_device: false
+    channel: 1
+    comment: null
+    dev_size: 1
+    device_type: FAM-USB (Wireless Tranceiver)
+    external_id: FF-BC-00-00
+    memory_entries: &id003 []
+    name: FAM-USB (FF-BC-00-00)
+    use_in_ha: true
+    version: null
   FF-CD-60-80: !!python/object:eo_man.data.device.Device
     additional_fields: {}
     address: 00-00-00-FF
@@ -710,6 +723,19 @@ devices:
     name: HA Contoller 00-00-B0-07
     use_in_ha: false
     version: unknown
+  FF-D6-00-00: !!python/object:eo_man.data.device.Device
+    address: FF-D6-00-00
+    base_id: FF-D6-00-00
+    bus_device: false
+    channel: 1
+    comment: null
+    dev_size: 1
+    device_type: USB300 (Wireless Tranceiver)
+    external_id: FF-D6-00-00
+    memory_entries: *id003
+    name: USB300 (FF-D6-00-00)
+    use_in_ha: true
+    version: null
   FF-E2-35-90: !!python/object:eo_man.data.device.Device
     address: FF-E2-35-90
     base_id: 00-00-00-00

@@ -1,6 +1,7 @@
 import os
 import threading
 from tkinter import *
+from tkinter import ttk
 from tkinter import filedialog
 import logging
 from tkinter import messagebox

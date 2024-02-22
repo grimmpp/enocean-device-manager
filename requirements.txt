@@ -1,5 +1,5 @@
 ﻿aiocoap==0.4.7
-eltako14bus==0.0.45
+eltako14bus==0.0.46
 numpy==1.26.3
 pillow==10.2.0
 pyserial==3.5
@@ -9,3 +9,4 @@ StrEnum==0.4.15
 termcolor==2.4.0
 tkinterhtml==0.7
 requests==2.31.0
+enocean==0.60.1

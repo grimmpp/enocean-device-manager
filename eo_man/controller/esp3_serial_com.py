@@ -19,9 +19,18 @@ from eltakobus.util import b2s
 class ESP3SerialCommunicator(Communicator):
     ''' Serial port communicator class for EnOcean radio '''
 
-    def __init__(self, filename, log=None, callback=None, baud_rate=57600, reconnection_timeout:float=10, esp2_translation_enabled:bool=False):
+    def __init__(self, 
+                 filename, 
+                 log=None, 
+                 callback=None, 
+                 baud_rate=57600, 
+                 reconnection_timeout:float=10, 
+                 esp2_translation_enabled:bool=False, 
+                 auto_reconnect:bool=True):
+        
         self.esp2_translation_enabled = esp2_translation_enabled
         self._outside_callback = callback
+        self._auto_reconnect = auto_reconnect
         super(ESP3SerialCommunicator, self).__init__(self.__callback_wrapper)
         
         self._filename = filename
@@ -50,49 +59,36 @@ class ESP3SerialCommunicator(Communicator):
         except Exception as e:
             pass
 
+    async def base_exchange(self, request:ESP2Message):
+        self.esp2_translation_enabled = True
+        self.send(request)
+
     @classmethod
     def convert_esp2_to_esp3_message(cls, message: ESP2Message) -> RadioPacket:
-    
-        d = message.data[0]
 
+        optional = []
         if isinstance(message, RPSMessage):
             org = RORG.RPS
-            org_func = 0x02
-            org_type = 0x02
+            data = [message.data[0]]
         elif isinstance(message, Regular1BSMessage):
             org = RORG.BS1
-            org_func = 0x02
-            org_type = 0x02
+            data = [message.data[0]]
         elif isinstance(message, Regular4BSMessage):
             org = RORG.BS4
-            org_func = 0x01
-            org_type = 0x01
-            d = message.data
+            telegram_count = 0x03
+            optional = [telegram_count, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]
+            data = message.data
         else:
             return None
         
-        # command = [0xA5, 0x02, bval, 0x01, 0x09]
-        # command.extend(self._sender_id)
-        # command.extend([0x00])
-        # self.send_command(data=command, optional=[], packet_type=0x01)
-
-        # data = bytes([org, 0x02, 0x01, 0x01, 0x09]) + d + message.address + bytes([message.status])
-
-# RadioPacket.create(rorg=RORG.BS4, rorg_func=0x20, rorg_type=0x01,
-#                               sender=transmitter_id,
-#                               CV=50,
-#                               TMP=21.5,
-#                               ES='true')
         sender = [x for x in message.address]
 
-        # packet = Packet(packet_type=0x01, data=data, optional=[])
-        packet = RadioPacket.create(rorg=org, 
-                                rorg_func=org_func, 
-                                rorg_type=org_type,
-                                sender=sender,
-                                command=[0x01, 0x00, 0x00, 0x09]
-                                )
-        return packet
+        command=[org]
+        command.extend(data)
+        command.extend(sender)
+        command.extend([message.status])
+
+        return Packet(PACKET.RADIO, command, optional)
 
     @classmethod
     def convert_esp3_to_esp2_message(cls, packet: RadioPacket) -> ESP2Message:
@@ -174,10 +170,16 @@ class ESP3SerialCommunicator(Communicator):
                 self.is_serial_connected.clear()
                 self.log.error(e)
                 self.__ser = None
-                self.log.info("Serial communication crashed. Wait %s seconds for reconnection.", self.__recon_time)
-                time.sleep(self.__recon_time)
+                if self._auto_reconnect:
+                    self.log.info("Serial communication crashed. Wait %s seconds for reconnection.", self.__recon_time)
+                    time.sleep(self.__recon_time)
+                else:
+                    self._stop_flag.set()
 
-        self.__ser.close()
+        if self.__ser is not None:
+            self.__ser.close()
+            self.__ser = None
+        self.is_serial_connected.clear()
         self._fire_status_change_handler(connected=False)
         self.logger.info('SerialCommunicator stopped')
 
@@ -219,7 +221,7 @@ class ESP3SerialCommunicator(Communicator):
         # Unfortunately, all other messages received during this time are ignored.
         for i in range(0, 10):
             try:
-                packet = self.receive.get(block=True, timeout=0.2)
+                packet = self.receive.get(block=True, timeout=0.1)
                 # We're only interested in responses to the request in question.
                 if packet.packet_type == PACKET.RESPONSE and packet.response == RETURN_CODE.OK and len(packet.response_data) == 4:  # noqa: E501
                     # Base ID is set in the response data.
@@ -233,7 +235,7 @@ class ESP3SerialCommunicator(Communicator):
                 continue
         # Return the current Base ID (might be None).
         return self._base_id
-
+    
 if __name__ == '__main__':
 
     def cb(package:Packet):
@@ -246,7 +248,36 @@ if __name__ == '__main__':
     # asyncio.run( com.send(Packet(PACKET.COMMON_COMMAND, data=[0x08])) )
     
 
-    com = ESP3SerialCommunicator("COM12", callback=cb)
+    # ser = serial.Serial("COM12", 57600, timeout=0.1)
+
+    # # org = 0xF6  # org = 0x05, rorg = 0xF6
+    # # package_type = 0x01  # Radio_ERP_1
+    # # telegram_count = 0x02  # Sub-Telegram Count
+    # # header_checksum = 0x7A
+    # # h_seq = property(lambda self: 3 if self.outgoing else 0)
+    # # data = [0x70]
+    # # address = [0xFF,0xD6,0x30,0x01]
+    # # status = 0x00
+
+    # # # 55 00 07 07 01 7A F6 70 FF B9 FC 8D 30 02 FF FF FF FF 44 00 F8
+    # # body = bytes((0x07, 0x07, package_type, header_checksum, org, *data, *address, status, telegram_count, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF))
+
+    # # data = b"\x55\x00" + body
+    # # msg = data + crc8.crc8(data[1:]).digest()
+
+    # msg = MY_RPSMessage(b'\xFF\xD6\x30\x01',0x00, b'\x70', True)
+
+    # ser.write(msg.serialize())
+    # ser.read_all()
+
+    # print("\n\n")
+    # time.sleep(2)
+
+    # ser.close()
+
+    # exit(0)
+
+    com = ESP3SerialCommunicator("COM12", callback=cb, esp2_translation_enabled=False)
     com.start()
     com.is_serial_connected.wait(timeout=10)
     com.set_callback(None)
@@ -257,8 +288,59 @@ if __name__ == '__main__':
     com.set_callback(cb)
     com.base_id
     
+    # asyncio.run( com.send(RPSMessage(address=b'\xFF\xD6\x30\x01', status=b'\x30', data=b'\x50', outgoing=True)) )
+    command=[RORG.BS4, 0x01, 0x00, 0x00, 0x09]
+    command.extend([0xFF,0xD6,0x30, 0x01])
+    command.extend([0x00])
+
+    # asyncio.run( com.send(Packet(0x01, command, optional=[])) )
+
+
+    sender = [0xFF,0xD6,0x30,0x01]
+    status = [0x30]
+
+    command=[RORG.RPS, 0x30]
+    command.extend(sender)
+    command.extend(status)
+
+    destination = [0xFF,0xFF,0xFF,0xFF]# [0xFF,0xA2,0x24,0x01]
+    
+    
+    # command.extend([0xFF,0xD6,0x30,0x01])
+    # command.extend([0x00])
+
+    # p = RadioPacket.create(RORG.RPS, rorg_func=0x02, rorg_type=0x02, command=command, destination=destination, sender=sender)
+    # p = Packet(packet_type = 0x01, data=command)
+    # p.status = 0x30
+    # p.data[1] = 0x30
+    # p.data[6] = 0x30
+    
+    p = ESP3SerialCommunicator.convert_esp2_to_esp3_message(RPSMessage(b'\xFF\xD6\x30\x01', 0x30, b'\x30', True))
+
+
+    # p = ESP3SerialCommunicator.convert_esp2_to_esp3_message(Regular4BSMessage(b'\xFF\xD6\x30\x01', 0x00, b'\x01\x00\x00\x09', True))
+    asyncio.run( com.send(p) )
+
+    print("\n\n")
+    # time.sleep(3)
+
+
+    p = ESP3SerialCommunicator.convert_esp2_to_esp3_message(Regular4BSMessage(b'\xFF\xD6\x30\x01', 0x00, bytes((0x01, 0x00, 0x00, 0x09)), True))
+    print(', '.join([hex(i) for i in p.build()]))
+
+    # p = ESP3SerialCommunicator.convert_esp2_to_esp3_message(RPSMessage(b'\xFF\xD6\x30\x01', 0x30, b'\x10', True))
+    # p = ESP3SerialCommunicator.convert_esp2_to_esp3_message(Regular4BSMessage(b'\xFF\x82\x3E\x70', 0x00, bytes((0x01, 0x00, 0x00, 0x08)), True))
+    print(p)
+    asyncio.run( com.send(p) )
+
+
     print("\n\n")
     time.sleep(2)
+
+    
+
+    com.stop()
+    exit(0)
 
     data = [0xf6, 0x50, 0xff, 0xa2, 0x24, 0x1, 0x30]
     body:bytes = bytes([0x0b, 0x05] + data[1:2] + [0,0,0] + data[2:])

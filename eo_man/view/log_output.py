@@ -20,7 +20,7 @@ class LogOutputPanel():
         # pane.grid(row=2, column=0, sticky="nsew", columnspan=3)
         self.root = pane
 
-        self.st = ScrolledText.ScrolledText(pane, border=3, height=10, state='disabled', bg='black', fg='lightgrey', font=('Arial', 14), padx=5, pady=5)
+        self.st = ScrolledText.ScrolledText(pane, border=3, height=10, state=DISABLED, bg='black', fg='lightgrey', font=('Arial', 14), padx=5, pady=5)
         self.st.configure(font='TkFixedFont')
         self.st.pack(expand=True, fill="both")
         # self.st.grid(row=2, column=0, sticky="nsew", columnspan=3)
