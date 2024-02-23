@@ -168,31 +168,31 @@ class MenuPresenter():
 
     def import_from_file(self):
         filename = None
-        try:
-            if not self.remember_latest_filename:
-                self.remember_latest_filename = os.path.expanduser('~')
+        
+        if not self.remember_latest_filename:
+            self.remember_latest_filename = os.path.expanduser('~')
 
-            initial_dir = os.path.dirname(self.remember_latest_filename)
-            filename = filedialog.askopenfilename(initialdir=initial_dir, 
-                                                    title="Load Application State",
-                                                    filetypes=[("EnOcean Device Manager", "*.eodm"), ("EnOcean Device Manager", "*.yaml")],
-                                                    defaultextension=".eodm") #, ("configuration", "*.yaml"), ("all files", "*.*")))
-            
-            if not filename:
-                return None
-            
-            def load():
+        initial_dir = os.path.dirname(self.remember_latest_filename)
+        filename = filedialog.askopenfilename(initialdir=initial_dir, 
+                                                title="Load Application State",
+                                                filetypes=[("EnOcean Device Manager", "*.eodm"), ("EnOcean Device Manager", "*.yaml")],
+                                                defaultextension=".eodm") #, ("configuration", "*.yaml"), ("all files", "*.*")))
+
+        if not filename:
+            return None
+
+        def load():
+            try:
                 self.data_manager.load_application_data_from_file(filename)
                 # with open(filename, 'rb') as file:
                 #     self.data_manager.load_devices( pickle.load(file) )
+            except Exception as e:
+                msg = f"Loading application configuration file '{filename}' failed!"
+                self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
+                logging.exception(msg, exc_info=True)
 
-            t = threading.Thread(target=load)
-            t.start()
-
-        except Exception as e:
-            msg = f"Loading application configuration file '{filename}' failed!"
-            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
-            logging.exception(msg, exc_info=True)
+        t = threading.Thread(target=load)
+        t.start()
 
         return filename
         

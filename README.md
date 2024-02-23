@@ -6,7 +6,7 @@
 
 # Enocean Device Manager and Home Assistant Configuration Exporter
 
-# WORK IN PROGRESS!!! NOT YET RELEASE READY!!!
+# WORK IN PROGRESS BUT ALREAD USABLE!!!
 
 This client application allows you to **inventory all EnOcean devices**. It can **automatically read and detect devices** from the RS485 bus or from wireless network. After the devices are listed in the EnOcean Device Manager **you can enricht device information** like changing the name, comment or adapt parameters like timeframes, thresholds, units, ... .
 Furthermore, it automatically can detect default settings for Home Assistant configuration which can be adjust as well and it allows you to **generate and export the configuration for Home Assistant**. 

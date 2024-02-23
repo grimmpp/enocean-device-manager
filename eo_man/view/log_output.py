@@ -6,6 +6,8 @@ import tkinter.scrolledtext as ScrolledText
 
 from eltakobus.message import EltakoPoll, EltakoDiscoveryReply, EltakoDiscoveryRequest, EltakoMessage, prettify, Regular1BSMessage, EltakoWrapped1BS
 
+from eo_man import LOGGER
+
 from ..data.data_helper import b2s, a2s
 from ..data.data_manager import DataManager
 from ..controller.app_bus import AppBus, AppBusEventType
@@ -16,13 +18,28 @@ class LogOutputPanel():
         self.app_bus = app_bus
         self.data_manager = data_manager
 
-        pane = ttk.Frame(main, padding=2, height=100)
+        pane = ttk.Frame(main, padding=2, height=150)
         # pane.grid(row=2, column=0, sticky="nsew", columnspan=3)
         self.root = pane
 
-        self.st = ScrolledText.ScrolledText(pane, border=3, height=10, state=DISABLED, bg='black', fg='lightgrey', font=('Arial', 14), padx=5, pady=5)
+        tool_bar = ttk.Frame(pane, height=24)
+        tool_bar.pack(expand=False, fill=X, anchor=NW, pady=(0,4))
+
+        # l = Label(tool_bar, text="Search")
+        # l.pack(side=LEFT, padx=(2,0))
+
+        # self.e_search = ttk.Entry(tool_bar, width="14") 
+        # self.e_search.pack(side=LEFT, padx=(2,0))
+
+        self.show_telegram_values = tk.BooleanVar(value=True)
+        cb = ttk.Checkbutton(tool_bar, text="Show Telegram Values", variable=self.show_telegram_values)
+        cb.pack(side=LEFT, padx=(2,0))
+
+        self.st = ScrolledText.ScrolledText(pane, border=3,  height=150, 
+                                            state=DISABLED, bg='black', fg='lightgrey', 
+                                            font=('Arial', 14), padx=5, pady=5)
         self.st.configure(font='TkFixedFont')
-        self.st.pack(expand=True, fill="both")
+        self.st.pack(expand=True, fill=BOTH)
         # self.st.grid(row=2, column=0, sticky="nsew", columnspan=3)
 
         app_bus.add_event_handler(AppBusEventType.SERIAL_CALLBACK, self.serial_callback)
@@ -45,13 +62,20 @@ class LogOutputPanel():
             if hasattr(telegram, 'status'):
                 payload += ', status: '+ a2s(telegram.status, 1)
 
-            eep, values = self.data_manager.get_values_from_message_to_string(telegram, current_base_id)
-            if eep is not None: 
-                values = f" => values for EEP {eep.__name__}: ({values})"
-            else:
-                values = ''
+            values = ''
+            if self.show_telegram_values.get():
+                eep, values = self.data_manager.get_values_from_message_to_string(telegram, current_base_id)
+                if eep is not None: 
+                    if values is not None:
+                        values = f" => values for EEP {eep.__name__}: ({values})"
+                    else:
+                        values = f" => No matching value for EEP {eep.__name__}"
+                else:
+                    values = ''
 
-            self.receive_log_message({'msg': f"Received Telegram: {tt} from {adr}{payload}{values}", 'color': 'darkgrey'})
+            msg = f"Received Telegram: {tt} from {adr}{payload}{values}"
+            self.receive_log_message({'msg': msg, 'color': 'darkgrey'})
+            LOGGER.info(msg)
 
 
     def receive_log_message(self, data):

@@ -48,10 +48,10 @@ class MainPanel():
         SerialConnectionBar(self.main, app_bus, data_manager, row=row_serial_con_bar)
         FilterBar(self.main, app_bus, data_manager, row=row_filter_bar)
         # main area
-        main_split_area = ttk.PanedWindow(self.main, orient="vertical")
-        main_split_area.grid(row=row_main_area, column=0, sticky="nsew", columnspan=4)
+        main_split_area = ttk.PanedWindow(self.main, orient=VERTICAL)
+        main_split_area.grid(row=row_main_area, column=0, sticky=NSEW, columnspan=4)
         
-        data_split_area = ttk.PanedWindow(main_split_area, orient="horizontal")
+        data_split_area = ttk.PanedWindow(main_split_area, orient=HORIZONTAL)
         # data_split_area = Frame(main_split_area)
         # data_split_area.columnconfigure(0, weight=5)
         # data_split_area.columnconfigure(0, weight=0, minsize=100)
@@ -61,7 +61,7 @@ class MainPanel():
         lo = LogOutputPanel(main_split_area, app_bus, data_manager)
 
         main_split_area.add(data_split_area, weight=5)
-        main_split_area.add(lo.root, weight=1)
+        main_split_area.add(lo.root, weight=2)
 
         data_split_area.add(dt.root, weight=5)
         data_split_area.add(dd.root, weight=0)
@@ -111,4 +111,5 @@ class MainPanel():
     def on_closing(self) -> None:
         self.app_bus.fire_event(AppBusEventType.WINDOW_CLOSED, {})
         logging.info("Close Application eo-man")
+        logging.info("========================\n")
         self.main.destroy()

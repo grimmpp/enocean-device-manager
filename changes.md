@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.1.10 Logs are sent into file
+* Logs are now written to log file in application folder.
+* Added Flag to see values from incomming telegrams.
+
 ## v0.1.9 Read Support for USB300 + Multi-Gateway Support for HA Config Export
 * Fixed compatibility of loading old application configs
 * Icons added
