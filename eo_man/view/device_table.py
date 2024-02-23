@@ -43,7 +43,6 @@ class DeviceTable():
             yscrollcommand=yscrollbar.set,
             xscrollcommand=xscrollbar.set,
             columns=(0,1,2,3,4,5,6,7,8,9),
-            height=10,
         )
         self.treeview.pack(expand=True, fill=BOTH)
         yscrollbar.config(command=self.treeview.yview)

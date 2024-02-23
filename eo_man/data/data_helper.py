@@ -65,6 +65,14 @@ def get_all_eep_names():
                 work.append(child)
     return sorted(set([s.__name__.upper() for s in subclasses if len(s.__name__) == 8 and s.__name__.count('_') == 2]))
 
+def find_eep_by_name(eep_name:str) -> EEP:
+    for child in EEP.__subclasses__():
+        if child.__name__.replace('_', '-').upper() == eep_name.replace('_', '-').upper():
+            return child
+        for sub_child in child.__subclasses__():
+            if sub_child.eep_string.replace('_', '-').upper() == eep_name.replace('_', '-').upper():
+                return sub_child
+    return None
 
 def a2s(address:int, length:int=4):
     """address to string"""

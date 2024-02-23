@@ -2,11 +2,13 @@ import sys
 import os
 import argparse
 from typing import Final
+from logging.handlers import RotatingFileHandler
 
 PACKAGE_NAME: Final = 'eo_man'
 
 # load same path like calling the app via 'python -m eo-man'
-file_dir = os.path.join( os.path.dirname(__file__), '..')
+PROJECT_DIR = os.path.dirname(__file__)
+file_dir = os.path.join( PROJECT_DIR, '..')
 sys.path.append(file_dir)
 __import__(PACKAGE_NAME)
 __package__ = PACKAGE_NAME
@@ -35,7 +37,12 @@ Home Assistant Configurations for the Home Assistant Eltako Integration (https:/
 
 
 def init_logger(app_bus:AppBus, log_level:int=logging.INFO):
-    logging.basicConfig(format='%(message)s ', level=logging.INFO)
+    file_handler = RotatingFileHandler(os.path.join(PROJECT_DIR, "enocean-device-manager.log"), 
+                                       mode='a', maxBytes=10*1024*1024, backupCount=2, encoding=None, delay=0)
+
+    logging.basicConfig(format='%(asctime)s %(name)s %(levelname)s %(message)s ', #'%(message)s ', 
+                        level=logging.INFO,
+                        handlers=[ file_handler, logging.StreamHandler() ])
     global LOGGER
     LOGGER = logging.getLogger(PACKAGE_NAME)
     LOGGER.setLevel(log_level)

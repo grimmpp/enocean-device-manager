@@ -179,7 +179,8 @@ class SerialController():
                     self._serial_bus = RS485SerialInterfaceV2(serial_port, 
                                                               baud_rate=baudrate, 
                                                               callback=self._send_serial_event, 
-                                                              delay_message=delay_message)
+                                                              delay_message=delay_message,
+                                                              auto_reconnect=False)
                 self._serial_bus.start()
                 self._serial_bus.is_serial_connected.wait(timeout=10)
                 
