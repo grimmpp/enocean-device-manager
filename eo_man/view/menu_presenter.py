@@ -15,6 +15,7 @@ from ..data.ha_config_generator import HomeAssistantConfigurationGenerator
 
 from ..icons.image_gallary import ImageGallery
 
+from .eep_checker import EepChecker
 from .about_window import AboutWindow
 from . import DEFAULT_WINDOW_TITLE
 
@@ -79,6 +80,12 @@ class MenuPresenter():
         menu_bar.add_cascade(label="Home Assistant", menu=ha_menu)
         ha_menu.add_command(label="Reset to suggested HA properties.",
                             command=self.reset_to_suggested_ha_properties)
+
+
+        tool_menu = Menu(menu_bar, tearoff=False)
+        menu_bar.add_cascade(label="Tools", menu=tool_menu)
+        tool_menu.add_command(label="EEP Checker",
+                              command=lambda: EepChecker(main))
 
 
         help_menu = Menu(menu_bar, tearoff=False)

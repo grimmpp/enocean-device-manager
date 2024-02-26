@@ -287,14 +287,11 @@ class DataManager():
             device = self.devices[ext_id_str]
             try:
                 eep:EEP = data_helper.find_eep_by_name(device.eep)
-                properties_as_str = []
-                for k, v in eep.decode_message(message).__dict__.items():
-                    properties_as_str.append(f"{str(k)[1:] if str(k).startswith('_') else str(k)}: {str(v)}")
-
-                return eep, ', '.join(properties_as_str)
+                return eep, ', '.join(data_helper.get_values_for_eep(eep, message))
             except:
                 pass
         return eep, None
+    
 
 
     

@@ -37,7 +37,7 @@ Home Assistant Configurations for the Home Assistant Eltako Integration (https:/
 
 
 def init_logger(app_bus:AppBus, log_level:int=logging.INFO):
-    file_handler = RotatingFileHandler(os.path.join(PROJECT_DIR, "enocean-device-manager.log"), 
+    file_handler = RotatingFileHandler(os.path.join(PROJECT_DIR, "enocean-device-manager.log"),
                                        mode='a', maxBytes=10*1024*1024, backupCount=2, encoding=None, delay=0)
 
     logging.basicConfig(format='%(asctime)s %(name)s %(levelname)s %(message)s ', #'%(message)s ', 
@@ -46,6 +46,7 @@ def init_logger(app_bus:AppBus, log_level:int=logging.INFO):
     global LOGGER
     LOGGER = logging.getLogger(PACKAGE_NAME)
     LOGGER.setLevel(log_level)
+    file_handler.setLevel(logging.DEBUG)
     LOGGER.info("Start Application eo_man")
     LOGGER.info(ApplicationInfo.get_app_info_as_str())
     # add print log messages for log message view on command line as debug
