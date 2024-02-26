@@ -74,6 +74,13 @@ def find_eep_by_name(eep_name:str) -> EEP:
                 return sub_child
     return None
 
+def get_values_for_eep(eep:EEP, message:EltakoMessage) -> list[str]:
+    properties_as_str = []
+    for k, v in eep.decode_message(message).__dict__.items():
+        properties_as_str.append(f"{str(k)[1:] if str(k).startswith('_') else str(k)}: {str(v)}")
+
+    return properties_as_str
+
 def a2s(address:int, length:int=4):
     """address to string"""
     if address is None:

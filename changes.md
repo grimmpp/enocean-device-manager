@@ -1,5 +1,8 @@
 # Change Log
 
+## 0.1.11 EEP Checker added
+* Small tool added to check EEP values of a data set.
+
 ## v0.1.10 Logs are sent into file
 * Logs are now written to log file in application folder.
 * Added Flag to see values from incomming telegrams.
