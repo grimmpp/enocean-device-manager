@@ -5,6 +5,7 @@ from .application_data import ApplicationData
 from .filter import DataFilter
 from .const import *
 from .app_info import ApplicationInfo as AppInfo
+from .recorded_message import RecordedMessage
 
 from eltakobus.util import AddressExpression, b2s
 from eltakobus.eep import EEP
@@ -28,6 +29,9 @@ class DataManager():
         # filter
         self.data_fitlers:dict[str:DataFilter] = {}
         self.selected_data_filter_name:DataFilter = None
+
+        # recorded messages
+        self.recoreded_messages:list[RecordedMessage] = []
 
 
     def set_current_data_filter_handler(self, filter:DataFilter):
@@ -93,6 +97,7 @@ class DataManager():
         else:
             self.app_bus.fire_event(AppBusEventType.SET_DATA_TABLE_FILTER, self.data_fitlers[self.selected_data_filter_name])
 
+        self.recoreded_messages = app_data.recoreded_messages
         self.load_devices(app_data.devices)
         return app_data
 
@@ -103,30 +108,34 @@ class DataManager():
         app_data.data_filters = self.data_fitlers
         app_data.devices = self.devices
         app_data.selected_data_filter_name = self.selected_data_filter_name
+        app_data.recoreded_messages = self.recoreded_messages
 
-        # if filename.endswith('.eodm'):
-        #     ApplicationData.write_to_file(filename, app_data)
-        # elif filename.endswith('.yaml'):
-        #     ApplicationData.write_to_yaml_file(filename, app_data)
-        # else:
-        #     raise Exception('unknow file type')
         ApplicationData.write_to_yaml_file(filename, app_data)
 
 
     def _serial_callback_handler(self, data:dict):
         message:EltakoMessage = data['msg']
         current_base_id:str = data['base_id']
+        gateway_id:str = data['gateway_id']
 
-        # self.add_sensor_from_wireless_telegram(message)
         if type(message) in [EltakoWrappedRPS,EltakoWrapped4BS, RPSMessage, Regular1BSMessage, Regular4BSMessage]:
-            if int.from_bytes(message.address, "big") > 0X000000FF:
-                a = b2s(message.address)
-                if a not in self.devices:
+            # for decentral devices
+            if int.from_bytes(message.address, "big") > 0X0000FFFF:
+                dev_address = b2s(message.address)
+                # add message to list
+                self.recoreded_messages.append(RecordedMessage(message, dev_address, gateway_id))
+                # if device unknown add device to list
+                if dev_address not in self.devices:
                     decentralized_device = Device.get_decentralized_device_by_telegram(message)
-                    self.devices[a] = decentralized_device
+                    self.devices[dev_address] = decentralized_device
                     self.app_bus.fire_event(AppBusEventType.UPDATE_SENSOR_REPRESENTATION, decentralized_device)
+            
+            # for bus devices
             elif current_base_id:
                 external_id = data_helper.a2s( int.from_bytes(AddressExpression.parse(current_base_id)[0], 'big') +  int.from_bytes(message.address, 'big') )
+                # add message to list
+                self.recoreded_messages.append(RecordedMessage(message, external_id, gateway_id))
+                # if device unknown add device to list
                 if external_id not in self.devices:
                     centralized_device = Device.get_centralized_device_by_telegram(message, current_base_id, external_id)
                     self.devices[centralized_device] = centralized_device

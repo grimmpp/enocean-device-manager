@@ -1,6 +1,9 @@
 # Change Log
 
-## 0.1.11 EEP Checker added
+## v0.1.12 Send Message Window added
+* Small tool to send messages added.
+
+## v0.1.11 EEP Checker added
 * Small tool added to check EEP values of a data set.
 
 ## v0.1.10 Logs are sent into file

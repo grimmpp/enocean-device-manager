@@ -1,4 +1,3 @@
-
 from tkinter import *
 import tkinter as tk
 from tkinter import Tk, ttk
@@ -9,7 +8,7 @@ from eltakobus.eep import A5_08_01
 from ..data import data_helper
 
 
-class EepChecker():
+class EepCheckerWindow():
 
     def __init__(self, main:Tk):
         popup = Toplevel(main, padx=4, pady=4)
@@ -77,30 +76,18 @@ class EepChecker():
         self.show_eep_values(None)
 
         popup.wm_attributes('-toolwindow', 'True')
-        # popup.resizable (width=False, height=False)
-        # popup.transient(main)
-        # popup.grab_set()
 
-        # center
-        # w = 260
-        # h = 260
-        # x = main.winfo_x() + main.winfo_width()/2 - w/2
-        # y = main.winfo_y() + main.winfo_height()/2 - h/2
-        # popup.geometry('%dx%d+%d+%d' % (w, h, x, y))
+        def center():
+            w = popup.winfo_width()
+            h = popup.winfo_height()
+            x = main.winfo_x() + main.winfo_width()/2 - w/2
+            y = main.winfo_y() + main.winfo_height()/2 - h/2
+            popup.geometry('%dx%d+%d+%d' % (w, h, x, y))
+
+        popup.after(10, center)
 
         main.wait_window(popup)
 
-
-    def enable_disable_data_fields(self):
-        msg_type = self.cb_msg_type.get()
-        if '4BS' in msg_type:
-            self.e_data2.config(state=NORMAL)
-            self.e_data1.config(state=NORMAL)
-            self.e_data0.config(state=NORMAL)
-        else:
-            self.e_data2.config(state=DISABLED)
-            self.e_data1.config(state=DISABLED)
-            self.e_data0.config(state=DISABLED)
 
     
     def set_message_type(self):

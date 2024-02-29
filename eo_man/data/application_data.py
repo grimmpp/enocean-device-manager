@@ -3,6 +3,7 @@ import yaml
 
 from .device import Device
 from .filter import DataFilter
+from .recorded_message import RecordedMessage
 
 import pickle
 
@@ -12,7 +13,8 @@ class ApplicationData():
 
     def __init__(self, version:str='unknown', 
                  selected_data_filter:str=None, data_filters:dict[str:DataFilter]={},
-                 devices:dict[str:Device]={}):
+                 devices:dict[str:Device]={},
+                 recoreded_messages:list[RecordedMessage]=[]):
         
         self.application_version:str = version
 
@@ -20,6 +22,9 @@ class ApplicationData():
         self.data_filters:dict[str:DataFilter] = data_filters
 
         self.devices:dict[str:Device] = devices
+
+        self.recoreded_messages:list[RecordedMessage] = recoreded_messages
+
 
     @classmethod
     def read_from_file(cls, filename:str):
@@ -52,9 +57,18 @@ class ApplicationData():
         return result
     
     @classmethod
+    def _migrate(cls, obj):
+        """required to make different versions compatibel"""
+        if not hasattr(obj, 'recoreded_messages'):
+            setattr(obj, 'recoreded_messages', [])
+
+    @classmethod
     def read_from_yaml_file(cls, filename:str):
         with open(filename, 'r') as file:
-            return yaml.load(file, Loader=yaml.Loader)
+            app_data = yaml.load(file, Loader=yaml.Loader)
+        cls._migrate(app_data)
+        
+        return app_data
         
     
     # @classmethod

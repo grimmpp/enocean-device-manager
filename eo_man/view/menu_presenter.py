@@ -8,6 +8,7 @@ from tkinter import messagebox
 import webbrowser
 
 from ..controller.app_bus import AppBus, AppBusEventType
+from ..controller.serial_controller import SerialController
 
 from ..data.device import Device
 from ..data.data_manager import DataManager
@@ -15,13 +16,14 @@ from ..data.ha_config_generator import HomeAssistantConfigurationGenerator
 
 from ..icons.image_gallary import ImageGallery
 
-from .eep_checker import EepChecker
+from .eep_checker_window import EepCheckerWindow
 from .about_window import AboutWindow
+from .send_message_window import SendMessageWindow
 from . import DEFAULT_WINDOW_TITLE
 
 class MenuPresenter():
 
-    def __init__(self, main: Tk, app_bus: AppBus, data_manager: DataManager):
+    def __init__(self, main: Tk, app_bus: AppBus, data_manager: DataManager, serial_controller:SerialController):
         self.main = main
         self.app_bus = app_bus
         self.data_manager = data_manager
@@ -83,10 +85,15 @@ class MenuPresenter():
 
 
         tool_menu = Menu(menu_bar, tearoff=False)
-        menu_bar.add_cascade(label="Tools", menu=tool_menu)
+        menu_bar.add_cascade(label="Tools", 
+                             menu=tool_menu)
         tool_menu.add_command(label="EEP Checker",
-                              command=lambda: EepChecker(main))
-
+                              command=lambda: EepCheckerWindow(main))
+        send_message_window = SendMessageWindow(main, app_bus, serial_controller)
+        tool_menu.add_command(label="Send Message", 
+                              command=send_message_window.show_window)
+        tool_menu.add_command(label="Message Log Analyser", 
+                              command=lambda: messagebox.showinfo("Message Log Analyser", "Will be available soon!"))
 
         help_menu = Menu(menu_bar, tearoff=False)
         menu_bar.add_cascade(label="Help", menu=help_menu)

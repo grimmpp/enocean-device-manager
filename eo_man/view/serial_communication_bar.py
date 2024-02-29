@@ -10,13 +10,15 @@ from ..controller.app_bus import AppBus, AppBusEventType
 from ..controller.serial_controller import SerialController
 from ..data.data_manager import DataManager
 
+from eltakobus.message import *
+
 class SerialConnectionBar():
 
-    def __init__(self, main: Tk, app_bus:AppBus, data_manager:DataManager, row:int):
+    def __init__(self, main: Tk, app_bus:AppBus, data_manager:DataManager, serial_controller:SerialController, row:int):
         self.main = main
         self.app_bus = app_bus
         self.data_manager = data_manager
-        self.serial_cntr = SerialController(app_bus)
+        self.serial_cntr = serial_controller
 
         f = LabelFrame(main, text="Serial Connection", bd=1)#, relief=SUNKEN)
         f.grid(row=row, column=0, columnspan=1, sticky=W+E+N+S, pady=(0,2), padx=2)
@@ -60,6 +62,10 @@ class SerialConnectionBar():
         self.b_sync_ha_sender = ttk.Button(f, text="Write HA senders to devices", state=DISABLED, command=self.write_ha_senders_to_devices)
         Hovertip(self.b_sync_ha_sender,"Ensures sender configuration for Home Assistant is written into device memory.",300)
         self.b_sync_ha_sender.pack(side=tk.LEFT, padx=(0, 5), pady=5)
+
+        # # if connected via fam14 force to get status update message
+        # b = ttk.Button(f, text="Send Poll", command=lambda: self.serial_cntr.send_message(EltakoPollForced(5)))
+        # b.pack(side=tk.LEFT, padx=(0, 5), pady=5)
 
         self.app_bus.add_event_handler(AppBusEventType.CONNECTION_STATUS_CHANGE, self.is_connected_handler)
         self.app_bus.add_event_handler(AppBusEventType.DEVICE_SCAN_STATUS, self.device_scan_status_handler)
@@ -152,10 +158,11 @@ class SerialConnectionBar():
             try:
                 self.main.config(cursor="watch")    #set cursor for waiting
                 self.b_detect.config(state=DISABLED)
+                self.b_connect.config(state=DISABLED)
                 self.cb_device_type.config(state=DISABLED)
                 self.cb_serial_ports.config(state=DISABLED)
                 serial_ports = self.serial_cntr.get_serial_ports(self.cb_device_type.get(), force_reload)
-                self.cb_device_type.config(state=NORMAL)
+                self.b_detect.config(state=NORMAL)
                 self.cb_device_type.config(state=NORMAL)
                 self.cb_serial_ports['values'] = serial_ports
                 if len(self.cb_serial_ports['values']) > 0:

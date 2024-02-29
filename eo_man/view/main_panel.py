@@ -6,6 +6,7 @@ from tkinter import ttk
 from ..icons.image_gallary import ImageGallery
 
 from ..controller.app_bus import AppBus, AppBusEventType
+from ..controller.serial_controller import SerialController
 
 from ..data.data_manager import DataManager
 
@@ -41,11 +42,13 @@ class MainPanel():
         self.main.rowconfigure(row_status_bar, weight=0, minsize=30)      # status bar
         self.main.columnconfigure(0, weight=1, minsize=100)
 
+        serial_controller = SerialController(app_bus)
+
         ## init presenters
-        mp = MenuPresenter(self.main, app_bus, data_manager)
+        mp = MenuPresenter(self.main, app_bus, data_manager, serial_controller)
         
         ToolBar(self.main, mp, row=row_button_bar)
-        SerialConnectionBar(self.main, app_bus, data_manager, row=row_serial_con_bar)
+        SerialConnectionBar(self.main, app_bus, data_manager, serial_controller, row=row_serial_con_bar)
         FilterBar(self.main, app_bus, data_manager, row=row_filter_bar)
         # main area
         main_split_area = ttk.PanedWindow(self.main, orient=VERTICAL)

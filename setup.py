@@ -25,7 +25,7 @@ required = ['eltako14bus==0.0.46', 'requests==2.31.0', 'enocean==0.60.1', 'pyser
 
 setup(
     name='eo_man',
-    version='0.1.11',
+    version='0.1.12',
     package_dir={'eo_man':"eo_man"},
     # packages=find_packages("./eo-man"),
     #package_data={'': ['*.png']},

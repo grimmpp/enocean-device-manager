@@ -22,20 +22,29 @@ class AppBusEventType(Enum):
 class AppBus():
 
     def __init__(self) -> None:
+        self.handler_count = 0
 
         for event_type in AppBusEventType:
             if event_type not in self._controller_event_handlers.keys():
-                self._controller_event_handlers[event_type] = []
+                self._controller_event_handlers[event_type] = {}
 
 
     _controller_event_handlers={}
-    def add_event_handler(self, event:AppBusEventType, handler) -> None:
-        self._controller_event_handlers[event].append(handler)
+    def add_event_handler(self, event:AppBusEventType, handler) -> int:
+        self.handler_count += 1
+        self._controller_event_handlers[event][self.handler_count] = handler
+        return self.handler_count
+    
+    def remove_event_handler_by_id(self, handler_id:int) -> None:
+        for et in AppBusEventType:
+            if handler_id in self._controller_event_handlers[et]:
+                del self._controller_event_handlers[et][handler_id]
+                break
 
     def fire_event(self, event:AppBusEventType, data) -> None:
         # print(f"[Controller] Fire event {event}")
-        for h in self._controller_event_handlers[event]: h(data)
+        for h in self._controller_event_handlers[event].values(): h(data)
 
     async def async_fire_event(self, event:AppBusEventType, data) -> None:
         # print(f"[Controller] Fire async event {event}")
-        for h in self._controller_event_handlers[event]: await h(data)
+        for h in self._controller_event_handlers[event].values(): await h(data)
