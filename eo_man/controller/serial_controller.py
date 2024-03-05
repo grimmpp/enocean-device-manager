@@ -27,7 +27,9 @@ class SerialController():
     def __init__(self, app_bus:AppBus) -> None:
         self.app_bus = app_bus
         self._serial_bus = None
+        self.connected_gateway_type = None
         self.current_base_id:str = None
+        self.gateway_id:str = None
         self.port_mapping = None
 
         self.app_bus.add_event_handler(AppBusEventType.WINDOW_CLOSED, self.on_window_closed)
@@ -52,6 +54,8 @@ class SerialController():
         else:
             return []
     
+    def is_connected_gateway_device_bus(self):
+        return self.connected_gateway_type == 'FAM14' or self.connected_gateway_type == 'FGW14-USB'
 
     def _get_gateway2serial_port_mapping(self) -> dict[str:list[str]]:
         """ Lists serial port names
@@ -156,8 +160,13 @@ class SerialController():
     def is_fam14_connection_active(self) -> bool:
         return self.is_serial_connection_active() and self._serial_bus.suppress_echo
 
-    def _send_serial_event(self, message) -> None:
-        self.app_bus.fire_event(AppBusEventType.SERIAL_CALLBACK, {'msg': message, 'base_id': self.current_base_id})
+    def _received_serial_event(self, message) -> None:
+        if isinstance(message.address, int):
+             message.address = message.address.to_bytes(4, 'big')
+
+        self.app_bus.fire_event(AppBusEventType.SERIAL_CALLBACK, {'msg': message, 
+                                                                  'base_id': self.current_base_id,
+                                                                  'gateway_id': self.gateway_id})
 
     def establish_serial_connection(self, serial_port:str, device_type:str) -> None:
         baudrate:int=57600
@@ -171,14 +180,14 @@ class SerialController():
             if not self.is_serial_connection_active():
                 if device_type == 'USB300':
                     self._serial_bus = ESP3SerialCommunicator(serial_port, 
-                                                              callback=self._send_serial_event,
+                                                              callback=self._received_serial_event,
                                                               esp2_translation_enabled=True,
                                                               auto_reconnect=False
                                                               )
                 else:
                     self._serial_bus = RS485SerialInterfaceV2(serial_port, 
                                                               baud_rate=baudrate, 
-                                                              callback=self._send_serial_event, 
+                                                              callback=self._received_serial_event, 
                                                               delay_message=delay_message,
                                                               auto_reconnect=False)
                 self._serial_bus.start()
@@ -188,6 +197,7 @@ class SerialController():
                     self._serial_bus.stop()
                 
                 if self._serial_bus.is_active():
+                    self.connected_gateway_type = device_type
                     self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Serial connection established. serial port: {serial_port}, baudrate: {baudrate}", 'color':'green'})
                     
                     if device_type == 'FAM14':
@@ -212,19 +222,23 @@ class SerialController():
             
         except Exception as e:
             self._serial_bus.stop()
+            self.connected_gateway_type = None
             self.app_bus.fire_event(AppBusEventType.CONNECTION_STATUS_CHANGE, {'serial_port':  serial_port, 'baudrate': baudrate, 'connected': False})
             msg = f"Establish connection for {device_type} on port {serial_port} failed!!!"
             self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
             logging.exception(msg, exc_info=True)
+
 
     async def async_create_usb300_device(self):
         try:
             self._serial_bus.set_callback( None )
             
             self.current_base_id = b2s(self._serial_bus.base_id)
+            self.gateway_id = self.current_base_id
 
             await self.app_bus.async_fire_event(AppBusEventType.ASYNC_TRANCEIVER_DETECTED, {'type': 'USB300', 
                                                                                             'base_id': self.current_base_id, 
+                                                                                            'gateway_id': self.gateway_id,
                                                                                             'tcm_version': '', 
                                                                                             'api_version': ''})
 
@@ -235,7 +249,8 @@ class SerialController():
             logging.exception(msg, exc_info=True)
             raise e
         finally:
-            self._serial_bus.set_callback( self._send_serial_event )                    
+            self._serial_bus.set_callback( self._received_serial_event )                    
+
 
     async def async_get_base_id_for_fam_usb(self, fam_usb:RS485SerialInterfaceV2, callback) -> str:
         base_id:str = None
@@ -253,6 +268,11 @@ class SerialController():
             fam_usb.set_callback( callback )
 
         return base_id
+    
+
+    def send_message(self, msg: EltakoMessage) -> None:
+        asyncio.run( self._serial_bus.send(msg) ) 
+
 
     async def async_create_fam_usb_device(self):
         try:
@@ -263,6 +283,7 @@ class SerialController():
             response:ESP2Message = await self._serial_bus.exchange(ESP2Message(bytes(data)), ESP2Message)
             base_id = response.body[2:6]
             self.current_base_id = b2s(base_id)
+            self.gateway_id = self.current_base_id
 
             # get version
             data = b'\xAB\x4B\x00\x00\x00\x00\x00\x00\x00\x00\x00'
@@ -272,6 +293,7 @@ class SerialController():
 
             await self.app_bus.async_fire_event(AppBusEventType.ASYNC_TRANCEIVER_DETECTED, {'type': 'FAM-USB', 
                                                                                             'base_id': self.current_base_id, 
+                                                                                            'gateway_id': self.gateway_id,
                                                                                             'tcm_version': tcm_sw_v, 
                                                                                             'api_version': api_v})
 
@@ -282,7 +304,7 @@ class SerialController():
             logging.exception(msg, exc_info=True)
             raise e
         finally:
-            self._serial_bus.set_callback( self._send_serial_event )
+            self._serial_bus.set_callback( self._received_serial_event )
 
     def stop_serial_connection(self) -> None:
         if self.is_serial_connection_active():
@@ -295,6 +317,8 @@ class SerialController():
             if not self._serial_bus.is_active():
                 self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Serial connection stopped.", 'color':'green'})
             self.current_base_id = None
+            self.gateway_id = None
+            self.connected_gateway_type = None
             self._serial_bus = None
 
     def kill_serial_connection_before_exit(self) -> None:
@@ -341,6 +365,7 @@ class SerialController():
             # first get fam14 and make it know to data manager
             fam14:FAM14 = await self.create_busobject(255)
             self.current_base_id = await fam14.get_base_id()
+            self.gateway_id = data_helper.a2s( (await fam14.get_base_id_in_int()) + 0xFF )
             self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Found device: {fam14}", 'color':'grey'})
             await self.app_bus.async_fire_event(AppBusEventType.ASYNC_DEVICE_DETECTED, {'device': fam14, 'fam14': fam14, 'force_overwrite': force_overwrite})
 
@@ -352,7 +377,7 @@ class SerialController():
         finally:
             if is_locked:
                 resp = await locking.unlock_bus(self._serial_bus)
-            self._serial_bus.set_callback( self._send_serial_event )
+            self._serial_bus.set_callback( self._received_serial_event )
 
 
     async def _scan_for_devices_on_bus(self, force_overwrite:bool=False) -> None:
@@ -394,7 +419,7 @@ class SerialController():
                 await locking.unlock_bus(self._serial_bus)
 
             self.app_bus.fire_event(AppBusEventType.DEVICE_SCAN_STATUS, 'FINISHED')
-            self._serial_bus.set_callback( self._send_serial_event )
+            self._serial_bus.set_callback( self._received_serial_event )
 
     def write_sender_id_to_devices(self, sender_base_id:int=45056, sender_id_list:dict={}):
         t = threading.Thread(target=lambda: asyncio.run( self.async_write_sender_id_to_devices(sender_base_id, sender_id_list) )  )
@@ -467,4 +492,4 @@ class SerialController():
                 await locking.unlock_bus(self._serial_bus)
 
                 self.app_bus.fire_event(AppBusEventType.WRITE_SENDER_IDS_TO_DEVICES_STATUS, 'FINISHED')
-                self._serial_bus.set_callback( self._send_serial_event )
+                self._serial_bus.set_callback( self._received_serial_event )

@@ -50,7 +50,15 @@ class LogOutputPanel():
         telegram:EltakoMessage = data['msg']
         current_base_id:str = data['base_id']
 
-        if type(telegram) not in [EltakoPoll, EltakoDiscoveryReply, EltakoDiscoveryRequest]:
+        # filter out poll messages
+        filter = type(telegram) not in [EltakoPoll, EltakoDiscoveryReply, EltakoDiscoveryRequest]
+        # filter out empty telegrams (generated when sending telegrams with FAM-USB)
+        try:
+            filter &= (int.from_bytes(telegram.address, 'big') > 0 and int.from_bytes(telegram.payload, 'big'))
+        except:
+            pass
+
+        if filter:
             tt = type(telegram).__name__
             adr = b2s(telegram.address)
             payload = ''
@@ -63,19 +71,20 @@ class LogOutputPanel():
                 payload += ', status: '+ a2s(telegram.status, 1)
 
             values = ''
-            if self.show_telegram_values.get():
-                eep, values = self.data_manager.get_values_from_message_to_string(telegram, current_base_id)
-                if eep is not None: 
-                    if values is not None:
-                        values = f" => values for EEP {eep.__name__}: ({values})"
-                    else:
-                        values = f" => No matching value for EEP {eep.__name__}"
+            eep, values = self.data_manager.get_values_from_message_to_string(telegram, current_base_id)
+            if eep is not None: 
+                if values is not None:
+                    values = f" => values for EEP {eep.__name__}: ({values})"
                 else:
-                    values = ''
+                    values = f" => No matching value for EEP {eep.__name__}"
+            else:
+                values = ''
 
-            msg = f"Received Telegram: {tt} from {adr}{payload}{values}"
-            self.receive_log_message({'msg': msg, 'color': 'darkgrey'})
-            LOGGER.info(msg)
+            display_values:str = values if self.show_telegram_values.get() else ''
+            log_msg     = f"Received Telegram: {tt} from {adr}{payload}{values}"
+            display_msg = f"Received Telegram: {tt} from {adr}{payload}{display_values}"
+            self.receive_log_message({'msg': display_msg, 'color': 'darkgrey'})
+            LOGGER.info(log_msg)
 
 
     def receive_log_message(self, data):

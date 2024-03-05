@@ -1,6 +1,14 @@
 # Change Log
 
-## 0.1.11 EEP Checker added
+## v0.1.13 Send Message Window Improved
+* Improved send messages tool.
+* fixed log rotation
+* Improved ESP3. Sending is working but not for gateway commands like A5-38-08 which is needed to control lights.
+
+## v0.1.12 Send Message Window added
+* Small tool to send messages added.
+
+## v0.1.11 EEP Checker added
 * Small tool added to check EEP values of a data set.
 
 ## v0.1.10 Logs are sent into file
