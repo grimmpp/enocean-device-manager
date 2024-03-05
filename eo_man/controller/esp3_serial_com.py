@@ -13,7 +13,9 @@ from enocean.communicators.communicator import Communicator
 from enocean.protocol.packet import Packet, RadioPacket, RORG, PACKET, UTETeachInPacket
 from enocean.protocol.constants import PACKET, PARSE_RESULT, RETURN_CODE
 
+
 from eltakobus.message import ESP2Message, RPSMessage, Regular1BSMessage,  Regular4BSMessage, prettify
+from eltakobus.eep import CentralCommandSwitching, A5_38_08
 from eltakobus.util import b2s
 
 class ESP3SerialCommunicator(Communicator):
@@ -68,27 +70,33 @@ class ESP3SerialCommunicator(Communicator):
 
         optional = []
         if isinstance(message, RPSMessage):
-            org = RORG.RPS
+            rorg = RORG.RPS
             data = [message.data[0]]
         elif isinstance(message, Regular1BSMessage):
-            org = RORG.BS1
+            rorg = RORG.BS1
             data = [message.data[0]]
         elif isinstance(message, Regular4BSMessage):
-            org = RORG.BS4
-            telegram_count = 0x03
-            optional = [telegram_count, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]
+            rorg = RORG.BS4
+            sub_tel = PACKET.RADIO_SUB_TEL if message.outgoing else 0 # 3 = send, 0 = receive
+            optional = [sub_tel,   # 3 = sender, 0 = receiver
+                        0xFF, 0xFF, 0xFF, 0xFF, # destination broadcast
+                        0xFF                    # wireless quality
+                        ]
             data = message.data
         else:
             return None
-        
-        sender = [x for x in message.address]
 
-        command=[org]
+        command=[rorg]
         command.extend(data)
-        command.extend(sender)
+        command.extend([x for x in message.address])
         command.extend([message.status])
 
-        return Packet(PACKET.RADIO, command, optional)
+        package_type = PACKET.RADIO_ERP1
+        p = Packet(package_type, command, optional)
+        p.rorg = rorg
+        p.packet_type = package_type
+
+        return p
 
     @classmethod
     def convert_esp3_to_esp2_message(cls, packet: RadioPacket) -> ESP2Message:
@@ -102,11 +110,15 @@ class ESP3SerialCommunicator(Communicator):
         else:
             return None
 
+        sub_tel = packet.optional[0] if packet.optional is not None and len(packet.optional) > 0 else 0 # 3 = send, 0 = receive
+        in_or_out = 0x6b if sub_tel == PACKET.RADIO_SUB_TEL else 0x0b
+
         if org == 0x07:
-            body:bytes = bytes([0x0b, org] + packet.data[1:])
+            
+            body:bytes = bytes([in_or_out, org] + packet.data[1:])
         else:
             # data = ['0xf6', '0x50', '0xff', '0xa2', '0x24', '0x1', '0x30']
-            body:bytes = bytes([0x0b, org] + packet.data[1:2] + [0,0,0] + packet.data[2:])
+            body:bytes = bytes([in_or_out, org] + packet.data[1:2] + [0,0,0] + packet.data[2:])
 
         return prettify( ESP2Message(body) )
     
@@ -319,18 +331,26 @@ if __name__ == '__main__':
 
 
     # p = ESP3SerialCommunicator.convert_esp2_to_esp3_message(Regular4BSMessage(b'\xFF\xD6\x30\x01', 0x00, b'\x01\x00\x00\x09', True))
-    asyncio.run( com.send(p) )
+    # asyncio.run( com.send(p) )
 
     print("\n\n")
     # time.sleep(3)
 
+    address = b'\xFF\xD6\x30\x01'
+    # esp2_msg = Regular4BSMessage(address, 0x00, bytes((0x01, 0x00, 0x00, 0x09)), True)
+    
+    esp2_msg = A5_38_08(command=0x01, switching=CentralCommandSwitching(0, 1, 0, 0, 1)).encode_message(address)
+    esp2_msg2 = Regular4BSMessage(address, 0x00, b'\x01\x00\x00\x09', True)
 
-    p = ESP3SerialCommunicator.convert_esp2_to_esp3_message(Regular4BSMessage(b'\xFF\xD6\x30\x01', 0x00, bytes((0x01, 0x00, 0x00, 0x09)), True))
+    print("ESP2: "+b2s(esp2_msg.serialize()))
+    p = ESP3SerialCommunicator.convert_esp2_to_esp3_message(esp2_msg)
     print(', '.join([hex(i) for i in p.build()]))
 
     # p = ESP3SerialCommunicator.convert_esp2_to_esp3_message(RPSMessage(b'\xFF\xD6\x30\x01', 0x30, b'\x10', True))
     # p = ESP3SerialCommunicator.convert_esp2_to_esp3_message(Regular4BSMessage(b'\xFF\x82\x3E\x70', 0x00, bytes((0x01, 0x00, 0x00, 0x08)), True))
-    print(p)
+    print("ESP3: " + b2s(bytes(p.build())) )
+    print("ESP2: " + b2s( ESP3SerialCommunicator.convert_esp3_to_esp2_message(p).serialize() ))
+    
     asyncio.run( com.send(p) )
 
 

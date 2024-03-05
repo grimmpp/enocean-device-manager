@@ -27,6 +27,7 @@ class SerialController():
     def __init__(self, app_bus:AppBus) -> None:
         self.app_bus = app_bus
         self._serial_bus = None
+        self.connected_gateway_type = None
         self.current_base_id:str = None
         self.gateway_id:str = None
         self.port_mapping = None
@@ -53,6 +54,8 @@ class SerialController():
         else:
             return []
     
+    def is_connected_gateway_device_bus(self):
+        return self.connected_gateway_type == 'FAM14' or self.connected_gateway_type == 'FGW14-USB'
 
     def _get_gateway2serial_port_mapping(self) -> dict[str:list[str]]:
         """ Lists serial port names
@@ -194,6 +197,7 @@ class SerialController():
                     self._serial_bus.stop()
                 
                 if self._serial_bus.is_active():
+                    self.connected_gateway_type = device_type
                     self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Serial connection established. serial port: {serial_port}, baudrate: {baudrate}", 'color':'green'})
                     
                     if device_type == 'FAM14':
@@ -218,6 +222,7 @@ class SerialController():
             
         except Exception as e:
             self._serial_bus.stop()
+            self.connected_gateway_type = None
             self.app_bus.fire_event(AppBusEventType.CONNECTION_STATUS_CHANGE, {'serial_port':  serial_port, 'baudrate': baudrate, 'connected': False})
             msg = f"Establish connection for {device_type} on port {serial_port} failed!!!"
             self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
@@ -313,6 +318,7 @@ class SerialController():
                 self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Serial connection stopped.", 'color':'green'})
             self.current_base_id = None
             self.gateway_id = None
+            self.connected_gateway_type = None
             self._serial_bus = None
 
     def kill_serial_connection_before_exit(self) -> None:
@@ -359,7 +365,7 @@ class SerialController():
             # first get fam14 and make it know to data manager
             fam14:FAM14 = await self.create_busobject(255)
             self.current_base_id = await fam14.get_base_id()
-            self.gateway_id = data_helper.a2i( (await fam14.get_base_id_in_int()) + 0xFF )
+            self.gateway_id = data_helper.a2s( (await fam14.get_base_id_in_int()) + 0xFF )
             self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Found device: {fam14}", 'color':'grey'})
             await self.app_bus.async_fire_event(AppBusEventType.ASYNC_DEVICE_DETECTED, {'device': fam14, 'fam14': fam14, 'force_overwrite': force_overwrite})
 

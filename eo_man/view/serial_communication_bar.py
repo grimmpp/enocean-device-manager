@@ -11,6 +11,7 @@ from ..controller.serial_controller import SerialController
 from ..data.data_manager import DataManager
 
 from eltakobus.message import *
+from eltakobus.eep import *
 
 class SerialConnectionBar():
 
