@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.1.12 Send Message Window Improved
+## v0.1.13 Send Message Window Improved
 * Improved send messages tool.
 * fixed log rotation
 * Improved ESP3. Sending is working but not for gateway commands like A5-38-08 which is needed to control lights.
