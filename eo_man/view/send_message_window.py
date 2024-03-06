@@ -28,7 +28,8 @@ class SendMessageWindow():
 
         self.popup = None
 
-        self.data = {0: 'AA', 1: '80', 2:'80', 3:'80'}
+        self.data = {0: '01', 1: '00', 2:'00', 3:'09'}
+        self.address = {0: '00', 1: '00', 2:'00', 3:'00'}
         self.status = '00'
 
         self.entered_keys = ''
@@ -67,33 +68,17 @@ class SendMessageWindow():
         f = ttk.Frame(self.popup)
         f.grid(row=row, column=1, sticky=W)
         self.cb_data_0 = ttk.Combobox(f, state="readonly", width="3")
-        self.cb_data_0['values'] = [data_helper.a2s(i,1) for i in range(0,256)]
-        self.cb_data_0.set(self.data[0])
-        self.cb_data_0.bind('<<ComboboxSelected>>', self.show_message )
-        self.cb_data_0.bind('<FocusIn>', self.on_focus_combobox)
-        self.cb_data_0.bind('<Key>', self.select_by_entered_keys)
-        self.cb_data_0.pack(side=LEFT)
         self.cb_data_1 = ttk.Combobox(f, state="readonly", width="3")
-        self.cb_data_1['values'] = [data_helper.a2s(i,1) for i in range(0,256)]
-        self.cb_data_1.set(self.data[1])
-        self.cb_data_1.bind('<<ComboboxSelected>>', self.show_message )
-        self.cb_data_1.bind('<FocusIn>', self.on_focus_combobox)
-        self.cb_data_1.bind('<Key>', self.select_by_entered_keys)
-        self.cb_data_1.pack(side=LEFT)
         self.cb_data_2 = ttk.Combobox(f, state="readonly", width="3")
-        self.cb_data_2['values'] = [data_helper.a2s(i,1) for i in range(0,256)]
-        self.cb_data_2.set(self.data[2])
-        self.cb_data_2.bind('<<ComboboxSelected>>', self.show_message )
-        self.cb_data_2.bind('<FocusIn>', self.on_focus_combobox)
-        self.cb_data_2.bind('<Key>', self.select_by_entered_keys)
-        self.cb_data_2.pack(side=LEFT)
         self.cb_data_3 = ttk.Combobox(f, state="readonly", width="3")
-        self.cb_data_3['values'] = [data_helper.a2s(i,1) for i in range(0,256)]
-        self.cb_data_3.set(self.data[3])
-        self.cb_data_3.bind('<<ComboboxSelected>>', self.show_message )
-        self.cb_data_3.bind('<FocusIn>', self.on_focus_combobox)
-        self.cb_data_3.bind('<Key>', self.select_by_entered_keys)
-        self.cb_data_3.pack(side=LEFT)
+        for idx, cb_d in enumerate([self.cb_data_0, self.cb_data_1, self.cb_data_2, self.cb_data_3]):
+            cb_d['values'] = [data_helper.a2s(i,1) for i in range(0,256)]
+            cb_d.set(self.data[idx])
+            cb_d.bind('<<ComboboxSelected>>', self.show_message )
+            cb_d.bind('<FocusIn>', self.on_focus_combobox)
+            cb_d.bind('<Key>', self.select_by_entered_keys)
+            cb_d.bind('<Return>', lambda e: self.show_message(e, True))
+            cb_d.pack(side=LEFT)
 
         
         row += 1
@@ -104,29 +89,16 @@ class SendMessageWindow():
 
         # address field
         self.cb_sender_id_0 = ttk.Combobox(f, state="readonly", width="3")
-        self.cb_sender_id_0['values'] = [data_helper.a2s(i,1) for i in range(0,256)]
-        self.cb_sender_id_0.bind('<<ComboboxSelected>>', self.show_message )
-        self.cb_sender_id_0.bind('<FocusIn>', self.on_focus_combobox)
-        self.cb_sender_id_0.bind('<Key>', self.select_by_entered_keys)
-        self.cb_sender_id_0.pack(side=LEFT)
         self.cb_sender_id_1 = ttk.Combobox(f, state="readonly", width="3")
-        self.cb_sender_id_1['values'] = [data_helper.a2s(i,1) for i in range(0,256)]
-        self.cb_sender_id_1.bind('<<ComboboxSelected>>', self.show_message )
-        self.cb_sender_id_1.bind('<FocusIn>', self.on_focus_combobox)
-        self.cb_sender_id_1.bind('<Key>', self.select_by_entered_keys)
-        self.cb_sender_id_1.pack(side=LEFT)
         self.cb_sender_id_2 = ttk.Combobox(f, state="readonly", width="3")
-        self.cb_sender_id_2['values'] = [data_helper.a2s(i,1) for i in range(0,256)]
-        self.cb_sender_id_2.bind('<<ComboboxSelected>>', self.show_message )
-        self.cb_sender_id_2.bind('<FocusIn>', self.on_focus_combobox)
-        self.cb_sender_id_2.bind('<Key>', self.select_by_entered_keys)
-        self.cb_sender_id_2.pack(side=LEFT)
         self.cb_sender_id_3 = ttk.Combobox(f, state="readonly", width="3")
-        self.cb_sender_id_3['values'] = [data_helper.a2s(i,1) for i in range(0,256)]
-        self.cb_sender_id_3.bind('<<ComboboxSelected>>', self.show_message )
-        self.cb_sender_id_3.bind('<FocusIn>', self.on_focus_combobox)
-        self.cb_sender_id_3.bind('<Key>', self.select_by_entered_keys)
-        self.cb_sender_id_3.pack(side=LEFT)
+        for cb_s in [self.cb_sender_id_0, self.cb_sender_id_1, self.cb_sender_id_2, self.cb_sender_id_3]:
+            cb_s['values'] = [data_helper.a2s(i,1) for i in range(0,256)]
+            cb_s.bind('<<ComboboxSelected>>', self.show_message )
+            cb_s.bind('<FocusIn>', self.on_focus_combobox)
+            cb_s.bind('<Key>', self.select_by_entered_keys)
+            cb_s.bind('<Return>', lambda e: self.show_message(e, True))
+            cb_s.pack(side=LEFT)
         self.set_sender_ids()
         
         # status
@@ -140,6 +112,7 @@ class SendMessageWindow():
         self.cb_status.bind('<<ComboboxSelected>>', self.show_message )
         self.cb_status.bind('<FocusIn>', self.on_focus_combobox)
         self.cb_status.bind('<Key>', self.select_by_entered_keys)
+        self.cb_status.bind('<Return>', lambda e: self.show_message(e, True))
         self.cb_status.grid(row=row, column=1, sticky=W)
 
 
@@ -152,13 +125,13 @@ class SendMessageWindow():
 
 
         row += 1
-        self.f_telegram = ttk.Frame(self.popup)
-        self.f_telegram.grid(row=row, column=0, sticky=EW, columnspan=2)
+        l = ttk.Label(self.popup, text="Telegram:")
+        l.grid(row=row, column=0, sticky=W, columnspan=2)
 
 
         row += 1
-        l = ttk.Label(self.popup, text="")
-        l.grid(row=row, column=0, sticky=W, columnspan=2)
+        self.f_telegram = ttk.Frame(self.popup)
+        self.f_telegram.grid(row=row, column=0, sticky=EW, columnspan=2)
 
 
         # close button
@@ -176,7 +149,7 @@ class SendMessageWindow():
 
         self.show_message(None)
 
-        self.popup.wm_attributes('-toolwindow', 'True')
+        # self.popup.wm_attributes('-toolwindow', 'True')
         self.popup.protocol("WM_DELETE_WINDOW", self.close)
         self.popup.resizable (width=False, height=False)
         
@@ -215,9 +188,8 @@ class SendMessageWindow():
     def on_message_type_changed(self, event):
         msg_type = self.cb_msg_type.get()
         if '4BS' not in msg_type:
-            if self.cb_data_1.get() != '': self.data[1] = self.cb_data_1.get()
-            if self.cb_data_2.get() != '': self.data[2] = self.cb_data_2.get()
-            if self.cb_data_3.get() != '': self.data[3] = self.cb_data_3.get()
+            for cb_d in enumerate([self.cb_data_1, self.cb_data_2, self.cb_data_3]):
+                if cb_d.get() != '': self.data[3] = self.cb_data_3.get()
             self.cb_data_1.config(state=DISABLED)
             self.cb_data_2.config(state=DISABLED)
             self.cb_data_3.config(state=DISABLED)
@@ -243,6 +215,7 @@ class SendMessageWindow():
             y = self.main.winfo_y() + self.main.winfo_height()/2 - h/2
             self.popup.geometry('%dx%d+%d+%d' % (w, h, x, y))
             self.popup.focus()
+            self.popup.state(newstate=NORMAL)
 
 
     def close(self):
@@ -262,6 +235,7 @@ class SendMessageWindow():
             self.cb_sender_id_0.set( base_id.split('-')[0] )
             self.cb_sender_id_1.set( base_id.split('-')[1] )
             self.cb_sender_id_2.set( base_id.split('-')[2] )
+            self.cb_sender_id_3.set(self.address[3])
             self.cb_sender_id_0.config(state=DISABLED)
             self.cb_sender_id_1.config(state=DISABLED)
             self.cb_sender_id_2.config(state=DISABLED)
@@ -276,10 +250,10 @@ class SendMessageWindow():
 
             self.cb_sender_id_3['values'] = [data_helper.a2s(i,1) for i in range(0,256)]
             
-            self.cb_sender_id_0.set('00')
-            self.cb_sender_id_1.set('00')
-            self.cb_sender_id_2.set('00')
-            self.cb_sender_id_3.set('00')
+            self.cb_sender_id_0.set(self.address[0])
+            self.cb_sender_id_1.set(self.address[1])
+            self.cb_sender_id_2.set(self.address[2])
+            self.cb_sender_id_3.set(self.address[3])
 
 
     def on_connection_state_changed(self, data):
@@ -294,7 +268,11 @@ class SendMessageWindow():
     def show_message(self, event=None, send:bool=False):
         msg_type = self.cb_msg_type.get()
         try:
-            sender_id_str = f"{self.cb_sender_id_0.get()}-{self.cb_sender_id_1.get()}-{self.cb_sender_id_2.get()}-{self.cb_sender_id_3.get()}"
+            self.address[0] = self.cb_sender_id_0.get()
+            self.address[1] = self.cb_sender_id_1.get()
+            self.address[2] = self.cb_sender_id_2.get()
+            self.address[3] = self.cb_sender_id_3.get()
+            sender_id_str = '-'.join(self.address.values())
             sender_id = AddressExpression.parse( sender_id_str )[0]
             data_str = f"{self.cb_data_0.get()}-{self.cb_data_1.get()}-{self.cb_data_2.get()}-{self.cb_data_3.get()}".replace('---', '-00-00-00')
             data = AddressExpression.parse( data_str )[0]
@@ -314,7 +292,7 @@ class SendMessageWindow():
             if '4BS' not in msg_type: msg_text = msg_text[0:15] + msg_text[24:]
             self.show_telegram_text(msg_text, msg_type)
 
-            if send:
+            if send and self.serial_controller.is_serial_connection_active():
                 self.serial_controller.send_message(msg)
                 self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Send Message: {str(msg)}", 'color':'green', 'log-level':'INFO'})
         except Exception as e:

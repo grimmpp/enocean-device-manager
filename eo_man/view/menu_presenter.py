@@ -27,8 +27,11 @@ class MenuPresenter():
         self.main = main
         self.app_bus = app_bus
         self.data_manager = data_manager
+        self.serial_controller = serial_controller
         self.ha_conf_gen = HomeAssistantConfigurationGenerator(app_bus, data_manager)
         self.remember_latest_filename = ""
+
+        self.send_message_window = None
 
         menu_bar = Menu(main)
         file_menu = Menu(menu_bar, tearoff=False)
@@ -89,9 +92,9 @@ class MenuPresenter():
                              menu=tool_menu)
         tool_menu.add_command(label="EEP Checker",
                               command=lambda: EepCheckerWindow(main))
-        send_message_window = SendMessageWindow(main, app_bus, serial_controller)
+
         tool_menu.add_command(label="Send Message", 
-                              command=send_message_window.show_window)
+                              command=self.show_send_message_window)
         tool_menu.add_command(label="Message Log Analyser", 
                               command=lambda: messagebox.showinfo("Message Log Analyser", "Will be available soon!"))
 
@@ -269,4 +272,7 @@ class MenuPresenter():
     def open_eo_man_documentation(self):
         webbrowser.open_new(r"https://github.com/grimmpp/enocean-device-manager/tree/main/docs")
 
-    
+    def show_send_message_window(self):
+        if self.send_message_window is None:
+            self.send_message_window = SendMessageWindow(self.main, self.app_bus, self.serial_controller)
+        self.send_message_window.show_window()

@@ -305,8 +305,14 @@ if __name__ == '__main__':
     command.extend([0xFF,0xD6,0x30, 0x01])
     command.extend([0x00])
 
-    # asyncio.run( com.send(Packet(0x01, command, optional=[])) )
+    optional=[0x03, 0xFF,0xFF,0xFF,0xFF,0xFF]
 
+    asyncio.run( com.send(Packet(PACKET.RADIO_ERP1, command, optional)) )
+
+    command=[RORG.RPS, 0x01, 0x00, 0x00, 0x09]
+    command.extend([0xFF,0xD6,0x30, 0x01])
+    command.extend([0x00])
+    asyncio.run( com.send(Packet(PACKET.RADIO_ERP1, command, optional)) )
 
     sender = [0xFF,0xD6,0x30,0x01]
     status = [0x30]
@@ -349,7 +355,7 @@ if __name__ == '__main__':
     # p = ESP3SerialCommunicator.convert_esp2_to_esp3_message(RPSMessage(b'\xFF\xD6\x30\x01', 0x30, b'\x10', True))
     # p = ESP3SerialCommunicator.convert_esp2_to_esp3_message(Regular4BSMessage(b'\xFF\x82\x3E\x70', 0x00, bytes((0x01, 0x00, 0x00, 0x08)), True))
     print("ESP3: " + b2s(bytes(p.build())) )
-    print("ESP2: " + b2s( ESP3SerialCommunicator.convert_esp3_to_esp2_message(p).serialize() ))
+    print("ESP2: " + b2s(ESP3SerialCommunicator.convert_esp3_to_esp2_message(p).serialize() ))
     
     asyncio.run( com.send(p) )
 
