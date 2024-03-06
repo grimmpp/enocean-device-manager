@@ -96,3 +96,12 @@ class ImageGallery():
     @classmethod
     def get_wireless_icon(cls, size:tuple[int:int]=(32,32)) -> ImageTk.PhotoImage:
         return ImageGallery.get_image("wireless.png", size)
+    
+    @classmethod
+    def get_send_mail(cls, size:tuple[int:int]=(32,32)) -> ImageTk.PhotoImage:
+        return ImageGallery.get_image("mail-send-receive.png", size)
+    
+    @classmethod
+    def get_forward_mail(cls, size:tuple[int:int]=(32,32)) -> ImageTk.PhotoImage:
+        return ImageGallery.get_image("mail-forward.png", size)
+    

@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.1.14 Fixed Send Message
+* Send Message Window improved and fixed.
+* Added button in toolbar for send message window.
+
 ## v0.1.13 Send Message Window Improved
 * Improved send messages tool.
 * fixed log rotation

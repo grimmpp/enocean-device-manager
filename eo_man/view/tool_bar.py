@@ -29,8 +29,14 @@ class ToolBar():
         b = self._create_img_button(f, "Save to current file", ImageGallery.get_save_file_icon(), menu_presenter.save_file )
         b = self._create_img_button(f, "Save as file", ImageGallery.get_save_file_as_icon(), lambda: menu_presenter.save_file(save_as=True) )
         b = self._create_img_button(f, "Open file", ImageGallery.get_open_folder_icon(), menu_presenter.load_file)
+        
+        self._add_separater(f)
+        
         b = self._create_img_button(f, "Export Home Assistant Configuration", ImageGallery.get_ha_logo(), menu_presenter.export_ha_config)
 
+        self._add_separater(f)
+
+        b = self._create_img_button(f, "Send Message", ImageGallery.get_forward_mail(), menu_presenter.show_send_message_window)
 
         # placed at the right end
         b = DonationButton(f, relief=GROOVE, small_icon=True).pack(side=RIGHT, padx=(0,2), pady=2)
@@ -43,6 +49,9 @@ class ToolBar():
             new_v = AppInfo.get_lastest_available_version()
             b = self._create_img_button(f, f"New Software Version 'v{new_v}' is available.", ImageGallery.get_software_update_available_icon(), self.show_how_to_update)
             b.pack(side=RIGHT, padx=(0,2), pady=2)
+
+    def _add_separater(self, f:Frame):
+        ttk.Separator(f, orient=VERTICAL).pack(side=LEFT, padx=4)
 
 
     def _create_img_button(self, f:Frame, tooltip:str, image:ImageTk.PhotoImage, command) -> Button:
