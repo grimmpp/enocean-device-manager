@@ -187,22 +187,14 @@ class SendMessageWindow():
 
     def on_message_type_changed(self, event):
         msg_type = self.cb_msg_type.get()
-        if '4BS' not in msg_type:
-            for cb_d in enumerate([self.cb_data_1, self.cb_data_2, self.cb_data_3]):
-                if cb_d.get() != '': self.data[3] = self.cb_data_3.get()
-            self.cb_data_1.config(state=DISABLED)
-            self.cb_data_2.config(state=DISABLED)
-            self.cb_data_3.config(state=DISABLED)
-            self.cb_data_1.set('')
-            self.cb_data_2.set('')
-            self.cb_data_3.set('')
-        else:
-            self.cb_data_1.config(state="readonly")
-            self.cb_data_2.config(state="readonly")
-            self.cb_data_3.config(state="readonly")
-            self.cb_data_1.set(self.data[1])
-            self.cb_data_2.set(self.data[2])
-            self.cb_data_3.set(self.data[3])
+        for idx, cb_d in enumerate([self.cb_data_1, self.cb_data_2, self.cb_data_3]):
+            if '4BS' not in msg_type:
+                if cb_d.get() != '': self.data[idx+1] = cb_d.get()
+                cb_d.config(state=DISABLED)
+                cb_d.set('')
+            else:
+                cb_d.config(state="readonly")
+                cb_d.set(self.data[idx+1])
 
         self.show_message(event)
 
