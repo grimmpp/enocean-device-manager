@@ -29,6 +29,9 @@ class ToolBar():
         b = self._create_img_button(f, "Save to current file", ImageGallery.get_save_file_icon(), menu_presenter.save_file )
         b = self._create_img_button(f, "Save as file", ImageGallery.get_save_file_as_icon(), lambda: menu_presenter.save_file(save_as=True) )
         b = self._create_img_button(f, "Open file", ImageGallery.get_open_folder_icon(), menu_presenter.load_file)
+        
+        self._add_separater(f)
+        
         b = self._create_img_button(f, "Export Home Assistant Configuration", ImageGallery.get_ha_logo(), menu_presenter.export_ha_config)
 
         self._add_separater(f)

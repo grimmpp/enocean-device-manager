@@ -92,8 +92,9 @@ class MenuPresenter():
                              menu=tool_menu)
         tool_menu.add_command(label="EEP Checker",
                               command=lambda: EepCheckerWindow(main))
-
         tool_menu.add_command(label="Send Message", 
+                              image=ImageGallery.get_forward_mail((16,16)),
+                              compound=LEFT,
                               command=self.show_send_message_window)
         tool_menu.add_command(label="Message Log Analyser", 
                               command=lambda: messagebox.showinfo("Message Log Analyser", "Will be available soon!"))
