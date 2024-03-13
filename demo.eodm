@@ -1,5 +1,5 @@
 !!python/object:eo_man.data.application_data.ApplicationData
-application_version: 0.1.7
+application_version: 0.1.10
 data_filters:
   Buttons: !!python/object:eo_man.data.filter.DataFilter
     device_address_filter: []
@@ -752,4 +752,7 @@ devices:
     name: unknown
     use_in_ha: true
     version: unknown
+recoreded_messages: []
 selected_data_filter_name: null
+send_message_template_list:
+- A55A6B070100000900000000007C

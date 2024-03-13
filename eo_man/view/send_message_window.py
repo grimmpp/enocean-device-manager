@@ -1,3 +1,4 @@
+from functools import reduce
 
 from tkinter import *
 import tkinter as tk
@@ -10,6 +11,7 @@ from eltakobus.util import AddressExpression
 from ..controller.app_bus import AppBus, AppBusEventType
 from ..controller.serial_controller import SerialController
 from ..data import data_helper
+from ..data.data_manager import DataManager
 
 
 class SendMessageWindow():
@@ -19,9 +21,10 @@ class SendMessageWindow():
     STATUS_COLOR = "blue"
     ORG_COLOR = "orange"
 
-    def __init__(self, main:Tk, app_bus:AppBus, serial_controller:SerialController):
+    def __init__(self, main:Tk, app_bus:AppBus, data_manager:DataManager, serial_controller:SerialController):
         self.main = main
         self.app_bus = app_bus
+        self.data_manager = data_manager
         self.serial_controller = serial_controller
 
         self.app_bus.add_event_handler(AppBusEventType.CONNECTION_STATUS_CHANGE, self.on_connection_state_changed)
@@ -33,6 +36,7 @@ class SendMessageWindow():
         self.status = '00'
 
         self.entered_keys = ''
+        self.current_telegram = None
 
     def show_window(self):
         if self.popup:
@@ -42,10 +46,9 @@ class SendMessageWindow():
         self.popup = Toplevel(self.main, padx=4, pady=4)
         self.popup.wm_title("Send Message")
 
-        self.width_column_0 = 90
-        self.width_column_1 = 204
-        self.popup.columnconfigure(0, minsize=self.width_column_0)
-        self.popup.columnconfigure(1, minsize=self.width_column_1)
+        self.col_widths = [90, 204, 8, 360, 28]
+        for idx, w in enumerate(self.col_widths):
+            self.popup.columnconfigure(idx, minsize=w)
         
         row = 0
         l = ttk.Label(self.popup, text="Message Type: ", foreground=self.ORG_COLOR)
@@ -54,8 +57,8 @@ class SendMessageWindow():
         self.l_msg_type = ttk.Label(self.popup, text='')
         self.l_msg_type.grid(row=row, column=1, sticky=W)
         self.cb_msg_type = ttk.Combobox(self.popup, state="readonly", width="18") 
-        self.cb_msg_type['values'] = ['RPS (Org = 0x05)', '1BS (Org = 0x06)', '4BS (Org = 0x7)']
-        self.cb_msg_type.set('4BS (Org = 0x7)')
+        self.cb_msg_type['values'] = ['RPS (Org = 0x05)', '1BS (Org = 0x06)', '4BS (Org = 0x07)']
+        self.cb_msg_type.set('4BS (Org = 0x07)')
         self.cb_msg_type.grid(row=row, column=1, sticky=W)
         self.cb_msg_type.bind('<<ComboboxSelected>>', self.on_message_type_changed)
 
@@ -147,6 +150,52 @@ class SendMessageWindow():
         self.b_send.bind('<Return>', lambda event, send=True: self.show_message(event, send))
         self.b_send.grid(row=row, column=1, sticky=EW, padx=(0,8))
 
+
+        ttk.Separator(self.popup, orient=VERTICAL).grid(column=2, row=0, rowspan=10, sticky=NSEW)
+
+        # favourites
+
+        row = 0
+        l = ttk.Label(self.popup, text="Favourites")
+        l.grid(row=row, column=3, sticky=W)
+
+        row += 1
+        f = ttk.Frame(self.popup)
+        f.grid(row=row, rowspan=5, column=3, sticky=NSEW)
+        scrollbar = ttk.Scrollbar(f)
+        self.lb_fav_msg = ttk.Treeview(f, yscrollcommand=scrollbar.set, show="tree", height=7, selectmode='browse')
+        scrollbar.configure(command=self.lb_fav_msg.yview)
+        scrollbar.pack(side=RIGHT, fill=Y)
+        self.lb_fav_msg.pack(side=LEFT, fill=BOTH, expand=True)    
+
+        if self.data_manager.send_message_template_list:
+            for msg_str in self.data_manager.send_message_template_list:
+                msg = ESP2Message.parse(bytes.fromhex(msg_str))
+                org = msg.body[1]
+                data = msg.body[2:6]
+                address = msg.body[6:10]
+                status = msg.body[10]
+                outgoing = {(3 << 5) + 11: True, (0 << 5) + 11: False}[msg.body[0]]
+
+                if org == 7:    msg = Regular4BSMessage(address, status, data, outgoing)
+                elif org == 6:  msg = Regular1BSMessage(address, status, data, outgoing)
+                elif org == 5:  msg = RPSMessage(address, status, data, outgoing)
+
+                self.add_fav_msg(msg)
+
+
+        row += 5
+        f = ttk.Frame(self.popup)
+        f.grid(row=row, rowspan=5, column=3, sticky=NSEW)
+
+        self.b_remove_fav = ttk.Button(f, text="Remove", command=self.remove_fav_msg)
+        self.b_remove_fav.pack(side=LEFT)
+        self.b_add_fav = ttk.Button(f, text="Add", command=lambda: self.add_fav_msg(self.current_telegram) )
+        self.b_add_fav.pack(side=LEFT)
+        self.b_apply_fav = ttk.Button(f, text="Apply", command=self.apply_fav_msg)
+        self.b_apply_fav.pack(side=RIGHT)
+
+
         self.show_message(None)
 
         # self.popup.wm_attributes('-toolwindow', 'True')
@@ -156,6 +205,65 @@ class SendMessageWindow():
         self.popup.after(10, self.center_window)
 
         self.main.wait_window(self.popup)
+
+
+    def remove_fav_msg(self):
+        if self.lb_fav_msg.selection():
+            for item in self.lb_fav_msg.selection():
+                self.lb_fav_msg.delete(item)
+
+        self.app_bus.fire_event(AppBusEventType.SEND_MESSAGE_TEMPLATE_LIST_UPDATED, 
+                                [id for id in self.lb_fav_msg.get_children()])
+
+    def add_fav_msg(self, msg:EltakoMessage):
+        if msg:
+            id = data_helper.b2s(msg.serialize(), separator='')
+
+            if not self.lb_fav_msg.exists(id):
+                text = ''
+                if isinstance(msg, Regular4BSMessage): text += "4BS: "
+                elif isinstance(msg, Regular1BSMessage): text += "1BS: "
+                elif isinstance(msg, RPSMessage): text += "RPS: "
+
+                text += f"Data: {data_helper.b2s(msg.data, ' ')}, "
+                text += f"Address: {data_helper.b2s(msg.address, ' ')}, "
+                text += "Status: {:02X}".format(msg.status)
+
+                self.lb_fav_msg.insert(parent="", index="end", iid=id, text=text)
+
+            self.app_bus.fire_event(AppBusEventType.SEND_MESSAGE_TEMPLATE_LIST_UPDATED, 
+                                    [id for id in self.lb_fav_msg.get_children()])
+
+    def apply_fav_msg(self):
+        if self.lb_fav_msg.selection():
+            msg = ESP2Message.parse(bytes.fromhex(self.lb_fav_msg.selection()[0]))
+            data = msg.body[2:6]
+            address = msg.body[6:10]
+            status = msg.body[10]
+            outgoing = {(3 << 5) + 11: True, (0 << 5) + 11: False}[msg.body[0]]
+
+            item_text = self.lb_fav_msg.item(self.lb_fav_msg.selection()[0])['text']
+            if '4BS' in item_text:   self.cb_msg_type.set('4BS (Org = 0x07)')
+            elif '1BS' in item_text: self.cb_msg_type.set('1BS (Org = 0x06)')
+            elif 'RPS' in item_text: self.cb_msg_type.set('RPS (Org = 0x05)')
+            self.on_message_type_changed()
+
+            self.cb_data_0.set( "{:02X}".format(data[0]) )
+            if '4BS' in item_text:
+                self.cb_data_1.set( "{:02X}".format(data[1]) )
+                self.cb_data_2.set( "{:02X}".format(data[2]) )
+                self.cb_data_3.set( "{:02X}".format(data[3]) )
+
+            self.cb_sender_id_3.set( "{:02X}".format(address[3]) )
+            if str(self.cb_sender_id_0['state']) not in ['disabled', 'readonly']:
+                self.cb_sender_id_0.set( "{:02X}".format(address[0]) )
+                self.cb_sender_id_1.set( "{:02X}".format(address[1]) )
+                self.cb_sender_id_2.set( "{:02X}".format(address[2]) )
+
+            self.cb_status.set( "{:02X}".format(status) )
+            self.out_going_msg_boolvar.set(outgoing)
+
+            self.show_message()
 
 
     def on_focus_combobox(self, event=None):
@@ -185,7 +293,7 @@ class SendMessageWindow():
         self.show_message()
 
 
-    def on_message_type_changed(self, event):
+    def on_message_type_changed(self, event=None):
         msg_type = self.cb_msg_type.get()
         for idx, cb_d in enumerate([self.cb_data_1, self.cb_data_2, self.cb_data_3]):
             if '4BS' not in msg_type:
@@ -201,7 +309,7 @@ class SendMessageWindow():
 
     def center_window(self):
         if self.popup:
-            w = self.width_column_0 + self.width_column_1 # popup.winfo_width()
+            w = reduce(lambda x, y: x + y, self.col_widths) # popup.winfo_width()
             h = self.popup.winfo_height()
             x = self.main.winfo_x() + self.main.winfo_width()/2 - w/2
             y = self.main.winfo_y() + self.main.winfo_height()/2 - h/2
@@ -277,8 +385,10 @@ class SendMessageWindow():
                 data = data[0:1]
                 msg = Regular1BSMessage(sender_id, status, data, self.out_going_msg_boolvar.get())
             elif 'RPS' in msg_type:
-                msg = RPSMessage(sender_id, status, data, self.out_going_msg_boolvar.get())
                 data = data[0:1]
+                msg = RPSMessage(sender_id, status, data, self.out_going_msg_boolvar.get())
+
+            self.current_telegram = msg
 
             msg_text = b2a(msg.serialize()).upper()
             if '4BS' not in msg_type: msg_text = msg_text[0:15] + msg_text[24:]
@@ -289,6 +399,7 @@ class SendMessageWindow():
                 self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Send Message: {str(msg)}", 'color':'green', 'log-level':'INFO'})
         except Exception as e:
             self.show_telegram_text('Invalid telegram!')
+            self.current_telegram = None
 
 
     def show_telegram_text(self, text:str, msg_type:str=''):

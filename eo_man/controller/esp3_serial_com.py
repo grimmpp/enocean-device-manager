@@ -149,14 +149,14 @@ class ESP3SerialCommunicator(Communicator):
     async def send(self, packet) -> bool:
         if self.esp2_translation_enabled:
             esp3_msg = ESP3SerialCommunicator.convert_esp2_to_esp3_message(packet)
-            self.log.debug(f"Converted esp2 ({str(packet)} - {b2s(packet.serialize())}) message to esp3 ({str(esp3_msg)})")
+            self.log.info(f"Converted esp2 ({str(packet)} - {b2s(packet.serialize())}) message to esp3 ({str(esp3_msg)} - {b2s(esp3_msg.build())})")
             if esp3_msg is None:
-                self.log.warn("[ESP3SerialCommunicator] Cannot convert to esp3 message (%s).", packet)
+                self.log.warn(f"[ESP3SerialCommunicator] Cannot convert to esp3 message ({str(packet)}).")
             else:
-                self.log.debug(f"Send ESP3 message {str(esp3_msg)}")
+                self.log.info(f"Send ESP3 message {str(esp3_msg)}")
                 return super().send(esp3_msg)
         else:
-            self.log.debug(f"Send ESP3 message {str(packet)}")
+            self.log.info(f"Send ESP3 message {str(packet)}")
             return super().send(packet)
 
     def run(self):

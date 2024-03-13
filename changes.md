@@ -1,5 +1,8 @@
 # Change Log
 
+## v0.1.16 
+* Added template list for messages to be sent
+
 ## v0.1.15 Fixed Send Message
 * Send Message Window improved and fixed.
 * Added button in toolbar for send message window.

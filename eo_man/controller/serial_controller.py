@@ -9,6 +9,9 @@ from termcolor import colored
 import logging
 import threading
 
+import serial.tools.list_ports
+from serial.tools.list_ports_common import ListPortInfo
+
 from eltakobus import *
 from eltakobus.device import *
 from eltakobus.locking import buslocked, UNLOCKED
@@ -23,6 +26,8 @@ from .app_bus import AppBusEventType, AppBus
 
 
 class SerialController():
+
+    USB_VENDOR_ID = 0x0403
 
     def __init__(self, app_bus:AppBus) -> None:
         self.app_bus = app_bus
@@ -67,15 +72,22 @@ class SerialController():
         """
         # python -m serial.tools.miniterm COM10 57600 --encoding hexlify
         
-        if sys.platform.startswith('win'):
-            ports = ['COM%s' % (i + 1) for i in range(256)]
-        elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
-            # this excludes your current terminal "/dev/tty"
-            ports = glob.glob('/dev/tty[A-Za-z]*')
-        elif sys.platform.startswith('darwin'):
-            ports = glob.glob('/dev/tty.*')
-        else:
-            raise EnvironmentError('Unsupported platform')
+        _ports:list[ListPortInfo] = serial.tools.list_ports.comports()
+        for p in _ports:
+            print(f"port: {p.device}, hwid: {p.hwid}")
+        print(len(_ports), 'ports found')
+
+        # if sys.platform.startswith('win'):
+        #     ports = ['COM%s' % (i + 1) for i in range(256)]
+        # elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
+        #     # this excludes your current terminal "/dev/tty"
+        #     ports = glob.glob('/dev/tty[A-Za-z]*')
+        # elif sys.platform.startswith('darwin'):
+        #     ports = glob.glob('/dev/tty.*')
+        # else:
+        #     raise EnvironmentError('Unsupported platform')
+        
+        ports = [p.device for p in _ports if p.vid == self.USB_VENDOR_ID]
 
         fam14 = GatewayDeviceType.GatewayEltakoFAM14.value
         usb300 = GatewayDeviceType.GatewayEnOceanUSB300.value

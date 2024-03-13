@@ -25,6 +25,8 @@ class ApplicationData():
 
         self.recoreded_messages:list[RecordedMessage] = recoreded_messages
 
+        self.send_message_template_list: list[str] = []
+
 
     @classmethod
     def read_from_file(cls, filename:str):
@@ -61,6 +63,9 @@ class ApplicationData():
         """required to make different versions compatibel"""
         if not hasattr(obj, 'recoreded_messages'):
             setattr(obj, 'recoreded_messages', [])
+
+        if not hasattr(obj, 'send_message_template_list'):
+            setattr(obj, 'send_message_template_list', [])
 
     @classmethod
     def read_from_yaml_file(cls, filename:str):
