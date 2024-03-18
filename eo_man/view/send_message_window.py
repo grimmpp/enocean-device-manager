@@ -12,6 +12,7 @@ from ..controller.app_bus import AppBus, AppBusEventType
 from ..controller.serial_controller import SerialController
 from ..data import data_helper
 from ..data.data_manager import DataManager
+from ..data.message_history import MessageHistoryEntry
 
 
 class SendMessageWindow():
@@ -50,26 +51,33 @@ class SendMessageWindow():
         for idx, w in enumerate(self.col_widths):
             self.popup.columnconfigure(idx, minsize=w)
         
+        for idx in range(0,8):
+            self.popup.rowconfigure(idx, weight=0)
+        
+
+        _pady = (4,0)
+        _padx = (2,0)
+
         row = 0
         l = ttk.Label(self.popup, text="Message Type: ", foreground=self.ORG_COLOR)
         l.grid(row=row, column=0, sticky=W)
 
         self.l_msg_type = ttk.Label(self.popup, text='')
-        self.l_msg_type.grid(row=row, column=1, sticky=W)
+        self.l_msg_type.grid(row=row, column=1, sticky=W, pady=_pady, padx=_padx)
         self.cb_msg_type = ttk.Combobox(self.popup, state="readonly", width="18") 
         self.cb_msg_type['values'] = ['RPS (Org = 0x05)', '1BS (Org = 0x06)', '4BS (Org = 0x07)']
         self.cb_msg_type.set('4BS (Org = 0x07)')
-        self.cb_msg_type.grid(row=row, column=1, sticky=W)
+        self.cb_msg_type.grid(row=row, column=1, sticky=W, pady=_pady, padx=_padx)
         self.cb_msg_type.bind('<<ComboboxSelected>>', self.on_message_type_changed)
 
 
         row += 1
         l = ttk.Label(self.popup, text="Data: ", foreground=self.DATA_COLOR)
-        l.grid(row=row, column=0, sticky=W)
+        l.grid(row=row, column=0, sticky=W, pady=_pady, padx=_padx)
 
         # data fields
         f = ttk.Frame(self.popup)
-        f.grid(row=row, column=1, sticky=W)
+        f.grid(row=row, column=1, sticky=W, pady=_pady, padx=_padx)
         self.cb_data_0 = ttk.Combobox(f, state="readonly", width="3")
         self.cb_data_1 = ttk.Combobox(f, state="readonly", width="3")
         self.cb_data_2 = ttk.Combobox(f, state="readonly", width="3")
@@ -86,9 +94,9 @@ class SendMessageWindow():
         
         row += 1
         l = ttk.Label(self.popup, text="Sender Id: ", foreground=self.ADDRESS_COLOR)
-        l.grid(row=row, column=0, sticky=W)
+        l.grid(row=row, column=0, sticky=W, pady=_pady, padx=_padx)
         f = ttk.Frame(self.popup)
-        f.grid(row=row, column=1, sticky=W)
+        f.grid(row=row, column=1, sticky=W, pady=_pady, padx=_padx)
 
         # address field
         self.cb_sender_id_0 = ttk.Combobox(f, state="readonly", width="3")
@@ -107,7 +115,7 @@ class SendMessageWindow():
         # status
         row += 1
         l = ttk.Label(self.popup, text="Status: ", foreground=self.STATUS_COLOR)
-        l.grid(row=row, column=0, sticky=W)
+        l.grid(row=row, column=0, sticky=W, pady=_pady, padx=_padx)
 
         self.cb_status = ttk.Combobox(self.popup, width="3", state="readonly")
         self.cb_status['values'] = [data_helper.a2s(i,1) for i in range(0,256)]
@@ -116,7 +124,7 @@ class SendMessageWindow():
         self.cb_status.bind('<FocusIn>', self.on_focus_combobox)
         self.cb_status.bind('<Key>', self.select_by_entered_keys)
         self.cb_status.bind('<Return>', lambda e: self.show_message(e, True))
-        self.cb_status.grid(row=row, column=1, sticky=W)
+        self.cb_status.grid(row=row, column=1, sticky=W, pady=_pady, padx=_padx)
 
 
         # out going message
@@ -124,17 +132,28 @@ class SendMessageWindow():
         self.out_going_msg_boolvar = BooleanVar()
         self.out_going_msg_boolvar.set(True)
         cb = ttk.Checkbutton(self.popup, text="Out-Going Telegram", command=self.show_message, variable=self.out_going_msg_boolvar)
-        cb.grid(row=row, sticky=W, column=1)
+        cb.grid(row=row, sticky=W, column=1, pady=_pady, padx=_padx)
+
+
+        row += 1
+        l = ttk.Label(self.popup, text="")
+        l.grid(row=row, column=0, sticky=W, columnspan=2, pady=_pady, padx=_padx)
 
 
         row += 1
         l = ttk.Label(self.popup, text="Telegram:")
-        l.grid(row=row, column=0, sticky=W, columnspan=2)
+        l.grid(row=row, column=0, sticky=W, columnspan=2, pady=_pady, padx=_padx)
 
 
         row += 1
+        self.popup.rowconfigure(row, weight=1)
         self.f_telegram = ttk.Frame(self.popup)
-        self.f_telegram.grid(row=row, column=0, sticky=EW, columnspan=2)
+        self.f_telegram.grid(row=row, column=0, sticky=NSEW, columnspan=2, pady=_pady, padx=_padx)
+
+
+        row += 1
+        l = ttk.Label(self.popup, text="")
+        l.grid(row=row, column=0, sticky=W, columnspan=2, pady=_pady, padx=_padx)
 
 
         # close button
@@ -160,17 +179,20 @@ class SendMessageWindow():
         l.grid(row=row, column=3, sticky=W)
 
         row += 1
-        f = ttk.Frame(self.popup)
-        f.grid(row=row, rowspan=5, column=3, sticky=NSEW)
+        rowspan = 7
+        f = ttk.Frame(self.popup, width=self.col_widths[3])
+        f.grid(row=row, rowspan=rowspan, column=3, sticky=NSEW)
+        s = ttk.Style()
+        s.configure('SendMessageWindow.Treeview', rowheight=38)
         scrollbar = ttk.Scrollbar(f)
-        self.lb_fav_msg = ttk.Treeview(f, yscrollcommand=scrollbar.set, show="tree", height=7, selectmode='browse')
+        self.lb_fav_msg = ttk.Treeview(f, yscrollcommand=scrollbar.set, show="tree", height=4, selectmode='browse', style='SendMessageWindow.Treeview')
         scrollbar.configure(command=self.lb_fav_msg.yview)
         scrollbar.pack(side=RIGHT, fill=Y)
         self.lb_fav_msg.pack(side=LEFT, fill=BOTH, expand=True)    
 
         if self.data_manager.send_message_template_list:
-            for msg_str in self.data_manager.send_message_template_list:
-                msg = ESP2Message.parse(bytes.fromhex(msg_str))
+            for history_entry in self.data_manager.send_message_template_list:
+                msg = ESP2Message.parse(history_entry.message)
                 org = msg.body[1]
                 data = msg.body[2:6]
                 address = msg.body[6:10]
@@ -178,22 +200,32 @@ class SendMessageWindow():
                 outgoing = {(3 << 5) + 11: True, (0 << 5) + 11: False}[msg.body[0]]
 
                 if org == 7:    msg = Regular4BSMessage(address, status, data, outgoing)
-                elif org == 6:  msg = Regular1BSMessage(address, status, data, outgoing)
-                elif org == 5:  msg = RPSMessage(address, status, data, outgoing)
+                elif org == 6:  msg = Regular1BSMessage(address, status, data[0:1], outgoing)
+                elif org == 5:  msg = RPSMessage(address, status, data[0:1], outgoing)
 
-                self.add_fav_msg(msg)
+                self.add_fav_msg(msg, history_entry.name)
 
 
-        row += 5
+        row += rowspan
         f = ttk.Frame(self.popup)
-        f.grid(row=row, rowspan=5, column=3, sticky=NSEW)
+        f.grid(row=row, column=3, sticky=E+W)
+        self.b_add_fav = ttk.Button(f, text="Add as", command=lambda: self.add_fav_msg(self.current_telegram) )
+        self.b_add_fav.bind('<Return>', lambda e: self.add_fav_msg(self.current_telegram))
+        self.b_add_fav.pack(side=LEFT, pady=(4,2), padx=(0,2))
+        self.e_name = ttk.Entry(f)
+        self.e_name.bind('<Return>', lambda e: self.add_fav_msg(self.current_telegram))
+        self.e_name.pack(fill=X, pady=(4,2), padx=(0,16))
+
+        row += 1
+        f = ttk.Frame(self.popup)
+        f.grid(row=row, column=3, sticky=E+W)
 
         self.b_remove_fav = ttk.Button(f, text="Remove", command=self.remove_fav_msg)
-        self.b_remove_fav.pack(side=LEFT)
-        self.b_add_fav = ttk.Button(f, text="Add", command=lambda: self.add_fav_msg(self.current_telegram) )
-        self.b_add_fav.pack(side=LEFT)
+        self.b_remove_fav.bind('<Return>', lambda e: self.remove_fav_msg())
+        self.b_remove_fav.pack(side=LEFT, pady=2, padx=(0,2))
         self.b_apply_fav = ttk.Button(f, text="Apply", command=self.apply_fav_msg)
-        self.b_apply_fav.pack(side=RIGHT)
+        self.b_apply_fav.bind('<Return>', lambda e: self.apply_fav_msg())
+        self.b_apply_fav.pack(fill=X, pady=2, padx=(0,16))
 
 
         self.show_message(None)
@@ -212,27 +244,46 @@ class SendMessageWindow():
             for item in self.lb_fav_msg.selection():
                 self.lb_fav_msg.delete(item)
 
-        self.app_bus.fire_event(AppBusEventType.SEND_MESSAGE_TEMPLATE_LIST_UPDATED, 
-                                [id for id in self.lb_fav_msg.get_children()])
+        self.send_update_of_current_message_templates()
+        
 
-    def add_fav_msg(self, msg:EltakoMessage):
+    def send_update_of_current_message_templates(self):
+        entries = list()
+        for c_id in self.lb_fav_msg.get_children():
+           
+            name = self.lb_fav_msg.item(c_id)['text'].split('\n')[0]
+            msg = bytes.fromhex(c_id)
+
+            entries.append(MessageHistoryEntry(name, msg))
+
+        self.app_bus.fire_event(AppBusEventType.SEND_MESSAGE_TEMPLATE_LIST_UPDATED, entries)
+
+
+    def add_fav_msg(self, msg:EltakoMessage,name:str=''):
         if msg:
             id = data_helper.b2s(msg.serialize(), separator='')
 
+            text = ''
+            if isinstance(msg, Regular4BSMessage): text += "4BS: "
+            elif isinstance(msg, Regular1BSMessage): text += "1BS: "
+            elif isinstance(msg, RPSMessage): text += "RPS: "
+
+            text += f"Data: {data_helper.b2s(msg.data, ' ')}, "
+            text += f"Address: {data_helper.b2s(msg.address, ' ')}, "
+            text += "Status: {:02X}".format(msg.status)
+
+            if not name and self.e_name.get():
+                name = self.e_name.get()
+                self.e_name.delete(0, END)
+
+            text = f"{name}\n{text}"
+
             if not self.lb_fav_msg.exists(id):
-                text = ''
-                if isinstance(msg, Regular4BSMessage): text += "4BS: "
-                elif isinstance(msg, Regular1BSMessage): text += "1BS: "
-                elif isinstance(msg, RPSMessage): text += "RPS: "
-
-                text += f"Data: {data_helper.b2s(msg.data, ' ')}, "
-                text += f"Address: {data_helper.b2s(msg.address, ' ')}, "
-                text += "Status: {:02X}".format(msg.status)
-
                 self.lb_fav_msg.insert(parent="", index="end", iid=id, text=text)
+            else:
+                self.lb_fav_msg.item(id, text=text)
 
-            self.app_bus.fire_event(AppBusEventType.SEND_MESSAGE_TEMPLATE_LIST_UPDATED, 
-                                    [id for id in self.lb_fav_msg.get_children()])
+            self.send_update_of_current_message_templates()
 
     def apply_fav_msg(self):
         if self.lb_fav_msg.selection():
@@ -255,7 +306,7 @@ class SendMessageWindow():
                 self.cb_data_3.set( "{:02X}".format(data[3]) )
 
             self.cb_sender_id_3.set( "{:02X}".format(address[3]) )
-            if str(self.cb_sender_id_0['state']) not in ['disabled', 'readonly']:
+            if str(self.cb_sender_id_0['state']) not in ['disabled']:
                 self.cb_sender_id_0.set( "{:02X}".format(address[0]) )
                 self.cb_sender_id_1.set( "{:02X}".format(address[1]) )
                 self.cb_sender_id_2.set( "{:02X}".format(address[2]) )
@@ -408,30 +459,30 @@ class SendMessageWindow():
 
         if 'invalid' in text.lower():
             l = ttk.Label(self.f_telegram, text=text, foreground='red')
-            l.pack(side=LEFT)
+            l.pack(side=LEFT, anchor=NW, padx=(12,0))
         else:
             l = ttk.Label(self.f_telegram, text=text[0:9], foreground='darkgrey')
-            l.pack(side=LEFT)
+            l.pack(side=LEFT, anchor=NW, padx=(12,0))
 
             # org
             l = ttk.Label(self.f_telegram, text=text[9:12], foreground=self.ORG_COLOR, font = ('Sans','10','bold'))
-            l.pack(side=LEFT)
+            l.pack(side=LEFT, anchor=NW)
 
             # data
             data_end = 24
             if '4BS' not in msg_type: data_end = 12 + 3
             l = ttk.Label(self.f_telegram, text=text[12:data_end], foreground=self.DATA_COLOR)
-            l.pack(side=LEFT)
+            l.pack(side=LEFT, anchor=NW)
 
             # sender id
             sender_end = data_end + 12
             l = ttk.Label(self.f_telegram, text=text[data_end:sender_end], foreground=self.ADDRESS_COLOR)
-            l.pack(side=LEFT)
+            l.pack(side=LEFT, anchor=NW)
 
             # status
             l = ttk.Label(self.f_telegram, text=text[sender_end:sender_end+3], foreground=self.STATUS_COLOR)
-            l.pack(side=LEFT)
+            l.pack(side=LEFT, anchor=NW)
 
             # check sum
             l = ttk.Label(self.f_telegram, text=text[sender_end+3:sender_end+6], foreground='darkgrey')
-            l.pack(side=LEFT)
+            l.pack(side=LEFT, anchor=NW)

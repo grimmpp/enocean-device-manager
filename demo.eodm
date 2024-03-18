@@ -755,4 +755,7 @@ devices:
 recoreded_messages: []
 selected_data_filter_name: null
 send_message_template_list:
-- A55A6B070100000900000000007C
+- !!python/object:eo_man.data.message_history.MessageHistoryEntry
+  message: !!binary |
+    pVprBTAAAAD+27ZAQK8=
+  name: 'Switch: Right Top Button Pushed'

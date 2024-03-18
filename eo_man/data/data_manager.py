@@ -6,6 +6,7 @@ from .filter import DataFilter
 from .const import *
 from .app_info import ApplicationInfo as AppInfo
 from .recorded_message import RecordedMessage
+from .message_history import MessageHistoryEntry
 
 from eltakobus.util import AddressExpression, b2s
 from eltakobus.eep import EEP
@@ -34,8 +35,8 @@ class DataManager():
         # recorded messages
         self.recoreded_messages:list[RecordedMessage] = []
 
-        #
-        self.send_message_template_list = None
+        # message history
+        self.send_message_template_list:list[MessageHistoryEntry] = None
 
 
     def set_current_data_filter_handler(self, filter:DataFilter):
