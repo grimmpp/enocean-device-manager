@@ -2,6 +2,7 @@
 
 ## v0.1.16 
 * Added template list for messages to be sent
+* Added lib for ESP3 (USB300) support. (https://github.com/grimmpp/esp2_gateway_adapter)
 
 ## v0.1.15 Fixed Send Message
 * Send Message Window improved and fixed.

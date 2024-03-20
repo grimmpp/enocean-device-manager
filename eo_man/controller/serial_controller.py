@@ -16,7 +16,7 @@ from eltakobus import *
 from eltakobus.device import *
 from eltakobus.locking import buslocked, UNLOCKED
 from eltakobus.message import Regular4BSMessage
-from .esp3_serial_com import ESP3SerialCommunicator
+from esp2_gateway_adapter.esp3_serial_com import ESP3SerialCommunicator
 
 from ..data import data_helper
 from ..data.device import Device
