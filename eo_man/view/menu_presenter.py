@@ -275,5 +275,5 @@ class MenuPresenter():
 
     def show_send_message_window(self):
         if self.send_message_window is None:
-            self.send_message_window = SendMessageWindow(self.main, self.app_bus, self.serial_controller)
+            self.send_message_window = SendMessageWindow(self.main, self.app_bus, self.data_manager, self.serial_controller)
         self.send_message_window.show_window()

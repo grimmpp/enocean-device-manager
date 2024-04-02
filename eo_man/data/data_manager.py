@@ -6,6 +6,7 @@ from .filter import DataFilter
 from .const import *
 from .app_info import ApplicationInfo as AppInfo
 from .recorded_message import RecordedMessage
+from .message_history import MessageHistoryEntry
 
 from eltakobus.util import AddressExpression, b2s
 from eltakobus.eep import EEP
@@ -22,6 +23,7 @@ class DataManager():
         self.app_bus.add_event_handler(AppBusEventType.SET_DATA_TABLE_FILTER, self.set_current_data_filter_handler)
         self.app_bus.add_event_handler(AppBusEventType.REMOVED_DATA_TABLE_FILTER, self.remove_current_data_filter_handler)
         self.app_bus.add_event_handler(AppBusEventType.ASYNC_TRANCEIVER_DETECTED, self._async_tranceiver_detected)
+        self.app_bus.add_event_handler(AppBusEventType.SEND_MESSAGE_TEMPLATE_LIST_UPDATED, self.on_update_send_message_template_list)
 
         # devices
         self.devices:dict[str:Device] = {}
@@ -32,6 +34,9 @@ class DataManager():
 
         # recorded messages
         self.recoreded_messages:list[RecordedMessage] = []
+
+        # message history
+        self.send_message_template_list:list[MessageHistoryEntry] = None
 
 
     def set_current_data_filter_handler(self, filter:DataFilter):
@@ -97,6 +102,8 @@ class DataManager():
         else:
             self.app_bus.fire_event(AppBusEventType.SET_DATA_TABLE_FILTER, self.data_fitlers[self.selected_data_filter_name])
 
+        self.send_message_template_list = app_data.send_message_template_list
+
         self.recoreded_messages = app_data.recoreded_messages
         self.load_devices(app_data.devices)
         return app_data
@@ -109,6 +116,7 @@ class DataManager():
         app_data.devices = self.devices
         app_data.selected_data_filter_name = self.selected_data_filter_name
         app_data.recoreded_messages = self.recoreded_messages
+        app_data.send_message_template_list = self.send_message_template_list
 
         ApplicationData.write_to_yaml_file(filename, app_data)
 
@@ -302,5 +310,6 @@ class DataManager():
         return eep, None
     
 
-
+    def on_update_send_message_template_list(self, data:list[str]):
+        self.send_message_template_list = data
     

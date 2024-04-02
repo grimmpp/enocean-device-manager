@@ -1,5 +1,11 @@
 # Change Log
 
+## v0.1.16 Improved send message and program devices
+* Support for programming different baseId for HA sender into devices on bus.
+* Enabled FMZ14 and FAE14SSR to be programmed. 
+* Added template list for messages to be sent
+* Added lib for ESP3 (USB300) support. (https://github.com/grimmpp/esp2_gateway_adapter)
+
 ## v0.1.15 Fixed Send Message
 * Send Message Window improved and fixed.
 * Added button in toolbar for send message window.
