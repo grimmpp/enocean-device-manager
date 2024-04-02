@@ -9,9 +9,11 @@ from eo_man import LOGGER
 from ..controller.app_bus import AppBus, AppBusEventType
 from ..controller.serial_controller import SerialController
 from ..data.data_manager import DataManager
+from ..data import data_helper
 
 from eltakobus.message import *
 from eltakobus.eep import *
+from eltakobus.util import *
 
 class SerialConnectionBar():
 
@@ -38,7 +40,7 @@ class SerialConnectionBar():
         self.cb_device_type.set(self.cb_device_type['values'][0])
         self.cb_device_type.bind('<<ComboboxSelected>>', self.on_device_type_changed)
 
-        l = Label(f, text="Serial Port: ")
+        l = ttk.Label(f, text="Serial Port: ")
         l.pack(side=tk.LEFT, padx=(0, 5), pady=5)
 
         self.cb_serial_ports = ttk.Combobox(f, state="readonly", width="10") 
@@ -60,8 +62,21 @@ class SerialConnectionBar():
         s = ttk.Separator(f, orient=VERTICAL )
         s.pack(side=tk.LEFT, padx=(0,5), pady=0, fill="y")
 
-        self.b_sync_ha_sender = ttk.Button(f, text="Write HA senders to devices", state=DISABLED, command=self.write_ha_senders_to_devices)
-        Hovertip(self.b_sync_ha_sender,"Ensures sender configuration for Home Assistant is written into device memory.",300)
+        text  = "Ensures sender configuration for Home Assistant is written into device memory.\n"
+        text += "* Gateways will be added when being once connected.\n"
+        text += "* Only device connected to FAM14 via wire will be updated.\n"
+        text += "* Button will be enabled when FAM14 is connected."
+
+        l = ttk.Label(f, text="Program HA senders into devices: ")
+        Hovertip(l, text, 300)
+        l.pack(side=tk.LEFT, padx=(0, 5), pady=5)
+
+        self.cb_gateways_for_HA = ttk.Combobox(f, state="readonly", width="24") 
+        Hovertip(self.cb_gateways_for_HA, text, 300)
+        self.cb_gateways_for_HA.pack(side=tk.LEFT, padx=(0, 5), pady=5)
+
+        self.b_sync_ha_sender = ttk.Button(f, text="Write to devices", state=DISABLED, command=self.write_ha_senders_to_devices)
+        Hovertip(self.b_sync_ha_sender, text, 300)
         self.b_sync_ha_sender.pack(side=tk.LEFT, padx=(0, 5), pady=5)
 
         # # if connected via fam14 force to get status update message
@@ -72,7 +87,21 @@ class SerialConnectionBar():
         self.app_bus.add_event_handler(AppBusEventType.DEVICE_SCAN_STATUS, self.device_scan_status_handler)
         self.app_bus.add_event_handler(AppBusEventType.WRITE_SENDER_IDS_TO_DEVICES_STATUS, self.device_scan_status_handler)
         self.app_bus.add_event_handler(AppBusEventType.WINDOW_LOADED, self.on_window_loaded)
+        self.app_bus.add_event_handler(AppBusEventType.UPDATE_DEVICE_REPRESENTATION, self.update_cb_gateways_for_HA)
+        self.app_bus.add_event_handler(AppBusEventType.UPDATE_SENSOR_REPRESENTATION, self.update_cb_gateways_for_HA)
         
+
+    def update_cb_gateways_for_HA(self, event=None):
+        gateways = []
+        for d in self.data_manager.devices.values():
+            if d.is_gateway():
+                gateways.append(d.name)
+        
+        self.cb_gateways_for_HA['values'] = gateways
+        if self.cb_gateways_for_HA.get() == '':
+            self.cb_gateways_for_HA.set(gateways[0])
+        elif len(gateways) == 0:
+            self.cb_gateways_for_HA.set('')
 
     def on_device_type_changed(self, event):
         self.cb_serial_ports['values'] = []
@@ -82,10 +111,27 @@ class SerialConnectionBar():
 
 
     def write_ha_senders_to_devices(self):
+        # get gateways and its base id
+        baseId = self.cb_gateways_for_HA.get().split(' ')[1].replace('(', '').replace(')', '')
+        g = self.data_manager.devices.get(baseId, None)
+        if g.is_wired_gateway():
+            sender_base_id = '00-00-B0-00'
+        else:
+            sender_base_id = g.base_id
+
+        # get sender list to be entered
         sender_list = {}
-        for dev in self.data_manager.devices.values():
-            sender_list[dev.external_id] = dev.additional_fields
-        self.serial_cntr.write_sender_id_to_devices(45056, sender_list)
+        for d in self.data_manager.devices.values():
+            if d.base_id == self.serial_cntr.current_base_id and d.use_in_ha:
+                if 'sender' in d.additional_fields:
+                    sender_list[d.external_id] = dict(d.additional_fields)
+                    sender_id = data_helper.a2i(sender_base_id) + data_helper.a2i(d.address)
+                    sender_list[d.external_id]['sender']['id'] =  data_helper.a2s(sender_id)
+
+        self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {
+            'msg': f'Write sender ids to devices for gateway {self.cb_gateways_for_HA.get()} with sender base id {sender_base_id} on bus with base id {self.serial_cntr.current_base_id}',
+            'color': 'lightgreen'})
+        self.serial_cntr.write_sender_id_to_devices(sender_list)
         
 
     def on_window_loaded(self, data):

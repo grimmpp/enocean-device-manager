@@ -433,39 +433,77 @@ class SerialController():
             self.app_bus.fire_event(AppBusEventType.DEVICE_SCAN_STATUS, 'FINISHED')
             self._serial_bus.set_callback( self._received_serial_event )
 
-    def write_sender_id_to_devices(self, sender_base_id:int=45056, sender_id_list:dict={}):
-        t = threading.Thread(target=lambda: asyncio.run( self.async_write_sender_id_to_devices(sender_base_id, sender_id_list) )  )
+    def write_sender_id_to_devices(self, sender_id_list:dict={}):
+        t = threading.Thread(target=lambda: asyncio.run( self.async_write_sender_id_to_devices(sender_id_list) )  )
         t.start()
 
 
     async def async_ensure_programmed(self, fam14_base_id_int:int, dev:BusObject, sender_id_list:dict):
-        HEATING = [FAE14SSR]
-        if isinstance(dev, HasProgrammableRPS) or isinstance(dev, DimmerStyle) or type(dev) in HEATING:
+        #HEATING = [FAE14SSR]
+        if isinstance(dev, HasProgrammableRPS) or isinstance(dev, DimmerStyle):# or type(dev) in HEATING:
             for i in range(0,dev.size):
                 device_ext_id_str = b2s( (fam14_base_id_int + dev.address+i).to_bytes(4,'big'))
 
                 if device_ext_id_str in sender_id_list:
+                    update_result = None
                     if 'sender' in sender_id_list[device_ext_id_str]:
                         sender_id_str = sender_id_list[device_ext_id_str]['sender']['id']
                         sender_eep_str = sender_id_list[device_ext_id_str]['sender']['eep']
                         sender_address = AddressExpression.parse(sender_id_str)
                         eep_profile = EEP.find(sender_eep_str)
 
-                        if type(dev) in HEATING:
-                            # need to be at a special position 12 and 13
-                            continue
-                            mem_line:bytes = sender_address[0] + bytes((0, 65, 1, 0))
-                            #TODO: NOT PROPERLY WORKING
-                            await dev.write_mem_line(12 + i, mem_line)
+                        # if type(dev) in HEATING:
+                        #     # need to be at a special position 12 and 13
+                        #     continue
+                        #     mem_line:bytes = sender_address[0] + bytes((0, 65, 1, 0))
+                        #     #TODO: NOT PROPERLY WORKING
+                        #     await dev.write_mem_line(12 + i, mem_line)
+                        # else:
+                        retry = 3
+                        exception = None
+                        error_msg = {'msg': f'Failed to write sender id ({sender_id_str}) to device ({device_ext_id_str}). Will be retried up to {retry} times!',
+                                        'log-level': 'ERROR', 
+                                        'color': 'red'}
+
+                        while retry > 0:
+                            try:
+                                update_result = await dev.ensure_programmed(i, sender_address, eep_profile)
+                                retry=0
+                                exception = None
+                                time.sleep(0.2) # delay to avaid buffer overflow
+
+                            except WriteError as e:
+                                logging.exception(str(e))
+                                self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, error_msg)
+                                retry -= 1
+                                exception = e
+                            except TimeoutError as e:
+                                logging.exception(str(e))
+                                self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, error_msg)
+                                retry -= 1
+                                exception = e
+                            except Exception as e:
+                                logging.exception(str(e))
+                                self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, error_msg)
+                                retry -= 1
+                                exception = e
+                                
+
+                        if exception is not None:
+                            raise exception
+                                
+                        if update_result is None:
+                            msg = f'Update for device {type(dev).__name__} ({device_ext_id_str}) NOT supported.'
+                        elif update_result == True:
+                            msg = f'Updated Home Assistant sender id {sender_id_str} for eep {sender_eep_str} in device {type(dev).__name__} {device_ext_id_str}.'
                         else:
-                            await dev.ensure_programmed(i, sender_address, eep_profile)
-                
-                        msg = f"Updated Home Assistant sender id ({sender_id_str}) in device {type(dev).__name__} ({device_ext_id_str})"
+                            msg = f'Sender id {sender_id_str} for eep {sender_eep_str} in device {type(dev).__name__} {device_ext_id_str} already exists.'
+
                         self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'color':'grey'})
                         self.app_bus.fire_event(AppBusEventType.WRITE_SENDER_IDS_TO_DEVICES_STATUS, 'DEVICE_UPDATED')
 
 
-    async def async_write_sender_id_to_devices(self, sender_base_id:int=45056, sender_id_list:dict={}): # 45056 = 0x00 00 B0 00
+    async def async_write_sender_id_to_devices(self, sender_id_list:dict={}): # 45056 = 0x00 00 B0 00
         if not self.is_fam14_connection_active():
             self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': "Cannot write HA sender ids to devices because you are not connected to FAM14.", 'color':'red'})
         else:
@@ -488,10 +526,7 @@ class SerialController():
 
                 # iterate through all devices
                 async for dev in self.enumerate_bus():
-                    try:
-                        await self.async_ensure_programmed(fam14_base_id_int, dev, sender_id_list)
-                    except TimeoutError:
-                        logging.error("Read error, skipping: Device %s announces %d memory but produces timeouts at reading" % (dev, dev.discovery_response.memory_size))
+                    await self.async_ensure_programmed(fam14_base_id_int, dev, sender_id_list)
 
                 self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': "Device scan finished.", 'color':'red'})
             except Exception as e:

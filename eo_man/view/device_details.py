@@ -187,7 +187,7 @@ class DeviceDetails():
 
         # additional fields
         c_row += 1
-        c_row = self.add_additional_fields(device, device.additional_fields, f, c_row)
+        c_row = self.add_additional_fields(device, device.additional_fields, f, '', c_row)
 
         # memory entries
         c_row += 1
@@ -263,27 +263,38 @@ class DeviceDetails():
 
         self.data_manager.update_device(device)
 
-    def add_additional_fields(self, device:Device, add_fields:dict, f:Frame, _row:int=0, spaces:int=0):
+    def add_additional_fields(self, device:Device, add_fields:dict, f:Frame, parent_key:str='', _row:int=0, spaces:int=0):
         for key, value in add_fields.items():
             
             if not isinstance(value, dict):
                 l = Label(f, text=spaces*" "+key.title())
                 l.grid(row=_row, column=0, sticky=W, padx=3)
 
-                entry = Entry(f)
-                entry.insert(END, str(value) )
                 def set_additional_field_value(af, k, t):
                     af[k]=t.get()
-                entry.bind("<Any-KeyPress>", lambda e, af=add_fields, k=key, t=entry: set_additional_field_value(af,k,t))# set_additional_field_value(e,af,k,t))
-                entry.grid(row=_row, column=1, sticky=W+E)
-                entry.bind('<Return>', lambda e, af=add_fields, k=key, t=entry, d=device: [set_additional_field_value(af,k,t), self.update_device(d)])
+
+                if key == 'id' and parent_key == 'sender':
+                    l = Label(f, text="BaseId + "+value.split('-')[-1])
+                    l.grid(row=_row, column=1, sticky=W)
+                elif 'eep' in key: 
+                    cb = ttk.Combobox(f, width="20") 
+                    cb['values'] = data_helper.get_all_eep_names()
+                    cb.grid(row=_row, column=1, sticky=W+E)
+                    cb.set(value)
+                    cb.bind('<Return>', lambda e, af=add_fields, k=key, t=cb, d=device: [set_additional_field_value(af,k,t), self.update_device(d)])
+                else:
+                    entry = Entry(f)
+                    entry.insert(END, str(value) )
+                    entry.bind("<Any-KeyPress>", lambda e, af=add_fields, k=key, t=entry: set_additional_field_value(af,k,t))# set_additional_field_value(e,af,k,t))
+                    entry.bind('<Return>', lambda e, af=add_fields, k=key, t=entry, d=device: [set_additional_field_value(af,k,t), self.update_device(d)])
+                    entry.grid(row=_row, column=1, sticky=W+E)
 
             if isinstance(value, dict):
                 # lf = LabelFrame(f, text=key.title())
                 # lf.grid(row=_row, column=0, sticky=W, padx=3, columnspan=2)
                 l = Label(f, text=spaces*" "+key.title()+":")
                 l.grid(row=_row, column=0, sticky=W, padx=3, columnspan=2)
-                _row = self.add_additional_fields(device, value, f, _row+1, spaces+3)
+                _row = self.add_additional_fields(device, value, f, key, _row+1, spaces+3)
 
             _row += 1 
 
