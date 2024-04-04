@@ -64,7 +64,7 @@ class SerialConnectionBar():
 
         text  = "Ensures sender configuration for Home Assistant is written into device memory.\n"
         text += "* Gateways will be added when being once connected.\n"
-        text += "* Only device connected to FAM14 via wire will be updated.\n"
+        text += "* Only devices connected to FAM14 via wire will be updated.\n"
         text += "* Button will be enabled when FAM14 is connected."
 
         l = ttk.Label(f, text="Program HA senders into devices: ")
@@ -95,7 +95,7 @@ class SerialConnectionBar():
         gateways = []
         for d in self.data_manager.devices.values():
             if d.is_gateway():
-                gateways.append(d.name)
+                gateways.append(f"{d.device_type.replace(' (Wireless Tranceiver)', '')} ({d.external_id})")
         
         self.cb_gateways_for_HA['values'] = gateways
         if self.cb_gateways_for_HA.get() == '':
