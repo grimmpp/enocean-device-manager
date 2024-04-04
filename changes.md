@@ -1,6 +1,9 @@
 # Change Log
 
-## v0.1.16 Improved send message and program devices
+## v0.1.7 Bug-Fix missing dependency in v0.1.16
+* added dependency `esp2_gateway_adapter`
+
+## v0.1.16 Improved send message and program devices (DELETED)
 * Support for programming different baseId for HA sender into devices on bus.
 * Enabled FMZ14 and FAE14SSR to be programmed. 
 * Added template list for messages to be sent
