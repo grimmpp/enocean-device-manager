@@ -115,7 +115,7 @@ devices:
     ha_platform: ''
     key_function: SWITCHING_STATE_FROM_CONTROLLER
     memory_entries: *id001
-    name: HA Contoller FF-86-B0-8A
+    name: HA Controller FF-86-B0-8A
     use_in_ha: false
     version: unknown
   FF-86-B0-8B: !!python/object:eo_man.data.device.Device
@@ -131,7 +131,7 @@ devices:
     ha_platform: ''
     key_function: SWITCHING_STATE_FROM_CONTROLLER
     memory_entries: *id001
-    name: HA Contoller FF-86-B0-8B
+    name: HA Controller FF-86-B0-8B
     use_in_ha: false
     version: unknown
   FF-86-B0-8C: !!python/object:eo_man.data.device.Device
@@ -147,7 +147,7 @@ devices:
     ha_platform: ''
     key_function: SWITCHING_STATE_FROM_CONTROLLER
     memory_entries: *id001
-    name: HA Contoller FF-86-B0-8C
+    name: HA Controller FF-86-B0-8C
     use_in_ha: false
     version: unknown
   FF-CD-60-80: !!python/object:eo_man.data.device.Device
@@ -671,7 +671,7 @@ devices:
     ha_platform: ''
     key_function: OPERATIONS_COMMAND_WITH_TIME_VALUE_TRASMISSION_FROM_CONTROLLER
     memory_entries: *id001
-    name: HA Contoller 00-00-B0-05
+    name: HA Controller 00-00-B0-05
     use_in_ha: false
     version: unknown
   FF-CE-10-87: !!python/object:eo_man.data.device.Device
@@ -687,7 +687,7 @@ devices:
     ha_platform: ''
     key_function: SWITCHING_STATE_FROM_CONTROLLER
     memory_entries: *id001
-    name: HA Contoller 00-00-B0-07
+    name: HA Controller 00-00-B0-07
     use_in_ha: false
     version: unknown
   FF-E2-35-90: !!python/object:eo_man.data.device.Device

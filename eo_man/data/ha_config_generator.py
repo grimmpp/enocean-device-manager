@@ -124,7 +124,7 @@ class HomeAssistantConfigurationGenerator():
         spaces = space_count*" " + "        "
         for key in additional_fields.keys():
             value = additional_fields[key]
-            if parent_key in ['sender'] and key == 'id' and gateway.is_wireless_tranceiver():
+            if parent_key in ['sender'] and key == 'id' and gateway.is_wireless_transceiver():
                 value = data_helper.a2s( int("0x"+value[-2:], base=16) + data_helper.a2i(gateway.base_id) )
             if isinstance(value, str) or isinstance(value, int):
                 if key not in [CONF_COMMENT, CONF_REGISTERED_IN]:

@@ -72,22 +72,22 @@ class SerialController():
         """
         # python -m serial.tools.miniterm COM10 57600 --encoding hexlify
         
-        _ports:list[ListPortInfo] = serial.tools.list_ports.comports()
-        for p in _ports:
-            print(f"port: {p.device}, hwid: {p.hwid}")
-        print(len(_ports), 'ports found')
+        # _ports:list[ListPortInfo] = serial.tools.list_ports.comports()
+        # for p in _ports:
+        #     print(f"port: {p.device}, hwid: {p.hwid}")
+        # print(len(_ports), 'ports found')
 
-        # if sys.platform.startswith('win'):
-        #     ports = ['COM%s' % (i + 1) for i in range(256)]
-        # elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
-        #     # this excludes your current terminal "/dev/tty"
-        #     ports = glob.glob('/dev/tty[A-Za-z]*')
-        # elif sys.platform.startswith('darwin'):
-        #     ports = glob.glob('/dev/tty.*')
-        # else:
-        #     raise EnvironmentError('Unsupported platform')
+        if sys.platform.startswith('win'):
+            ports = ['COM%s' % (i + 1) for i in range(256)]
+        elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
+            # this excludes your current terminal "/dev/tty"
+            ports = glob.glob('/dev/tty[A-Za-z]*')
+        elif sys.platform.startswith('darwin'):
+            ports = glob.glob('/dev/tty.*')
+        else:
+            raise EnvironmentError('Unsupported platform')
         
-        ports = [p.device for p in _ports if p.vid == self.USB_VENDOR_ID]
+        # ports = [p.device for p in _ports if p.vid == self.USB_VENDOR_ID]
 
         fam14 = GatewayDeviceType.GatewayEltakoFAM14.value
         usb300 = GatewayDeviceType.GatewayEnOceanUSB300.value
@@ -248,7 +248,7 @@ class SerialController():
             self.current_base_id = b2s(self._serial_bus.base_id)
             self.gateway_id = self.current_base_id
 
-            await self.app_bus.async_fire_event(AppBusEventType.ASYNC_TRANCEIVER_DETECTED, {'type': 'USB300', 
+            await self.app_bus.async_fire_event(AppBusEventType.ASYNC_TRANSCEIVER_DETECTED, {'type': 'USB300', 
                                                                                             'base_id': self.current_base_id, 
                                                                                             'gateway_id': self.gateway_id,
                                                                                             'tcm_version': '', 
@@ -256,7 +256,7 @@ class SerialController():
 
 
         except Exception as e:
-            msg = 'Failed to get information about USB300!!!'
+            msg = 'Failed to get information about USB300 (ESP3)!!!'
             self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
             logging.exception(msg, exc_info=True)
             raise e
@@ -303,7 +303,7 @@ class SerialController():
             tcm_sw_v = '.'.join(str(n) for n in response.body[2:6])
             api_v = '.'.join(str(n) for n in response.body[6:10])
 
-            await self.app_bus.async_fire_event(AppBusEventType.ASYNC_TRANCEIVER_DETECTED, {'type': 'FAM-USB', 
+            await self.app_bus.async_fire_event(AppBusEventType.ASYNC_TRANSCEIVER_DETECTED, {'type': 'FAM-USB', 
                                                                                             'base_id': self.current_base_id, 
                                                                                             'gateway_id': self.gateway_id,
                                                                                             'tcm_version': tcm_sw_v, 

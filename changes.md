@@ -1,6 +1,10 @@
 # Change Log
 
-## v0.1.7 Bug-Fix missing dependency in v0.1.16
+## v0.1.18 Bug-fix for USB300 detection
+* Bug-fix USB300 detection
+* Typos removed
+
+## v0.1.17 Bug-Fix missing dependency in v0.1.16
 * added dependency `esp2_gateway_adapter`
 
 ## v0.1.16 Improved send message and program devices (DELETED)
@@ -35,7 +39,7 @@
 * Serial port detection for FAM-USB and USB300 improved.
 * TODO: Cleanup of ESP3 communication, move function into lib
 
-## v0.1.8 Wireless Tranceiver Support
+## v0.1.8 Wireless Transceiver Support
 * Reset suggested HA settings added
 * Support for FAM-USB. Is now detected as gateway and contained in HA config 
 * **Experimental** Support for USB300. CODE CLEANUP HEAVILY NEEDED!!!

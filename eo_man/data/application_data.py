@@ -28,13 +28,18 @@ class ApplicationData():
         self.send_message_template_list: list[str] = []
 
 
+    translations:dict[str:str] ={
+        'name: HA Contoller': 'name: HA Controller',
+        '(Wireless Tranceiver)': '(Wireless Transceiver)'
+    }
+
     @classmethod
     def read_from_file(cls, filename:str):
         result = ApplicationData()
 
         file_content = None
         with open(filename, 'rb') as file:
-            file_content = pickle.load(file) 
+            file_content = pickle.loads(file) 
 
         if isinstance(file_content, ApplicationData):
             result = file_content
@@ -70,7 +75,10 @@ class ApplicationData():
     @classmethod
     def read_from_yaml_file(cls, filename:str):
         with open(filename, 'r') as file:
-            app_data = yaml.load(file, Loader=yaml.Loader)
+            file_content = file.read()
+            for k,v in cls.translations.items():
+                file_content.replace(k,v)
+            app_data = yaml.load(file_content, Loader=yaml.Loader)
         cls._migrate(app_data)
         
         return app_data
