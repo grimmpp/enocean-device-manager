@@ -22,7 +22,7 @@ class DataManager():
         self.app_bus.add_event_handler(AppBusEventType.LOAD_FILE, self._reset)
         self.app_bus.add_event_handler(AppBusEventType.SET_DATA_TABLE_FILTER, self.set_current_data_filter_handler)
         self.app_bus.add_event_handler(AppBusEventType.REMOVED_DATA_TABLE_FILTER, self.remove_current_data_filter_handler)
-        self.app_bus.add_event_handler(AppBusEventType.ASYNC_TRANCEIVER_DETECTED, self._async_tranceiver_detected)
+        self.app_bus.add_event_handler(AppBusEventType.ASYNC_TRANSCEIVER_DETECTED, self._async_transceiver_detected)
         self.app_bus.add_event_handler(AppBusEventType.SEND_MESSAGE_TEMPLATE_LIST_UPDATED, self.on_update_send_message_template_list)
 
         # devices
@@ -150,7 +150,7 @@ class DataManager():
                     self.app_bus.fire_event(AppBusEventType.UPDATE_DEVICE_REPRESENTATION, centralized_device)
 
 
-    async def _async_tranceiver_detected(self, data):
+    async def _async_transceiver_detected(self, data):
         base_id = data['base_id']
         if data.get('type', None) is not None:
             gw_device = Device(address=base_id,
@@ -158,7 +158,7 @@ class DataManager():
                              external_id=base_id,
                              base_id=base_id,
                              name=f"{data['type']} ({base_id})",
-                             device_type=f"{data['type']} (Wireless Tranceiver)",
+                             device_type=f"{data['type']} (Wireless Transceiver)",
                              use_in_ha=True
                              )
             if gw_device.external_id not in self.devices:

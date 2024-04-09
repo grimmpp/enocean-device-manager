@@ -72,13 +72,13 @@ class Device():
         return self.device_type is not None and 'USB300' in self.device_type
 
     def is_gateway(self) -> bool:
-        return self.is_wired_gateway() or self.is_wireless_tranceiver()
+        return self.is_wired_gateway() or self.is_wireless_transceiver()
     
     def is_wired_gateway(self) -> bool:
         return self.is_fam14() or self.is_fgw14_usb()
 
-    def is_wireless_tranceiver(self) -> bool:
-        return self.is_usb300() or self.is_fam_usb() or (self.device_type is not None and 'Wireless Tranceiver' in self.device_type)
+    def is_wireless_transceiver(self) -> bool:
+        return self.is_usb300() or self.is_fam_usb() or (self.device_type is not None and 'Wireless Transceiver' in self.device_type)
     
     def is_bus_device(self) -> bool:
         return self.bus_device
@@ -242,7 +242,7 @@ class Device():
             bd.device_type = 'Smart Home'
             bd.ha_platform = ''
             bd.eep = ''
-            bd.name = 'HA Contoller ' + sensor_info.sensor_id_str
+            bd.name = 'HA Controller ' + sensor_info.sensor_id_str
         elif 'WEATHER_STATION' in bd.key_function:
             bd.use_in_ha = True
             bd.device_type = 'Weather Station'

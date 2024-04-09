@@ -95,7 +95,7 @@ class SerialConnectionBar():
         gateways = []
         for d in self.data_manager.devices.values():
             if d.is_gateway():
-                gateways.append(f"{d.device_type.replace(' (Wireless Tranceiver)', '')} ({d.external_id})")
+                gateways.append(f"{d.device_type.replace(' (Wireless Transceiver)', '')} ({d.external_id})")
         
         self.cb_gateways_for_HA['values'] = gateways
         if self.cb_gateways_for_HA.get() == '':
@@ -112,7 +112,7 @@ class SerialConnectionBar():
 
     def write_ha_senders_to_devices(self):
         # get gateways and its base id
-        baseId = self.cb_gateways_for_HA.get().split(' ')[1].replace('(', '').replace(')', '')
+        baseId = self.cb_gateways_for_HA.get().split(' ')[-1].replace('(', '').replace(')', '')
         g = self.data_manager.devices.get(baseId, None)
         if g.is_wired_gateway():
             sender_base_id = '00-00-B0-00'

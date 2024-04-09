@@ -119,7 +119,7 @@ devices:
     ha_platform: ''
     key_function: SWITCHING_STATE_FROM_CONTROLLER
     memory_entries: *id002
-    name: HA Contoller FF-86-B0-8A
+    name: HA Controller FF-86-B0-8A
     use_in_ha: false
     version: unknown
   FF-86-B0-8B: !!python/object:eo_man.data.device.Device
@@ -135,7 +135,7 @@ devices:
     ha_platform: ''
     key_function: SWITCHING_STATE_FROM_CONTROLLER
     memory_entries: *id002
-    name: HA Contoller FF-86-B0-8B
+    name: HA Controller FF-86-B0-8B
     use_in_ha: false
     version: unknown
   FF-86-B0-8C: !!python/object:eo_man.data.device.Device
@@ -151,7 +151,7 @@ devices:
     ha_platform: ''
     key_function: SWITCHING_STATE_FROM_CONTROLLER
     memory_entries: *id002
-    name: HA Contoller FF-86-B0-8C
+    name: HA Controller FF-86-B0-8C
     use_in_ha: false
     version: unknown
   FF-BC-00-00: !!python/object:eo_man.data.device.Device
@@ -161,7 +161,7 @@ devices:
     channel: 1
     comment: null
     dev_size: 1
-    device_type: FAM-USB (Wireless Tranceiver)
+    device_type: FAM-USB (Wireless Transceiver)
     external_id: FF-BC-00-00
     memory_entries: &id003 []
     name: FAM-USB (FF-BC-00-00)
@@ -704,7 +704,7 @@ devices:
     ha_platform: ''
     key_function: OPERATIONS_COMMAND_WITH_TIME_VALUE_TRASMISSION_FROM_CONTROLLER
     memory_entries: *id002
-    name: HA Contoller 00-00-B0-05
+    name: HA Controller 00-00-B0-05
     use_in_ha: false
     version: unknown
   FF-CE-10-87: !!python/object:eo_man.data.device.Device
@@ -720,7 +720,7 @@ devices:
     ha_platform: ''
     key_function: SWITCHING_STATE_FROM_CONTROLLER
     memory_entries: *id002
-    name: HA Contoller 00-00-B0-07
+    name: HA Controller 00-00-B0-07
     use_in_ha: false
     version: unknown
   FF-D6-00-00: !!python/object:eo_man.data.device.Device
@@ -730,7 +730,7 @@ devices:
     channel: 1
     comment: null
     dev_size: 1
-    device_type: USB300 (Wireless Tranceiver)
+    device_type: USB300 (Wireless Transceiver)
     external_id: FF-D6-00-00
     memory_entries: *id003
     name: USB300 (FF-D6-00-00)
