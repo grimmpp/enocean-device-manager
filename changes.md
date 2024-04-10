@@ -1,5 +1,8 @@
 # Change Log
 
+## v0.1.19 Added EEP A5-30-01 and A5-30-03
+* Added EEPs for digital input
+
 ## v0.1.18 Bug-fix for USB300 detection
 * Bug-fix USB300 detection
 * Typos removed
