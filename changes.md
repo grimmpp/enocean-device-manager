@@ -1,5 +1,7 @@
 # Change Log
 
+## v0.1.20 Bug-fix for detection of FSR14_2x
+
 ## v0.1.19 Added EEP A5-30-01 and A5-30-03
 * Added EEPs for digital input
 
