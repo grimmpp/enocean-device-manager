@@ -18,6 +18,7 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/eo_man",
+            "args": ["-v"],
             "console": "integratedTerminal",
             "justMyCode": true
         },

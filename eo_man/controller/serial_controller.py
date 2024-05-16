@@ -186,7 +186,7 @@ class SerialController():
         if device_type == 'FAM-USB':
             baudrate = 9600
         elif device_type == 'FAM14':
-            delay_message = .001
+            delay_message = 0.001
 
         try:
             if not self.is_serial_connection_active():
@@ -344,26 +344,26 @@ class SerialController():
             t = threading.Thread(target=lambda: asyncio.run( self._scan_for_devices_on_bus(force_overwrite) )  )
             t.start()
 
-    async def create_busobject(self, id: int) -> BusObject:
-        response = await self._serial_bus.exchange(EltakoDiscoveryRequest(address=id), EltakoDiscoveryReply)
-
-        assert id == response.reported_address, "Queried for ID %s, received %s" % (id, prettify(response))
-
-        for o in sorted_known_objects:
-            if response.model.startswith(o.discovery_name) and (o.size is None or o.size == response.reported_size):
-                return o(response, bus=self._serial_bus)
-        else:
-            return BusObject(response, bus=self._serial_bus)
 
     async def enumerate_bus(self) -> Iterator[BusObject]: # type: ignore
         """Search the bus for devices, yield bus objects for every match"""
 
+        skip_until = 0
+
         for i in range(1, 256):
             try:
-                self.app_bus.fire_event(AppBusEventType.DEVICE_ITERATION_PROGRESS, i/256.0*100.0)
-                yield await self.create_busobject(i)
+                if i > skip_until:
+                    self.app_bus.fire_event(AppBusEventType.DEVICE_ITERATION_PROGRESS, i/256.0*100.0)
+                    bus_object = await create_busobject(bus=self._serial_bus, id=i)
+                    skip_until = i + bus_object.size -1
+                    yield bus_object
             except TimeoutError:
                 continue
+            except Exception as e:
+                msg = 'Cannot detect device'
+                self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
+                logging.exception(msg, exc_info=True)
+
 
     async def _get_fam14_device_on_bus(self, force_overwrite:bool=False) -> None:
         is_locked = False
@@ -375,7 +375,7 @@ class SerialController():
             is_locked = (await locking.lock_bus(self._serial_bus)) == locking.LOCKED
             
             # first get fam14 and make it know to data manager
-            fam14:FAM14 = await self.create_busobject(255)
+            fam14:FAM14 = await create_busobject(bus=self._serial_bus, id=255)
             self.current_base_id = await fam14.get_base_id()
             self.gateway_id = data_helper.a2s( (await fam14.get_base_id_in_int()) + 0xFF )
             self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Found device: {fam14}", 'color':'grey'})
@@ -405,7 +405,7 @@ class SerialController():
             is_locked = (await locking.lock_bus(self._serial_bus)) == locking.LOCKED
             
             # first get fam14 and make it know to data manager
-            fam14:FAM14 = await self.create_busobject(255)
+            fam14:FAM14 = await create_busobject(bus=self._serial_bus, id=255)
             logging.debug(colored(f"Found device: {fam14}",'grey'))
             await self.app_bus.async_fire_event(AppBusEventType.ASYNC_DEVICE_DETECTED, {'device': fam14, 'fam14': fam14, 'force_overwrite': force_overwrite})
 
@@ -470,7 +470,7 @@ class SerialController():
                                 update_result = await dev.ensure_programmed(i, sender_address, eep_profile)
                                 retry=0
                                 exception = None
-                                time.sleep(0.2) # delay to avaid buffer overflow
+                                time.sleep(0.2) # delay to avoid buffer overflow
 
                             except WriteError as e:
                                 logging.exception(str(e))
@@ -518,7 +518,7 @@ class SerialController():
                 self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': "Start writing Home Assistant sender ids to devices", 'color':'red'})
 
                 # first get fam14 and make it know to data manager
-                fam14:FAM14 = await self.create_busobject(255)
+                fam14:FAM14 = await create_busobject(bus=self._serial_bus, id=255)
                 fam14_base_id_int = await fam14.get_base_id_in_int()
                 fam14_base_id = b2s(await fam14.get_base_id_in_bytes())
                 msg = f"Update devices on Bus (fam14 base id: {fam14_base_id})"
