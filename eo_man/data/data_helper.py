@@ -33,6 +33,8 @@ EEP_MAPPING = [
     {'hw-type': 'FUD14', CONF_EEP: 'A5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 3, 'PCT14-key-function': 32, 'description': 'Central command - gateway', 'address_count': 1},
     {'hw-type': 'FUD14_800W', CONF_EEP: 'A5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 3, 'PCT14-key-function': 32, 'description': 'Central command - gateway', 'address_count': 1},
 
+    {'hw-type': 'FDG14', CONF_EEP: 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 1, 'PCT14-key-function': 32, 'description': 'Central command - gateway', 'address_count': 16},
+
     {'hw-type': 'FMZ14', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 1, 'description': 'Eltako relay', 'address_count': 1},
     {'hw-type': 'FSR14', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 2, 'PCT14-key-function': 51, 'description': 'Eltako relay', 'address_count': 1},
     {'hw-type': 'FSR14_1x', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 2, 'PCT14-key-function': 51, 'description': 'Eltako relay', 'address_count': 1},
@@ -63,7 +65,7 @@ def get_all_eep_names():
             if child not in subclasses:
                 subclasses.add(child)
                 work.append(child)
-    return sorted(set([s.__name__.upper() for s in subclasses if len(s.__name__) == 8 and s.__name__.count('_') == 2]))
+    return sorted(set([s.__name__.replace('_', '-').upper() for s in subclasses if len(s.__name__) == 8 and s.__name__.count('_') == 2]))
 
 def find_eep_by_name(eep_name:str) -> EEP:
     for child in EEP.__subclasses__():

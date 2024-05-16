@@ -30,13 +30,13 @@ def cli_argument():
         description=
 """EnOcean Device Manager (https://github.com/grimmpp/enocean-device-manager) allows you to managed your EnOcean devices and to generate 
 Home Assistant Configurations for the Home Assistant Eltako Integration (https://github.com/grimmpp/home-assistant-eltako).""")
-    p.add_argument('-v', '--verbose', help="Logs all messages.", action='store_true')
+    p.add_argument('-v', '--verbose', help="Logs all messages.", action='count', default=0)
     p.add_argument('-c', "--app_config", help="Filename of stored application configuration. Filename must end with '.eodm'.", default=None)
     p.add_argument('-ha', "--ha_config", help="Filename for Home Assistant Configuration for Eltako Integration. By passing the filename it will disable the GUI and only generate the Home Assistant Configuration file.")
     return p.parse_args()
 
 
-def init_logger(app_bus:AppBus, log_level:int=logging.INFO):
+def init_logger(app_bus:AppBus, log_level:int=logging.INFO, verbose_level:int=0):
     file_handler = RotatingFileHandler(os.path.join(PROJECT_DIR, "enocean-device-manager.log"), 
                                        mode='a', maxBytes=10*1024*1024, backupCount=2, encoding=None, delay=0)
     stream_handler = logging.StreamHandler()
@@ -50,6 +50,13 @@ def init_logger(app_bus:AppBus, log_level:int=logging.INFO):
     LOGGER.setLevel(log_level)
     file_handler.setLevel(logging.DEBUG)
     stream_handler.setLevel(log_level)
+    
+    logging.getLogger('esp2_gateway_adapter').setLevel(logging.INFO)
+    logging.getLogger('eltakobus.serial').setLevel(logging.INFO)
+    if verbose_level > 0:
+        logging.getLogger('esp2_gateway_adapter').setLevel(logging.DEBUG)
+    elif verbose_level > 1:
+        logging.getLogger('eltakobus.serial').setLevel(logging.DEBUG)
 
     LOGGER.info("Start Application eo_man")
     LOGGER.info(ApplicationInfo.get_app_info_as_str())
@@ -71,7 +78,7 @@ def main():
     # init application message BUS
     app_bus = AppBus()
 
-    init_logger(app_bus, logging.DEBUG if opts.verbose else logging.INFO)
+    init_logger(app_bus, logging.DEBUG if opts.verbose > 0 else logging.INFO)
 
     # init DATA MANAGER
     data_manager = DataManager(app_bus)

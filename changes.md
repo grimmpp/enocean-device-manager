@@ -1,5 +1,10 @@
 # Change Log
 
+## v0.1.21 EEP representation bug fixes
+* Ignores unknown devices
+* Fixed EEP representation in dorp down
+* Preparation for FDG14 detection
+
 ## v0.1.20 Bug-fix for detection of FSR14_2x
 
 ## v0.1.19 Added EEP A5-30-01 and A5-30-03
