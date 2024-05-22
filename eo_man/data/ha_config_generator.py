@@ -34,13 +34,13 @@ class HomeAssistantConfigurationGenerator():
     def get_gateway_by(self, gw_d:Device) -> GatewayDeviceType:
         gw_type = None
         if gw_d.is_fam14():
-            gw_type = GatewayDeviceType.GatewayEltakoFAM14.value
+            gw_type = GatewayDeviceType.EltakoFAM14.value
         elif gw_d.is_fgw14_usb():
-            gw_type = GatewayDeviceType.GatewayEltakoFGW14USB.value
+            gw_type = GatewayDeviceType.EltakoFGW14USB.value
         elif gw_d.is_fam_usb():
-            gw_type = GatewayDeviceType.GatewayEltakoFAMUSB.value
+            gw_type = GatewayDeviceType.EltakoFAMUSB.value
         elif gw_d.is_usb300():
-            gw_type = GatewayDeviceType.GatewayEnOceanUSB300.value
+            gw_type = GatewayDeviceType.USB300.value
         return gw_type
 
     def generate_ha_config(self, device_list:list[Device]) -> str:
@@ -63,8 +63,8 @@ class HomeAssistantConfigurationGenerator():
             out += f"  {CONF_GATEWAY}:\n"
             out += f"  - {CONF_ID}: {global_gw_id}\n"
 
-            gw_fam14 = GatewayDeviceType.GatewayEltakoFAM14.value
-            gw_fgw14usb = GatewayDeviceType.GatewayEltakoFGW14USB.value
+            gw_fam14 = GatewayDeviceType.EltakoFAM14.value
+            gw_fgw14usb = GatewayDeviceType.EltakoFGW14USB.value
             
             gw_type = self.get_gateway_by(gw_d)
             out += f"    {CONF_DEVICE_TYPE}: {gw_type}   # you can simply change {gw_fam14} to {gw_fgw14usb}\n"

@@ -84,11 +84,11 @@ class DeviceDetails():
         l = Label(f, text="Base Id")
         l.grid(row=c_row, column=0, sticky=W, padx=3)
 
-        self.text_address = ttk.Entry(f)
-        self.text_address.insert(END, "00-00-00-00")
-        self.text_address.config(state=DISABLED)
-        self.text_address.grid(row=c_row, column=1, sticky=W+E)
-        self._update_text_field(self.text_address, device.base_id)
+        self.text_base_id = ttk.Entry(f)
+        self.text_base_id.insert(END, "00-00-00-00")
+        self.text_base_id.config(state=DISABLED)
+        self.text_base_id.grid(row=c_row, column=1, sticky=W+E)
+        self._update_text_field(self.text_base_id, device.base_id)
         # self.text_address.bind('<Return>', lambda e, d=device: self.update_device(d))
 
         # external address
@@ -122,7 +122,7 @@ class DeviceDetails():
         l.grid(row=c_row, column=0, sticky=W, padx=3)
 
         self.cb_device_type = ttk.Combobox(f, width="20") 
-        self.cb_device_type['values'] = list(set([t['hw-type'] for t in data_helper.EEP_MAPPING]))
+        self.cb_device_type['values'] = data_helper.get_known_device_types()
         self.cb_device_type.grid(row=c_row, column=1, sticky=W+E)
         self.cb_device_type.set(device.device_type if device.device_type else '')
         if device.is_gateway():
@@ -261,7 +261,11 @@ class DeviceDetails():
         device.use_in_ha = self.cb_export_ha_var.get() == 1
         device.ha_platform = self.cb_ha_platform.get()
 
+        Device.init_sender_fields(device)
+
         self.data_manager.update_device(device)
+
+        self.selected_device_handler(device, force_update=True)
 
     def add_additional_fields(self, device:Device, add_fields:dict, f:Frame, parent_key:str='', _row:int=0, spaces:int=0):
         for key, value in add_fields.items():
@@ -274,8 +278,19 @@ class DeviceDetails():
                     af[k]=t.get()
 
                 if key == 'id' and parent_key == 'sender':
-                    l = Label(f, text="BaseId + "+value.split('-')[-1])
-                    l.grid(row=_row, column=1, sticky=W)
+                    cb_s = ttk.Combobox(f, state="readonly", width="3")
+                    cb_s['values'] = [data_helper.a2s(i,1) for i in range(0,256)]
+                    cb_s.bind('<FocusIn>', self.on_focus_combobox)
+                    cb_s.bind('<Key>', self.select_by_entered_keys)
+                    cb_s.bind('<Return>', lambda e, af=add_fields, k=key, t=cb_s, d=device: [set_additional_field_value(af,k,t), self.update_device(d)])
+                    cb_s.set(str(value))
+                    cb_s.grid(row=_row, column=1, sticky=W)
+                    # entry = Entry(f)
+                    # entry.insert(END, str(value) )
+                    # entry.bind("<Any-KeyPress>", lambda e, af=add_fields, k=key, t=entry: set_additional_field_value(af,k,t))# set_additional_field_value(e,af,k,t))
+                    # entry.bind('<Return>', lambda e, af=add_fields, k=key, t=entry, d=device: [set_additional_field_value(af,k,t), self.update_device(d)])
+                    # if device.address.startswith('00-00-00-'): entry.config(state="readonly")
+                    # entry.grid(row=_row, column=1, sticky=W)
                 elif 'eep' in key: 
                     cb = ttk.Combobox(f, width="20") 
                     cb['values'] = data_helper.get_all_eep_names()
@@ -300,9 +315,38 @@ class DeviceDetails():
 
         return _row
 
+    def on_focus_combobox(self, event=None):
+        self.entered_keys = ''
+
+    def select_by_entered_keys(self, event=None):
+
+        if event.char.upper() not in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F']:
+            return
+
+        if event is not None:
+            if len(self.entered_keys) < 2:
+                self.entered_keys += event.char.upper()
+            else:
+                self.entered_keys = event.char.upper()
+
+        cb:ttk.Combobox = self.popup.focus_get()
+        if len(self.entered_keys) == 2:
+            cb.set(self.entered_keys)
+        elif len(self.entered_keys) == 1:
+            for v in cb['values']:
+                if v[0] == self.entered_keys:
+                    cb.set(v)
+                    break
+
+        self.show_message()
+
     def clean_and_disable(self, frame:Frame) -> None:
         for widget in frame.winfo_children():
-            widget.destroy()
+            if isinstance(widget, Frame):
+                self.clean_and_disable(widget)
+                widget.destroy()
+            else:
+                widget.destroy()
 
     def _update_text_field(self, text_field:Entry, value:str, state:str=DISABLED):
         try:

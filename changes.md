@@ -1,5 +1,8 @@
 # Change Log
 
+## v0.1.22 Support for MGW Gateway
+* Added support for [MGW Gateway](https://www.piotek.de/PioTek-MGW-POE) (ESP3 over LAN)
+
 ## v0.1.21 EEP representation bug fixes
 * Ignores unknown devices
 * Fixed EEP representation in dorp down

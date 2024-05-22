@@ -77,7 +77,7 @@ class FilterBar():
         l = Label(f, text="Device Type:")
         l.grid(row=0, column=col, padx=(0,3), sticky=W)
 
-        values = sorted(set([info['hw-type'] for info in data_helper.EEP_MAPPING]))
+        values = data_helper.get_known_device_types()
         self.cb_device_type = ChecklistCombobox(f, values=values, width="14") 
         self.cb_device_type.grid(row=1, column=col, padx=(0,3) )
         self.cb_device_type.bind('<Return>', self.apply_filter)

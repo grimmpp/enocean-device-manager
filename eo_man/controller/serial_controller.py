@@ -1,4 +1,3 @@
-
 from enum import Enum
 import sys
 import glob
@@ -9,6 +8,7 @@ from termcolor import colored
 import logging
 import threading
 
+
 import serial.tools.list_ports
 from serial.tools.list_ports_common import ListPortInfo
 
@@ -16,11 +16,13 @@ from eltakobus import *
 from eltakobus.device import *
 from eltakobus.locking import buslocked, UNLOCKED
 from eltakobus.message import Regular4BSMessage
+
 from esp2_gateway_adapter.esp3_serial_com import ESP3SerialCommunicator
+from esp2_gateway_adapter.esp3_tcp_com import TCP2SerialCommunicator, detect_lan_gateways
 
 from ..data import data_helper
 from ..data.device import Device
-from ..data.const import GatewayDeviceType
+from ..data.const import GatewayDeviceType as GDT, GATEWAY_DISPLAY_NAMES as GDN
 
 from .app_bus import AppBusEventType, AppBus
 
@@ -44,18 +46,23 @@ class SerialController():
         self.kill_serial_connection_before_exit()
 
 
+
+
     def get_serial_ports(self, device_type:str, force_reload:bool=False) ->list[str]:
         if force_reload or self.port_mapping is None:
             self.port_mapping = self._get_gateway2serial_port_mapping()
+            self.port_mapping[GDT.LAN] = detect_lan_gateways()
 
-        if device_type == 'FAM14':
-            return self.port_mapping[GatewayDeviceType.GatewayEltakoFAM14.value]
-        elif device_type == 'FGW14-USB':
-            return self.port_mapping[GatewayDeviceType.GatewayEltakoFGW14USB.value]
-        elif device_type == 'FAM-USB':
-            return self.port_mapping[GatewayDeviceType.GatewayEltakoFAMUSB.value]
-        elif device_type == 'USB300':
-            return self.port_mapping[GatewayDeviceType.GatewayEnOceanUSB300.value]
+        if device_type == GDN[GDT.EltakoFAM14]:
+            return self.port_mapping[GDT.EltakoFAM14.value]
+        elif device_type == GDN[GDT.EltakoFGW14USB]:
+            return self.port_mapping[GDT.EltakoFGW14USB.value]
+        elif device_type == GDN[GDT.EltakoFAMUSB]:
+            return self.port_mapping[GDT.EltakoFAMUSB.value]
+        elif device_type == GDN[GDT.USB300]:
+            return self.port_mapping[GDT.USB300.value]
+        elif device_type == GDN[GDT.LAN]:
+            return self.port_mapping[GDT.LAN]
         else:
             return []
     
@@ -89,10 +96,10 @@ class SerialController():
         
         # ports = [p.device for p in _ports if p.vid == self.USB_VENDOR_ID]
 
-        fam14 = GatewayDeviceType.GatewayEltakoFAM14.value
-        usb300 = GatewayDeviceType.GatewayEnOceanUSB300.value
-        famusb = GatewayDeviceType.GatewayEltakoFAMUSB.value
-        fgw14usb = GatewayDeviceType.GatewayEltakoFGW14USB.value
+        fam14 = GDT.EltakoFAM14.value
+        usb300 = GDT.USB300.value
+        famusb = GDT.EltakoFAMUSB.value
+        fgw14usb = GDT.EltakoFGW14USB.value
         result = { fam14: [], usb300: [], famusb: [], fgw14usb: [], 'all': [] }
 
         count = 0
@@ -183,14 +190,21 @@ class SerialController():
     def establish_serial_connection(self, serial_port:str, device_type:str) -> None:
         baudrate:int=57600
         delay_message:float=.1
-        if device_type == 'FAM-USB':
+        if device_type == GDN[GDT.EltakoFAMUSB]:
             baudrate = 9600
-        elif device_type == 'FAM14':
+        elif device_type == GDN[GDT.EltakoFAM14]:
             delay_message = 0.001
 
         try:
             if not self.is_serial_connection_active():
-                if device_type == 'USB300':
+                if device_type == GDN[GDT.LAN]:
+                    baudrate=5100
+                    self._serial_bus = TCP2SerialCommunicator(serial_port, 5100,
+                                                              callback=self._received_serial_event,
+                                                              esp2_translation_enabled=True,
+                                                              auto_reconnect=False
+                                                              )
+                elif device_type == GDN[GDT.ESP3]:
                     self._serial_bus = ESP3SerialCommunicator(serial_port, 
                                                               callback=self._received_serial_event,
                                                               esp2_translation_enabled=True,
@@ -212,7 +226,7 @@ class SerialController():
                     self.connected_gateway_type = device_type
                     self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Serial connection established. serial port: {serial_port}, baudrate: {baudrate}", 'color':'green'})
                     
-                    if device_type == 'FAM14':
+                    if device_type == GDN[GDT.EltakoFAM14]:
 
                         def run():
                             asyncio.run( self._get_fam14_device_on_bus() )
@@ -223,10 +237,12 @@ class SerialController():
                         t = threading.Thread(target=run)
                         t.start()
                     else:
-                        if device_type == 'FAM-USB': 
+                        if device_type == GDN[GDT.EltakoFAMUSB]: 
                             asyncio.run( self.async_create_fam_usb_device() )
-                        elif device_type == 'USB300':
+                        elif device_type == GDN[GDT.USB300]:
                             asyncio.run( self.async_create_usb300_device() )
+                        elif device_type == GDN[GDT.LAN]:
+                            asyncio.run( self.async_create_lan_gw_device() )
 
                         self.app_bus.fire_event(
                                 AppBusEventType.CONNECTION_STATUS_CHANGE, 
@@ -241,6 +257,28 @@ class SerialController():
             logging.exception(msg, exc_info=True)
 
 
+    async def async_create_lan_gw_device(self):
+        try:
+            self._serial_bus.set_callback( None )
+            
+            self.current_base_id = b2s(self._serial_bus.base_id)
+            self.gateway_id = self.current_base_id
+
+            await self.app_bus.async_fire_event(AppBusEventType.ASYNC_TRANSCEIVER_DETECTED, {'type': GDN[GDT.LAN], 
+                                                                                            'base_id': self.current_base_id, 
+                                                                                            'gateway_id': self.gateway_id,
+                                                                                            'tcm_version': '', 
+                                                                                            'api_version': ''})
+
+
+        except Exception as e:
+            msg = 'Failed to get information about LAN GW (TCP2ESP3)!!!'
+            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
+            logging.exception(msg, exc_info=True)
+            raise e
+        finally:
+            self._serial_bus.set_callback( self._received_serial_event )     
+
     async def async_create_usb300_device(self):
         try:
             self._serial_bus.set_callback( None )
@@ -248,7 +286,7 @@ class SerialController():
             self.current_base_id = b2s(self._serial_bus.base_id)
             self.gateway_id = self.current_base_id
 
-            await self.app_bus.async_fire_event(AppBusEventType.ASYNC_TRANSCEIVER_DETECTED, {'type': 'USB300', 
+            await self.app_bus.async_fire_event(AppBusEventType.ASYNC_TRANSCEIVER_DETECTED, {'type': GDN[GDT.USB300], 
                                                                                             'base_id': self.current_base_id, 
                                                                                             'gateway_id': self.gateway_id,
                                                                                             'tcm_version': '', 
@@ -303,7 +341,7 @@ class SerialController():
             tcm_sw_v = '.'.join(str(n) for n in response.body[2:6])
             api_v = '.'.join(str(n) for n in response.body[6:10])
 
-            await self.app_bus.async_fire_event(AppBusEventType.ASYNC_TRANSCEIVER_DETECTED, {'type': 'FAM-USB', 
+            await self.app_bus.async_fire_event(AppBusEventType.ASYNC_TRANSCEIVER_DETECTED, {'type': GDN[GDT.EltakoFAMUSB], 
                                                                                             'base_id': self.current_base_id, 
                                                                                             'gateway_id': self.gateway_id,
                                                                                             'tcm_version': tcm_sw_v, 
