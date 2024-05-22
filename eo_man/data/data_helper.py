@@ -45,6 +45,15 @@ EEP_MAPPING = [
     {'hw-type': 'FSB14', CONF_EEP: 'G5-3F-7F', 'sender_eep': 'H5-3F-7F', CONF_TYPE: Platform.COVER, 'PCT14-function-group': 2, 'PCT14-key-function': 31, 'description': 'Eltako cover', 'address_count': 2},
 
     {'hw-type': 'FAE14SSR', CONF_EEP: 'A5-10-06', 'sender_eep': 'A5-10-06', CONF_TYPE: Platform.CLIMATE, 'PCT14-function-group': 3, 'PCT14-key-function': 65, 'description': 'Eltako heating/cooling', 'address_count': 2},
+
+    {'hw-type': 'FSR61NP', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Eltako relay', 'address_count': 1},
+    {'hw-type': 'FSR61/8-24V UC', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Eltako relay', 'address_count': 1},
+    {'hw-type': 'FSR61-230V', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Eltako relay', 'address_count': 1},
+    {'hw-type': 'FSR61G-230V', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Eltako relay', 'address_count': 1},
+    {'hw-type': 'FSR61LN-230V', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Eltako relay', 'address_count': 1},
+
+    {'hw-type': 'FSB61-230V', CONF_EEP: 'G5-3F-7F', 'sender_eep': 'H5-3F-7F', CONF_TYPE: Platform.COVER, 'address_count': 1},
+    {'hw-type': 'FSB61NP-230V', CONF_EEP: 'G5-3F-7F', 'sender_eep': 'H5-3F-7F', CONF_TYPE: Platform.COVER, 'address_count': 1},
 ]
 
 ORG_MAPPING = {
@@ -95,6 +104,9 @@ def find_device_info_by_device_type(device_type:str) -> dict:
         if i['hw-type'] == device_type:
             return i
     return None
+
+def get_known_device_types() -> list:
+    return sorted(list(set([t['hw-type'] for t in EEP_MAPPING])))
 
 def get_eep_from_key_function_name(kf: KeyFunction) -> str:
     pos = KeyFunction(kf).name.find('EEP_')

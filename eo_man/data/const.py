@@ -63,6 +63,7 @@ CONF_TIME_OPENS: Final = "time_opens"
 CONF_INVERT_SIGNAL: Final = "invert_signal"
 CONF_VOC_TYPE_INDEXES: Final = "voc_type_indexes"
 
+
 class LANGUAGE_ABBREVIATION(StrEnum):
     LANG_ENGLISH = 'en'
     LANG_GERMAN = 'de'
@@ -79,10 +80,12 @@ PLATFORMS: Final = [
 ]
 
 class GatewayDeviceType(str, Enum):
-    GatewayEltakoFAM14 = 'fam14'
-    GatewayEltakoFGW14USB = 'fgw14usb'
-    GatewayEltakoFAMUSB = 'fam-usb'     # ESP2 transceiver: https://www.eltako.com/en/product/professional-standard-en/three-phase-energy-meters-and-one-phase-energy-meters/fam-usb/
-    GatewayEnOceanUSB300 = 'enocean-usb300'    # not yet supported
+    EltakoFAM14 = 'fam14'
+    EltakoFGW14USB = 'fgw14usb'
+    EltakoFAMUSB = 'fam-usb'     # ESP2 transceiver: https://www.eltako.com/en/product/professional-standard-en/three-phase-energy-meters-and-one-phase-energy-meters/fam-usb/
+    USB300 = 'enocean-usb300'
+    ESP3 = 'esp3-gateway'
+    LAN = 'mgw-lan'
 
     @classmethod
     def find(cls, value):
@@ -93,19 +96,36 @@ class GatewayDeviceType(str, Enum):
 
     @classmethod
     def is_transceiver(cls, dev_type) -> bool:
-        return dev_type in [GatewayDeviceType.GatewayEltakoFAMUSB, GatewayDeviceType.EnOceanUSB300]
+        return dev_type in [GatewayDeviceType.EltakoFAMUSB, GatewayDeviceType.USB300]
 
     @classmethod
     def is_bus_gateway(cls, dev_type) -> bool:
-        return dev_type in [GatewayDeviceType.GatewayEltakoFAM14, GatewayDeviceType.GatewayEltakoFGW14USB]
+        return dev_type in [GatewayDeviceType.EltakoFAM14, GatewayDeviceType.EltakoFGW14USB]
     
     @classmethod
     def is_esp2_gateway(cls, dev_type) -> bool:
-        return dev_type in [GatewayDeviceType.GatewayEltakoFAM14, GatewayDeviceType.GatewayEltakoFGW14USB, GatewayDeviceType.GatewayEltakoFAMUSB]
+        return dev_type in [GatewayDeviceType.EltakoFAM14, GatewayDeviceType.EltakoFGW14USB, GatewayDeviceType.EltakoFAMUSB]
 
 BAUD_RATE_DEVICE_TYPE_MAPPING: dict = {
-    GatewayDeviceType.GatewayEltakoFAM14: 57600,
-    GatewayDeviceType.GatewayEltakoFGW14USB: 57600,
-    GatewayDeviceType.GatewayEltakoFAMUSB: 9600,
-    GatewayDeviceType.GatewayEnOceanUSB300: 57600,
+    GatewayDeviceType.EltakoFAM14: 57600,
+    GatewayDeviceType.EltakoFGW14USB: 57600,
+    GatewayDeviceType.EltakoFAMUSB: 9600,
+    GatewayDeviceType.USB300: 57600,
+    GatewayDeviceType.ESP3: 57600,
 }
+
+GATEWAY_DISPLAY_NAMES = {
+    GatewayDeviceType.EltakoFAM14: "FAM14 (ESP2)",
+    GatewayDeviceType.EltakoFGW14USB: 'FGW14-USB (ESP2)',
+    GatewayDeviceType.EltakoFAMUSB: 'FAM-USB (ESP2)',
+    GatewayDeviceType.USB300: 'ESP3 Gateway',
+    GatewayDeviceType.ESP3: 'ESP3 Gateway',
+    GatewayDeviceType.LAN: 'MGW LAN/Wifi',
+}
+
+def get_display_names():
+    result = []
+    for v in GATEWAY_DISPLAY_NAMES.values():
+        if v not in result:
+            result.append(v)
+    return result

@@ -146,6 +146,21 @@ class Device():
 
         return bd
     
+
+    @classmethod
+    def init_sender_fields(cls, device, overwrite:bool=False): 
+        info:dict = find_device_info_by_device_type(device.device_type)
+
+        if device.additional_fields is None:
+            device.additional_fields = {}
+
+        if info.get('sender_eep', None):
+            if overwrite or not ('sender' in device.additional_fields and len(device.additional_fields['sender']) > 0):
+                device.additional_fields['sender'] = {
+                    CONF_ID:  a2s( a2i(device.address) % 128 )[-2:],
+                    CONF_EEP: info.get('sender_eep')
+                }
+    
     @classmethod
     def set_suggest_ha_config(cls, device):
         id = int.from_bytes( AddressExpression.parse(device.address)[0], 'big')
@@ -157,7 +172,7 @@ class Device():
 
             if info.get('sender_eep', None):
                 device.additional_fields['sender'] = {
-                    CONF_ID: a2s( SENDER_BASE_ID + id ),
+                    CONF_ID:  a2s( a2i(device.address) % 128 )[-2:],
                     CONF_EEP: info.get('sender_eep')
                 }
 
