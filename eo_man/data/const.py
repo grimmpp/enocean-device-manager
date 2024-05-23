@@ -120,7 +120,7 @@ GATEWAY_DISPLAY_NAMES = {
     GatewayDeviceType.EltakoFAMUSB: 'FAM-USB (ESP2)',
     GatewayDeviceType.USB300: 'ESP3 Gateway',
     GatewayDeviceType.ESP3: 'ESP3 Gateway',
-    GatewayDeviceType.LAN: 'MGW LAN/Wifi',
+    GatewayDeviceType.LAN: 'LAN Gateway (ESP3)',
 }
 
 def get_display_names():

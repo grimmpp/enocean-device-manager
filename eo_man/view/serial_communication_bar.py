@@ -36,7 +36,7 @@ class SerialConnectionBar():
         l = Label(f, text="Gateway Type: ")
         l.pack(side=tk.LEFT, padx=(0, 5), pady=5)
 
-        self.cb_device_type = ttk.Combobox(f, state="readonly", width="12") 
+        self.cb_device_type = ttk.Combobox(f, state="readonly", width="18") 
         self.cb_device_type.pack(side=tk.LEFT, padx=(0, 5), pady=5)
         self.cb_device_type['values'] = get_display_names() # ['FAM14', 'FGW14-USB', 'FAM-USB', 'USB300', 'LAN Gateway']
         self.cb_device_type.set(self.cb_device_type['values'][0])
@@ -45,7 +45,7 @@ class SerialConnectionBar():
         l = ttk.Label(f, text="Serial Port: ")
         l.pack(side=tk.LEFT, padx=(0, 5), pady=5)
 
-        self.cb_serial_ports = ttk.Combobox(f, state="readonly", width="10") 
+        self.cb_serial_ports = ttk.Combobox(f, state="readonly", width="14") 
         self.cb_serial_ports.pack(side=tk.LEFT, padx=(0, 5), pady=5)
 
         self.b_connect = ttk.Button(f, text="Connect", state=DISABLED, command=self.toggle_serial_connection_command)
