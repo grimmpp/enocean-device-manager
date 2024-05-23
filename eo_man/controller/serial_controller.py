@@ -217,14 +217,18 @@ class SerialController():
                                                               delay_message=delay_message,
                                                               auto_reconnect=False)
                 self._serial_bus.start()
-                self._serial_bus.is_serial_connected.wait(timeout=10)
+                self._serial_bus.is_serial_connected.wait(timeout=2)
                 
                 if not self._serial_bus.is_active():
                     self._serial_bus.stop()
                 
                 if self._serial_bus.is_active():
                     self.connected_gateway_type = device_type
-                    self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Serial connection established. serial port: {serial_port}, baudrate: {baudrate}", 'color':'green'})
+                    if device_type == GDN[GDT.LAN]:
+                        msg = f"TCP to Serial connection established. Server: {serial_port}:5100"
+                    else:
+                        msg = f"Serial connection established. serial port: {serial_port}, baudrate: {baudrate}"
+                    self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'color':'green'})
                     
                     if device_type == GDN[GDT.EltakoFAM14]:
 
@@ -248,11 +252,22 @@ class SerialController():
                                 AppBusEventType.CONNECTION_STATUS_CHANGE, 
                                 {'serial_port':  serial_port, 'baudrate': baudrate, 'connected': self._serial_bus.is_active()})
             
+                else:
+                    self.app_bus.fire_event(AppBusEventType.CONNECTION_STATUS_CHANGE, {'serial_port':  serial_port, 'baudrate': baudrate, 'connected': False})
+                    if device_type == GDN[GDT.LAN]:
+                        msg = f"Couldn't establish connection to {serial_port}:5100! Try to restart device."
+                    else:
+                        msg = f"Establish connection for {device_type} on port {serial_port} failed! Device not ready."
+                    self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
+
         except Exception as e:
             self._serial_bus.stop()
             self.connected_gateway_type = None
             self.app_bus.fire_event(AppBusEventType.CONNECTION_STATUS_CHANGE, {'serial_port':  serial_port, 'baudrate': baudrate, 'connected': False})
-            msg = f"Establish connection for {device_type} on port {serial_port} failed!!!"
+            if device_type == GDN[GDT.LAN]:
+                msg = f"Establish connection for {device_type} to {serial_port}:5100 failed! Retry later."
+            else:
+                msg = f"Establish connection for {device_type} on port {serial_port} failed!"
             self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
             logging.exception(msg, exc_info=True)
 
