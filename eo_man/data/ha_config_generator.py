@@ -33,15 +33,11 @@ class HomeAssistantConfigurationGenerator():
 
     def get_gateway_by(self, gw_d:Device) -> GatewayDeviceType:
         gw_type = None
-        if gw_d.is_fam14():
-            gw_type = GatewayDeviceType.EltakoFAM14.value
-        elif gw_d.is_fgw14_usb():
-            gw_type = GatewayDeviceType.EltakoFGW14USB.value
-        elif gw_d.is_fam_usb():
-            gw_type = GatewayDeviceType.EltakoFAMUSB.value
-        elif gw_d.is_usb300():
-            gw_type = GatewayDeviceType.USB300.value
-        return gw_type
+        for t in GatewayDeviceType:
+            if GATEWAY_DISPLAY_NAMES[t.value].lower() in gw_d.device_type.lower():
+                return t.value
+        return None
+
 
     def generate_ha_config(self, device_list:list[Device]) -> str:
         ha_platforms = set([str(d.ha_platform) for d in device_list if d.ha_platform is not None])
@@ -66,10 +62,12 @@ class HomeAssistantConfigurationGenerator():
             gw_fam14 = GatewayDeviceType.EltakoFAM14.value
             gw_fgw14usb = GatewayDeviceType.EltakoFGW14USB.value
             
-            gw_type = self.get_gateway_by(gw_d)
-            out += f"    {CONF_DEVICE_TYPE}: {gw_type}   # you can simply change {gw_fam14} to {gw_fgw14usb}\n"
-            out += f"    {CONF_BASE_ID}: {gw_d.external_id}\n"
+            # gw_type = self.get_gateway_by(gw_d)
+            out += f"    {CONF_DEVICE_TYPE}: {gw_d.device_type}   # you can simply change {gw_fam14} to {gw_fgw14usb}\n"
+            out += f"    {CONF_BASE_ID}: {gw_d.base_id}\n"
             out += f"    # {CONF_COMMENT}: {gw_d.comment}\n"
+            if gw_d.device_type == GatewayDeviceType.LAN:
+                out += f"    {CONF_GATEWAY_ADDRESS}: {gw_d.additional_fields['address']}\n"
             out += f"    {CONF_DEVICES}:\n"
 
             for platform in ha_platforms:
@@ -80,6 +78,7 @@ class HomeAssistantConfigurationGenerator():
                             # add devices
                             out += self.config_section_from_device_to_string(gw_d, device, True, 0) + "\n\n"
         # logs
+        out += "\n"
         out += "logger:\n"
         out += "  default: info\n"
         out += "  logs:\n"
@@ -109,7 +108,7 @@ class HomeAssistantConfigurationGenerator():
             kf = info['PCT14-key-function']
             fg = info['PCT14-function-group']
             out += spaces[:-2] + f"  # Use 'Write HA senders to devices' button or enter manually sender id in PCT14 into function group {fg} with function {kf} \n"    
-        adr = device.address if gateway.is_wired_gateway() else device.external_id
+        adr = device.address if gateway.is_wired_gateway() and gateway.base_id == device.base_id else device.external_id
         out += spaces[:-2] + f"- {CONF_ID}: {adr}\n"
         out += spaces[:-2] + f"  {CONF_NAME}: {device.name}\n"
         out += spaces[:-2] + f"  {CONF_EEP}: {device.eep}\n"

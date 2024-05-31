@@ -11,6 +11,7 @@ DOMAIN: Final = "eltako"
 DATA_ELTAKO: Final = "eltako"
 DATA_ENTITIES: Final = "entities"
 ELTAKO_GATEWAY: Final = "gateway"
+CONF_GATEWAY_ADDRESS: Final ="address"
 ELTAKO_CONFIG: Final = "config"
 MANUFACTURER: Final = "Eltako"
 
@@ -83,6 +84,7 @@ class GatewayDeviceType(str, Enum):
     EltakoFAM14 = 'fam14'
     EltakoFGW14USB = 'fgw14usb'
     EltakoFAMUSB = 'fam-usb'     # ESP2 transceiver: https://www.eltako.com/en/product/professional-standard-en/three-phase-energy-meters-and-one-phase-energy-meters/fam-usb/
+    EltakoFTD14 = 'ftd14'
     USB300 = 'enocean-usb300'
     ESP3 = 'esp3-gateway'
     LAN = 'mgw-lan'
@@ -129,3 +131,10 @@ def get_display_names():
         if v not in result:
             result.append(v)
     return result
+
+def get_gateway_type_by_name(device_type) -> GatewayDeviceType:
+        for t in GatewayDeviceType:
+            if t.value in GATEWAY_DISPLAY_NAMES:
+                if GATEWAY_DISPLAY_NAMES[t.value].lower() in device_type.lower():
+                    return t.value
+        return None

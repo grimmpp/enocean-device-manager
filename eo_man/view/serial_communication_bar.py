@@ -15,7 +15,7 @@ from eltakobus.message import *
 from eltakobus.eep import *
 from eltakobus.util import *
 
-from ..data.const import get_display_names
+from ..data.const import get_display_names, GATEWAY_DISPLAY_NAMES, GatewayDeviceType
 
 class SerialConnectionBar():
 
@@ -184,7 +184,7 @@ class SerialConnectionBar():
             self.b_detect.config(state=DISABLED)
             self.cb_device_type.config(state=DISABLED)
             
-            if self.cb_device_type.get() == 'FAM14' and self.serial_cntr.is_fam14_connection_active():
+            if self.cb_device_type.get() == GATEWAY_DISPLAY_NAMES[GatewayDeviceType.EltakoFAM14] and self.serial_cntr.is_fam14_connection_active():
                 self.b_scan.config(state=NORMAL)
                 self.b_sync_ha_sender.config(state=NORMAL)
             else:

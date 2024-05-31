@@ -158,9 +158,11 @@ class DataManager():
                              external_id=base_id,
                              base_id=base_id,
                              name=f"{data['type']} ({base_id})",
-                             device_type=f"{data['type']} (Wireless Transceiver)",
+                             device_type=get_gateway_type_by_name(data['type']),
                              use_in_ha=True
                              )
+            if data['type'] == GATEWAY_DISPLAY_NAMES[GatewayDeviceType.LAN]:
+                gw_device.additional_fields['address'] = data['address']
             if gw_device.external_id not in self.devices:
                 self.devices[gw_device.external_id] = gw_device
                 self.app_bus.fire_event(AppBusEventType.UPDATE_SENSOR_REPRESENTATION, gw_device)
@@ -183,9 +185,20 @@ class DataManager():
 
                 for si in bd.memory_entries:
                     _bd:Device = await Device.async_get_decentralized_device_by_sensor_info(si, data['device'], data['fam14'], channel)
+
                     if _bd.external_id not in self.devices or not self.devices[_bd.external_id].bus_device:
                         self.devices[_bd.external_id] = _bd
                         self.app_bus.fire_event(AppBusEventType.UPDATE_SENSOR_REPRESENTATION, _bd)
+
+                    # add device a second time with base id of FTD14
+                    if bd.is_ftd14():                    
+                        _bd:Device = Device.get_decentralized_device_by_sensor_info(si, bd.additional_fields['second base id'])
+                    
+                        if _bd.external_id not in self.devices or not self.devices[_bd.external_id].bus_device:
+                            self.devices[_bd.external_id] = _bd
+                            self.app_bus.fire_event(AppBusEventType.UPDATE_SENSOR_REPRESENTATION, _bd)
+                    
+                    
 
                 # if a new gateway was detected check if there are already devices detected which should be moved as child nodes under the newly detected gateway.
                 if bd.is_fam14():

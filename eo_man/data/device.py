@@ -1,6 +1,6 @@
 from eltakobus.device import SensorInfo, KeyFunction
 from eltakobus.util import b2s, AddressExpression
-from eltakobus.device import BusObject, FAM14
+from eltakobus.device import BusObject, FAM14, FTD14
 from eltakobus.message import *
 from eltakobus.eep import *
 
@@ -60,16 +60,19 @@ class Device():
         self.memory_entries = memory_entries
 
     def is_fam14(self) -> bool:
-        return self.device_type is not None and FAM14.__name__ in self.device_type
+        return self.device_type is not None and (FAM14.__name__ in self.device_type or self.device_type == GatewayDeviceType.EltakoFAM14.value)
 
     def is_fam_usb(self) -> bool:
-        return self.device_type is not None and ('FAM-USB' in self.device_type or 'FAM_USB' in self.device_type)
+        return self.device_type is not None and ('FAM-USB' in self.device_type or 'FAM_USB' in self.device_type or self.device_type == GatewayDeviceType.EltakoFAMUSB.value)
     
     def is_fgw14_usb(self) -> bool:
-        return self.device_type is not None and 'FGW14_USB' in self.device_type
+        return self.device_type is not None and ('FGW14_USB' in self.device_type or self.device_type == GatewayDeviceType.EltakoFGW14USB.value)
 
     def is_usb300(self) -> bool:
-        return self.device_type is not None and 'USB300' in self.device_type
+        return self.device_type is not None and ('USB300' in self.device_type or self.device_type == GatewayDeviceType.USB300)
+
+    def is_ftd14(self) -> bool:
+        return self.device_type == GatewayDeviceType.EltakoFTD14.value
 
     def is_gateway(self) -> bool:
         return self.is_wired_gateway() or self.is_wireless_transceiver()
@@ -117,23 +120,34 @@ class Device():
         bd.address = a2s( id )
         bd.channel = channel
         bd.dev_size = device.size
+        bd.use_in_ha = True
         bd.base_id = await fam14.get_base_id()
         bd.device_type = type(device).__name__
+        if bd.device_type == 'FAM14': bd.device_type = GatewayDeviceType.EltakoFAM14.value
+        if bd.device_type == 'FGW14_USB': bd.device_type = GatewayDeviceType.EltakoFGW14USB.value
+        if bd.device_type == 'FTD14': bd.device_type = GatewayDeviceType.EltakoFTD14.value
         bd.version = '.'.join(map(str,device.version))
         bd.key_function = ''
         bd.comment = ''
         bd.bus_device = True
         if isinstance(device, FAM14):
             bd.external_id = bd.base_id
+        elif isinstance(device, FTD14):
+            # bd.base_id = await device.get_base_id()    # TODO: needs to have different base id
+            bd.external_id = a2s( (await fam14.get_base_id_in_int()) + id )
         else:
             bd.external_id = a2s( (await fam14.get_base_id_in_int()) + id )
         bd.memory_entries = [m for m in (await device.get_all_sensors()) if b2s(m.dev_adr) == bd.address]
         # print(f"{bd.device_type} {bd.address}")
         # print_memory_entires( bd.memory_entries)
         # print("\n")
-        bd.name = f"{bd.device_type} {bd.address}"
+        bd.name = f"{bd.device_type.upper()} {bd.address}"
         if bd.is_fam14():
-            bd.name = f"{bd.device_type} {bd.external_id}"
+            bd.name = f"{bd.device_type.upper()} ({bd.external_id})"
+        if bd.is_ftd14():
+            ftd_base_id = await device.get_base_id()
+            bd.additional_fields['second base id'] = ftd_base_id
+            bd.name += f" ({ftd_base_id})"
         
         if bd.dev_size > 1:
             bd.name += f" ({bd.channel}/{bd.dev_size})"
