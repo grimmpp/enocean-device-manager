@@ -82,6 +82,10 @@ class ImageGallery():
         return ImageGallery.get_image("fam-usb2.png", size)
     
     @classmethod
+    def get_ftd14_icon(cls, size:tuple[int:int]=(32,32)) -> ImageTk.PhotoImage:
+        return ImageGallery.get_image("ftd14.png", size)
+    
+    @classmethod
     def get_fgw14_usb_icon(cls, size:tuple[int:int]=(32,32)) -> ImageTk.PhotoImage:
         return ImageGallery.get_image("fgw14-usb.png", size)
     

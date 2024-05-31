@@ -228,6 +228,8 @@ class DeviceTable():
                 image = ImageGallery.get_fam_usb_icon(self.ICON_SIZE)
             elif d.is_fgw14_usb():
                 image = ImageGallery.get_fgw14_usb_icon(self.ICON_SIZE)
+            elif d.is_ftd14():
+                image = ImageGallery.get_ftd14_icon(self.ICON_SIZE)
             else:
                 image = ImageGallery.get_blank(self.ICON_SIZE)
 

@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.1.24 Added Support for FHK14, F4HK14 and FTD14
+* Added support for Eltako devices: FHK14, F4HK14 and FTD14
+* Config generation for MGW Gateway (LAN) extended
+
 ## v0.1.23 Support for MGW Gateway
 * Added support for [MGW Gateway](https://www.piotek.de/PioTek-MGW-POE) (ESP3 over LAN)
 

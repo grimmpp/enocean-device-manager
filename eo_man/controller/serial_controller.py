@@ -246,7 +246,7 @@ class SerialController():
                         elif device_type == GDN[GDT.USB300]:
                             asyncio.run( self.async_create_usb300_device() )
                         elif device_type == GDN[GDT.LAN]:
-                            asyncio.run( self.async_create_lan_gw_device() )
+                            asyncio.run( self.async_create_lan_gw_device(serial_port) )
 
                         self.app_bus.fire_event(
                                 AppBusEventType.CONNECTION_STATUS_CHANGE, 
@@ -272,7 +272,7 @@ class SerialController():
             logging.exception(msg, exc_info=True)
 
 
-    async def async_create_lan_gw_device(self):
+    async def async_create_lan_gw_device(self, address):
         try:
             self._serial_bus.set_callback( None )
             
@@ -282,6 +282,7 @@ class SerialController():
             await self.app_bus.async_fire_event(AppBusEventType.ASYNC_TRANSCEIVER_DETECTED, {'type': GDN[GDT.LAN], 
                                                                                             'base_id': self.current_base_id, 
                                                                                             'gateway_id': self.gateway_id,
+                                                                                            'address': address,
                                                                                             'tcm_version': '', 
                                                                                             'api_version': ''})
 

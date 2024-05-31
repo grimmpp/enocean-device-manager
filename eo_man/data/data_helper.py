@@ -15,8 +15,9 @@ SENDER_BASE_ID = 0x0000B000
 
 EEP_MAPPING = [
     {'hw-type': 'BusObject', CONF_EEP: 'unknown', CONF_TYPE: 'unknown', 'description': 'unknown bus device'},
-    {'hw-type': 'FAM14', 'description': 'Bus Gateway'},
-    {'hw-type': 'FGW14_USB', 'description': 'Bus Gateway'},
+    {'hw-type': 'FAM14', 'description': 'Bus Gateway', 'device_type': GatewayDeviceType.EltakoFAM14.value},
+    {'hw-type': 'FGW14_USB', 'description': 'Bus Gateway', 'device_type': GatewayDeviceType.EltakoFGW14USB.value},
+    {'hw-type': 'FTD14', 'description': 'Bus Gateway', 'device_type': GatewayDeviceType.EltakoFTD14.value},
 
     {'hw-type': 'FTS14EM', CONF_EEP: 'F6-02-01', CONF_TYPE: Platform.BINARY_SENSOR, 'description': 'Rocker switch', 'address_count': 1},
     {'hw-type': 'FTS14EM', CONF_EEP: 'F6-02-02', CONF_TYPE: Platform.BINARY_SENSOR, 'description': 'Rocker switch', 'address_count': 1},
@@ -44,6 +45,8 @@ EEP_MAPPING = [
 
     {'hw-type': 'FSB14', CONF_EEP: 'G5-3F-7F', 'sender_eep': 'H5-3F-7F', CONF_TYPE: Platform.COVER, 'PCT14-function-group': 2, 'PCT14-key-function': 31, 'description': 'Eltako cover', 'address_count': 2},
 
+    {'hw-type': 'FHK14', CONF_EEP: 'A5-10-06', 'sender_eep': 'A5-10-06', CONF_TYPE: Platform.CLIMATE, 'PCT14-function-group': 3, 'PCT14-key-function': 65, 'description': 'Eltako heating/cooling', 'address_count': 2},
+    {'hw-type': 'F4HK14', CONF_EEP: 'A5-10-06', 'sender_eep': 'A5-10-06', CONF_TYPE: Platform.CLIMATE, 'PCT14-function-group': 3, 'PCT14-key-function': 65, 'description': 'Eltako heating/cooling', 'address_count': 4},
     {'hw-type': 'FAE14SSR', CONF_EEP: 'A5-10-06', 'sender_eep': 'A5-10-06', CONF_TYPE: Platform.CLIMATE, 'PCT14-function-group': 3, 'PCT14-key-function': 65, 'description': 'Eltako heating/cooling', 'address_count': 2},
 
     {'hw-type': 'FSR61NP', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Eltako relay', 'address_count': 1},
@@ -103,7 +106,7 @@ def find_device_info_by_device_type(device_type:str) -> dict:
     for i in EEP_MAPPING:
         if i['hw-type'] == device_type:
             return i
-    return None
+    return {}
 
 def get_known_device_types() -> list:
     return sorted(list(set([t['hw-type'] for t in EEP_MAPPING])))
