@@ -1,5 +1,8 @@
 # Change Log
 
+## v0.1.25 Fixed Gateway Detection
+* Bug-fix for gateway detection. 
+
 ## v0.1.24 Added Support for FHK14, F4HK14 and FTD14
 * Added support for Eltako devices: FHK14, F4HK14 and FTD14
 * Config generation for MGW Gateway (LAN) extended
