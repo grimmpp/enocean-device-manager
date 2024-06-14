@@ -15,7 +15,7 @@ with open('LICENSE', encoding="utf-8") as f:
     license = f.read()
 
 required = ['eltako14bus==0.0.56', 'requests==2.31.0', 'enocean==0.60.1', 'pyserial', 'pyserial-asyncio', 'aiocoap', 
-            'esp2_gateway_adapter==0.2.7',
+            'esp2_gateway_adapter==0.2.8',
             # 'homeassistant', 
             'zeroconf==0.132.2', 
             'pyyaml', 
