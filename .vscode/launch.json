@@ -11,7 +11,7 @@
             "program": "${workspaceFolder}/eo_man",
             "console": "integratedTerminal",
             "args": ["-v", "--app_config", "${workspaceFolder}/demo.eodm"],
-            "justMyCode": true
+            "justMyCode": false
         },
         {
             "name": "Python: Main Window",
@@ -20,7 +20,7 @@
             "program": "${workspaceFolder}/eo_man",
             "args": ["-v"],
             "console": "integratedTerminal",
-            "justMyCode": true
+            "justMyCode": false
         },
         {
             "name": "Python: CLI Help",
@@ -29,7 +29,7 @@
             "program": "${workspaceFolder}/eo_man",
             "console": "integratedTerminal",
             "args": ["-h"],
-            "justMyCode": true
+            "justMyCode": false
         },
         {
             "name": "Python: CLI load demo and store ha config",
