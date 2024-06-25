@@ -1,5 +1,8 @@
 # Change Log
 
+## v0.1.26 Fixed LAN Gateway Connection
+* For reconnecting lan gateway you still need to wait for 10sec
+
 ## v0.1.25 Fixed Gateway Detection
 * Bug-fix for gateway detection. 
 
