@@ -4,6 +4,7 @@
 * Added support for FSR14M-2x. Switch/light and power meter are represented as separate entities.
 * Fixed sender ids for bus gateways
 * Introduced validation for auto-generated configuration before exporting it.
+* Prepared configuration option for Home Assistance base_id.
 
 ## v0.1.26 Fixed LAN Gateway Connection
 * For reconnecting lan gateway you still need to wait for 10sec
