@@ -12,6 +12,8 @@ from . import data_helper
 
 class HomeAssistantConfigurationGenerator():
 
+    LOCAL_SENDER_OFFSET_ID = '00-00-B0-00'
+
     def __init__(self, app_bus:AppBus, data_manager:DataManager):
         self.app_bus = app_bus
         self.data_manager = data_manager
@@ -140,7 +142,9 @@ class HomeAssistantConfigurationGenerator():
         for key in additional_fields.keys():
             value = additional_fields[key]
             if parent_key in ['sender'] and key == 'id':
-                value = data_helper.a2s( int("0x"+value[-2:], base=16) + data_helper.a2i(gateway.base_id) )
+                if gateway.is_wired_gateway(): sender_offset_id = self.LOCAL_SENDER_OFFSET_ID
+                else: sender_offset_id = gateway.base_id
+                value = data_helper.a2s( int("0x"+value[-2:], base=16) + data_helper.a2i(sender_offset_id) )
             if isinstance(value, str) or isinstance(value, int):
                 if key not in [CONF_COMMENT, CONF_REGISTERED_IN]:
                     if isinstance(value, str) and '?' in value:
