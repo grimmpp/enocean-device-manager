@@ -146,7 +146,7 @@ class DataManager():
                 # if device unknown add device to list
                 if external_id not in self.devices:
                     centralized_device = Device.get_centralized_device_by_telegram(message, current_base_id, external_id)
-                    self.devices[centralized_device] = centralized_device
+                    self.devices[centralized_device.external_id] = centralized_device
                     self.app_bus.fire_event(AppBusEventType.UPDATE_DEVICE_REPRESENTATION, centralized_device)
 
 
@@ -197,8 +197,12 @@ class DataManager():
                         if _bd.external_id not in self.devices or not self.devices[_bd.external_id].bus_device:
                             self.devices[_bd.external_id] = _bd
                             self.app_bus.fire_event(AppBusEventType.UPDATE_SENSOR_REPRESENTATION, _bd)
-                    
-                    
+                
+                # add features of device as own entity/device
+                feature = Device.get_feature_as_device(bd)
+                if feature is not None: 
+                    self.devices[feature.external_id] = feature
+                    self.app_bus.fire_event(AppBusEventType.UPDATE_DEVICE_REPRESENTATION, feature)
 
                 # if a new gateway was detected check if there are already devices detected which should be moved as child nodes under the newly detected gateway.
                 if bd.is_fam14():

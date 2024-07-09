@@ -38,6 +38,22 @@ class HomeAssistantConfigurationGenerator():
                 return t.value
         return None
 
+    def perform_tests(self):
+        device_list = self.data_manager.devices.values()
+
+        self.test_unique_sender_ids(device_list)
+
+    def test_unique_sender_ids(self, device_list:list[Device]):
+        sender_ids = {}
+        for d in device_list:
+            if 'sender' in d.additional_fields and 'id' in d.additional_fields['sender']:
+                sender_id = d.additional_fields['sender']['id']
+                if not sender_id.isnumeric() or int(sender_id) < 1 or int(sender_id) > 127:
+                    raise Exception(f"sender id '{sender_id}' of device '{d.external_id}' is no valid number between 1 and 127.")
+                if sender_id in sender_ids:
+                    raise Exception(f"sender id '{sender_id}' is assinged more than once for at least device '{sender_ids[sender_id].external_id}' and '{d.external_id}'.")
+                
+                sender_ids[sender_id] = d
 
     def generate_ha_config(self, device_list:list[Device]) -> str:
         ha_platforms = set([str(d.ha_platform) for d in device_list if d.ha_platform is not None])
@@ -109,7 +125,7 @@ class HomeAssistantConfigurationGenerator():
             fg = info['PCT14-function-group']
             out += spaces[:-2] + f"  # Use 'Write HA senders to devices' button or enter manually sender id in PCT14 into function group {fg} with function {kf} \n"    
         adr = device.address if gateway.is_wired_gateway() and gateway.base_id == device.base_id else device.external_id
-        out += spaces[:-2] + f"- {CONF_ID}: {adr}\n"
+        out += spaces[:-2] + f"- {CONF_ID}: {adr.strip()}\n"
         out += spaces[:-2] + f"  {CONF_NAME}: {device.name}\n"
         out += spaces[:-2] + f"  {CONF_EEP}: {device.eep}\n"
 
@@ -123,7 +139,7 @@ class HomeAssistantConfigurationGenerator():
         spaces = space_count*" " + "        "
         for key in additional_fields.keys():
             value = additional_fields[key]
-            if parent_key in ['sender'] and key == 'id' and gateway.is_wireless_transceiver():
+            if parent_key in ['sender'] and key == 'id':
                 value = data_helper.a2s( int("0x"+value[-2:], base=16) + data_helper.a2i(gateway.base_id) )
             if isinstance(value, str) or isinstance(value, int):
                 if key not in [CONF_COMMENT, CONF_REGISTERED_IN]:
@@ -137,15 +153,10 @@ class HomeAssistantConfigurationGenerator():
     
 
     def save_as_yaml_to_file(self, filename:str):
-        msg = f"Export Home Assistant configuration into {filename}"
-        self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'color': 'red', 'log-level': 'INFO'})
         
-        config_str = self.generate_ha_config(
-            self.data_manager.devices.values()
-        )
+        devices = self.data_manager.devices.values()
+
+        config_str = self.generate_ha_config(devices)
 
         with open(filename, 'w', encoding="utf-8") as f:
             print(config_str, file=f)
-
-        msg = f"Export finished!"
-        self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'color': 'grey', 'log-level': 'DEBUG'})

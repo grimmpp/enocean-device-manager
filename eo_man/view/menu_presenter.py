@@ -244,12 +244,29 @@ class MenuPresenter():
                     filename += '.yaml'
                 self.remember_latest_ha_config_filename = filename
 
+            
+
+
+            msg = f"Export Home Assistant configuration into {self.remember_latest_ha_config_filename}"
+            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'color': 'red', 'log-level': 'INFO'})
+            
+
+            self.ha_conf_gen.perform_tests()
+
             self.ha_conf_gen.save_as_yaml_to_file(self.remember_latest_ha_config_filename)
+
+            msg = f"Export finished!"
+            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'color': 'grey', 'log-level': 'DEBUG'})
+            
+            msg = f"Home Assistant Configuration was successfully generated into file: \n\n{self.remember_latest_filename}"
+            messagebox.showinfo("Successful Export", msg)
 
         except Exception as e:
             msg = 'Exporting Home Assistant Configuration failed!'
             self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
             logging.exception(msg, exc_info=True)
+
+            messagebox.showwarning(title=msg, message=str(e) )
 
 
     def reset_to_suggested_ha_properties(self):

@@ -1,5 +1,10 @@
 # Change Log
 
+## v0.1.27 Added Support for FSR14M-2x
+* Added support for FSR14M-2x. Switch/light and power meter are represented as separate entities.
+* Fixed sender ids for bus gateways
+* Introduced validation for auto-generated configuration before exporting it.
+
 ## v0.1.26 Fixed LAN Gateway Connection
 * For reconnecting lan gateway you still need to wait for 10sec
 
