@@ -1,3 +1,4 @@
+import copy
 from eltakobus.device import SensorInfo, KeyFunction
 from eltakobus.util import b2s, AddressExpression
 from eltakobus.device import BusObject, FAM14, FTD14
@@ -160,6 +161,22 @@ class Device():
 
         return bd
     
+    @classmethod
+    def get_feature_as_device(cls, device):
+        feature = None
+
+        info = find_device_info_by_device_type(device.device_type+"-feature")
+        if len(info) > 0:
+            feature:Device = copy.deepcopy(device)
+            feature.additional_fields = {}
+            feature.device_type = device.device_type+"-feature"
+            feature.address = device.address + " "
+            feature.external_id = device.external_id + " "
+
+            Device.set_suggest_ha_config(feature, use_in_ha=True)
+            
+        return feature
+            
 
     @classmethod
     def init_sender_fields(cls, device, overwrite:bool=False): 
@@ -176,13 +193,14 @@ class Device():
                 }
     
     @classmethod
-    def set_suggest_ha_config(cls, device):
+    def set_suggest_ha_config(cls, device, use_in_ha:bool=False):
         id = int.from_bytes( AddressExpression.parse(device.address)[0], 'big')
         info:dict = find_device_info_by_device_type(device.device_type)
         if info is not None:
-            device.use_in_ha = device.device_type != BusObject.__name__
+            device.use_in_ha = (device.device_type != BusObject.__name__) or use_in_ha
             device.ha_platform = info.get(CONF_TYPE, None)
             device.eep = info.get(CONF_EEP, None)
+            device.comment = info.get('description', '')
 
             if info.get('sender_eep', None):
                 device.additional_fields['sender'] = {
@@ -205,6 +223,11 @@ class Device():
                     device.additional_fields[CONF_ROOM_THERMOSTAT][CONF_ID] = b2s(thermostat.sensor_id)
                     device.additional_fields[CONF_ROOM_THERMOSTAT][CONF_EEP] = A5_10_06.eep_string   #TODO: derive EEP from switch/sensor function
                 #TODO: cooling_mode
+
+            if info.get(CONF_METER_TARIFFS, None):
+                device.additional_fields[CONF_METER_TARIFFS] = info.get(CONF_METER_TARIFFS)
+            elif device.eep in [A5_12_01.eep_string, A5_12_02.eep_string, A5_12_03.eep_string]:
+                device.additional_fields[CONF_METER_TARIFFS] = '[1]'
     
     @classmethod
     def get_decentralized_device_by_telegram(cls, msg: RPSMessage):

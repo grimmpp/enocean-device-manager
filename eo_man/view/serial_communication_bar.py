@@ -100,7 +100,7 @@ class SerialConnectionBar():
                 gateways.append(f"{d.device_type.replace(' (Wireless Transceiver)', '')} ({d.external_id})")
         
         self.cb_gateways_for_HA['values'] = gateways
-        if self.cb_gateways_for_HA.get() == '':
+        if self.cb_gateways_for_HA.get() == '' and len(gateways) > 0:
             self.cb_gateways_for_HA.set(gateways[0])
         elif len(gateways) == 0:
             self.cb_gateways_for_HA.set('')

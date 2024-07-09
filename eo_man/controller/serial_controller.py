@@ -276,6 +276,8 @@ class SerialController():
         try:
             self._serial_bus.set_callback( None )
             
+            time.sleep(.4)
+
             self.current_base_id = b2s(self._serial_bus.base_id)
             self.gateway_id = self.current_base_id
 
