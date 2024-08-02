@@ -14,7 +14,7 @@ with open('README.md', encoding="utf-8") as f:
 with open('LICENSE', encoding="utf-8") as f:
     license = f.read()
 
-required = ['eltako14bus==0.0.60', 'requests==2.31.0', 'enocean==0.60.1', 'pyserial', 'pyserial-asyncio', 'aiocoap', 
+required = ['eltako14bus==0.0.61', 'requests==2.31.0', 'enocean==0.60.1', 'pyserial', 'pyserial-asyncio', 'aiocoap', 
             'esp2_gateway_adapter==0.2.9',
             # 'homeassistant', 
             'zeroconf==0.132.2', 
