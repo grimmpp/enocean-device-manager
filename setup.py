@@ -14,7 +14,7 @@ with open('README.md', encoding="utf-8") as f:
 with open('LICENSE', encoding="utf-8") as f:
     license = f.read()
 
-required = ['eltako14bus==0.0.61', 'requests==2.31.0', 'enocean==0.60.1', 'pyserial', 'pyserial-asyncio', 'aiocoap', 
+required = ['eltako14bus==0.0.62', 'requests==2.31.0', 'enocean==0.60.1', 'pyserial', 'pyserial-asyncio', 'aiocoap', 
             'esp2_gateway_adapter==0.2.9',
             # 'homeassistant', 
             'zeroconf==0.132.2', 
@@ -27,7 +27,7 @@ required = ['eltako14bus==0.0.61', 'requests==2.31.0', 'enocean==0.60.1', 'pyser
 
 setup(
     name='eo_man',
-    version='0.1.28',
+    version='0.1.29',
     package_dir={'eo_man':"eo_man"},
     # packages=find_packages("./eo-man"),
     #package_data={'': ['*.png']},

@@ -1,5 +1,5 @@
 ﻿aiocoap==0.4.7
-eltako14bus==0.0.61
+eltako14bus==0.0.62
 numpy==1.26.3
 pillow==10.2.0
 pyserial==3.5

@@ -41,7 +41,7 @@ class HomeAssistantConfigurationGenerator():
         return None
 
     def perform_tests(self):
-        device_list = self.data_manager.devices.values()
+        device_list = [d for d in self.data_manager.devices.values() if d.use_in_ha]
 
         self.test_unique_sender_ids(device_list)
 
@@ -50,10 +50,10 @@ class HomeAssistantConfigurationGenerator():
         for d in device_list:
             if 'sender' in d.additional_fields and 'id' in d.additional_fields['sender']:
                 sender_id = d.additional_fields['sender']['id']
-                if not sender_id.isnumeric() or int(sender_id) < 1 or int(sender_id) > 127:
+                if int(sender_id, 16) < 1 or int(sender_id, 16) > 127:
                     raise Exception(f"sender id '{sender_id}' of device '{d.external_id}' is no valid number between 1 and 127.")
                 if sender_id in sender_ids:
-                    raise Exception(f"sender id '{sender_id}' is assinged more than once for at least device '{sender_ids[sender_id].external_id}' and '{d.external_id}'.")
+                    raise Exception(f"sender id '{sender_id}' is assigned more than once for at least device '{sender_ids[sender_id].external_id}' and '{d.external_id}'.")
                 
                 sender_ids[sender_id] = d
 

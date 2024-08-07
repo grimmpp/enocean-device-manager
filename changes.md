@@ -1,5 +1,10 @@
 # Change Log
 
+## v0.1.29 Added FGD14 and FD2G14 Support
+* Added FGD14 and FD2G14 Support
+* Fixed missing dependency for FSR14M-2x support.
+* Fixed configuration generation and sender id validation.
+
 ## v0.1.28 added EEP F6-01-01
 
 ## v0.1.27 Added Support for FSR14M-2x
