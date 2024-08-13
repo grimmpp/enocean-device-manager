@@ -41,7 +41,7 @@ class HomeAssistantConfigurationGenerator():
         return None
 
     def perform_tests(self):
-        device_list = [d for d in self.data_manager.devices.values() if d.use_in_ha]
+        device_list = [d for d in self.data_manager.devices.values() if not d.is_gateway() and d.use_in_ha]
 
         self.test_unique_sender_ids(device_list)
 

@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.1.30 Extended device list
+* Extended device list with EEP mapping
+* Fixed sender id duplication check.
+
 ## v0.1.29 Added FGD14 and FD2G14 Support
 * Added FGD14 and FD2G14 Support
 * Fixed missing dependency for FSR14M-2x support.
