@@ -25,10 +25,34 @@ EEP_MAPPING = [
     {'hw-type': 'FTS14EM', CONF_EEP: 'D5-00-01', CONF_TYPE: Platform.BINARY_SENSOR, 'description': 'Contact sensor', 'address_count': 1},
     {'hw-type': 'FTS14EM', CONF_EEP: 'A5-08-01', CONF_TYPE: Platform.BINARY_SENSOR, 'description': 'Occupancy sensor', 'address_count': 1},
 
+    {'hw-type': 'FFTE', CONF_EEP: 'F6-10-00', CONF_TYPE: Platform.BINARY_SENSOR, 'description': 'window and door contacts', 'address_count': 1},
+    {'hw-type': 'FTKE', CONF_EEP: 'F6-10-00', CONF_TYPE: Platform.BINARY_SENSOR, 'description': 'window and door contacts', 'address_count': 1},
+    {'hw-type': 'FTK', CONF_EEP: 'F6-10-00', CONF_TYPE: Platform.BINARY_SENSOR, 'description': 'window and door contacts', 'address_count': 1},
+
     {'hw-type': 'FSDG14', CONF_EEP: 'A5-12-01', CONF_TYPE: Platform.SENSOR, 'description': 'Automated meter reading - electricity', 'address_count': 1},
     {'hw-type': 'F3Z14D', CONF_EEP: 'A5-12-01', CONF_TYPE: Platform.SENSOR, 'description': 'Automated meter reading - electricity', 'address_count': 3},
     {'hw-type': 'F3Z14D', CONF_EEP: 'A5-12-02', CONF_TYPE: Platform.SENSOR, 'description': 'Automated meter reading - gas', 'address_count': 3},
     {'hw-type': 'F3Z14D', CONF_EEP: 'A5-12-03', CONF_TYPE: Platform.SENSOR, 'description': 'Automated meter reading - water', 'address_count': 3},
+    
+    {'hw-type': 'FWG14', CONF_EEP: 'A5-13-01', CONF_TYPE: Platform.SENSOR, 'description': 'Weather Station', 'address_count': 1},
+    {'hw-type': 'FWG14MS', CONF_EEP: 'A5-13-01', CONF_TYPE: Platform.SENSOR, 'description': 'Weather Station', 'address_count': 1},
+    {'hw-type': 'MS', CONF_EEP: 'A5-13-01', CONF_TYPE: Platform.SENSOR, 'description': 'Weather Station', 'address_count': 1},
+    {'hw-type': 'WMS', CONF_EEP: 'A5-13-01', CONF_TYPE: Platform.SENSOR, 'description': 'Weather Station', 'address_count': 1},
+    {'hw-type': 'FWS61', CONF_EEP: 'A5-13-01', CONF_TYPE: Platform.SENSOR, 'description': 'Weather Station', 'address_count': 1},
+
+    {'hw-type': 'FLGTF', CONF_EEP: 'A5-04-02', CONF_TYPE: Platform.SENSOR, 'description': 'Temperature and Humidity Sensor', 'address_count': 1},
+    {'hw-type': 'FLT58', CONF_EEP: 'A5-04-02', CONF_TYPE: Platform.SENSOR, 'description': 'Temperature and Humidity Sensor', 'address_count': 1},
+    {'hw-type': 'FFT60', CONF_EEP: 'A5-04-02', CONF_TYPE: Platform.SENSOR, 'description': 'Temperature and Humidity Sensor', 'address_count': 1},
+
+    {'hw-type': 'FABH65S', CONF_EEP: 'A5-08-01', CONF_TYPE: Platform.SENSOR, 'description': 'Light-, Temperature-, Occupancy Sensor', 'address_count': 1},
+    {'hw-type': 'FBH65', CONF_EEP: 'A5-08-01', CONF_TYPE: Platform.SENSOR, 'description': 'Light-, Temperature-, Occupancy Sensor', 'address_count': 1},
+    {'hw-type': 'FBH65S', CONF_EEP: 'A5-08-01', CONF_TYPE: Platform.SENSOR, 'description': 'Light-, Temperature-, Occupancy Sensor', 'address_count': 1},
+    {'hw-type': 'FBH65TF', CONF_EEP: 'A5-08-01', CONF_TYPE: Platform.SENSOR, 'description': 'Light-, Temperature-, Occupancy Sensor', 'address_count': 1},
+
+    {'hw-type': 'FLGTF', CONF_EEP: 'A5-09-0C', CONF_TYPE: Platform.SENSOR, 'description': 'Air Quality / VOC⁠ (Volatile Organic Compounds)', 'address_count': 1},
+
+    {'hw-type': 'FUTH', CONF_EEP: 'A5-10-06', CONF_TYPE: Platform.SENSOR, 'description': 'Temperature Sensor and Controller', 'address_count': 1},
+    {'hw-type': 'FUTH-feature', CONF_EEP: 'A5-10-12', CONF_TYPE: Platform.SENSOR, 'description': 'Temperature Sensor and Controller and Humidity Sensor', 'address_count': 1},
 
     {'hw-type': 'FUD14', CONF_EEP: 'A5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 3, 'PCT14-key-function': 32, 'description': 'Central command - gateway', 'address_count': 1},
     {'hw-type': 'FUD14_800W', CONF_EEP: 'A5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 3, 'PCT14-key-function': 32, 'description': 'Central command - gateway', 'address_count': 1},
