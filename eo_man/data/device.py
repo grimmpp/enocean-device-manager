@@ -180,17 +180,9 @@ class Device():
 
     @classmethod
     def init_sender_fields(cls, device, overwrite:bool=False): 
-        info:dict = find_device_info_by_device_type(device.device_type)
-
         if device.additional_fields is None:
             device.additional_fields = {}
 
-        if info.get('sender_eep', None):
-            if overwrite or not ('sender' in device.additional_fields and len(device.additional_fields['sender']) > 0):
-                device.additional_fields['sender'] = {
-                    CONF_ID:  a2s( a2i(device.address) % 128 )[-2:],
-                    CONF_EEP: info.get('sender_eep')
-                }
     
     @classmethod
     def set_suggest_ha_config(cls, device, use_in_ha:bool=False):
@@ -198,20 +190,27 @@ class Device():
         info:dict = find_device_info_by_device_type(device.device_type)
         if info is not None:
             device.use_in_ha = (device.device_type != BusObject.__name__) or use_in_ha
-            device.ha_platform = info.get(CONF_TYPE, None)
-            device.eep = info.get(CONF_EEP, None)
-            device.comment = info.get('description', '')
+            device.ha_platform = info.get(CONF_TYPE, device.ha_platform)
+            device.eep = info.get(CONF_EEP, device.eep)
+            if device.comment == '' or is_device_description(info.get('description', '')):
+                device.comment = info.get('description', device.comment)
 
             if info.get('sender_eep', None):
                 device.additional_fields['sender'] = {
                     CONF_ID:  a2s( a2i(device.address) % 128 )[-2:],
                     CONF_EEP: info.get('sender_eep')
                 }
+            else:
+                if 'sender' in device.additional_fields: del device.additional_fields['sender']
 
             if info.get(CONF_TYPE, None) == Platform.COVER:
                 device.additional_fields[CONF_DEVICE_CLASS] = 'shutter'
                 device.additional_fields[CONF_TIME_CLOSES] = 25
                 device.additional_fields[CONF_TIME_OPENS] = 25
+            else:
+                if CONF_DEVICE_CLASS in device.additional_fields:   del device.additional_fields[CONF_DEVICE_CLASS]
+                if CONF_TIME_CLOSES in device.additional_fields:    del device.additional_fields[CONF_TIME_CLOSES]
+                if CONF_TIME_OPENS in device.additional_fields:     del device.additional_fields[CONF_TIME_OPENS]
 
             if info.get(CONF_TYPE, None) == Platform.CLIMATE:
                 device.additional_fields[CONF_TEMPERATURE_UNIT] = f"'{UnitOfTemperature.KELVIN}'"
@@ -222,12 +221,21 @@ class Device():
                     device.additional_fields[CONF_ROOM_THERMOSTAT] = {}
                     device.additional_fields[CONF_ROOM_THERMOSTAT][CONF_ID] = b2s(thermostat.sensor_id)
                     device.additional_fields[CONF_ROOM_THERMOSTAT][CONF_EEP] = A5_10_06.eep_string   #TODO: derive EEP from switch/sensor function
+                else:
+                    if CONF_ROOM_THERMOSTAT in device.additional_fields: del device.additional_fields[CONF_ROOM_THERMOSTAT]
                 #TODO: cooling_mode
+            else:
+                if CONF_TEMPERATURE_UNIT in device.additional_fields:       del device.additional_fields[CONF_TEMPERATURE_UNIT]
+                if CONF_MIN_TARGET_TEMPERATURE in device.additional_fields: del device.additional_fields[CONF_MIN_TARGET_TEMPERATURE]
+                if CONF_MAX_TARGET_TEMPERATURE in device.additional_fields: del device.additional_fields[CONF_MAX_TARGET_TEMPERATURE]
+                if CONF_ROOM_THERMOSTAT in device.additional_fields:        del device.additional_fields[CONF_ROOM_THERMOSTAT]
 
             if info.get(CONF_METER_TARIFFS, None):
                 device.additional_fields[CONF_METER_TARIFFS] = info.get(CONF_METER_TARIFFS)
             elif device.eep in [A5_12_01.eep_string, A5_12_02.eep_string, A5_12_03.eep_string]:
                 device.additional_fields[CONF_METER_TARIFFS] = '[1]'
+            else:
+                if CONF_METER_TARIFFS in device.additional_fields: del device.additional_fields[CONF_METER_TARIFFS]
     
     @classmethod
     def get_decentralized_device_by_telegram(cls, msg: RPSMessage):

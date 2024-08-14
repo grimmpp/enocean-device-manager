@@ -81,8 +81,8 @@ EEP_MAPPING = [
     {'hw-type': 'FSR61G-230V', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Eltako relay', 'address_count': 1},
     {'hw-type': 'FSR61LN-230V', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Eltako relay', 'address_count': 1},
 
-    {'hw-type': 'FSB61-230V', CONF_EEP: 'G5-3F-7F', 'sender_eep': 'H5-3F-7F', CONF_TYPE: Platform.COVER, 'address_count': 1},
-    {'hw-type': 'FSB61NP-230V', CONF_EEP: 'G5-3F-7F', 'sender_eep': 'H5-3F-7F', CONF_TYPE: Platform.COVER, 'address_count': 1},
+    {'hw-type': 'FSB61-230V', CONF_EEP: 'G5-3F-7F', 'sender_eep': 'H5-3F-7F', CONF_TYPE: Platform.COVER, 'address_count': 1, 'description': 'Eltako cover'},
+    {'hw-type': 'FSB61NP-230V', CONF_EEP: 'G5-3F-7F', 'sender_eep': 'H5-3F-7F', CONF_TYPE: Platform.COVER, 'address_count': 1, 'description': 'Eltako cover'},
 ]
 
 ORG_MAPPING = {
@@ -136,6 +136,12 @@ def find_device_info_by_device_type(device_type:str, eep:str=None) -> dict:
             elif i[CONF_EEP] == eep:
                 return i
     return {}
+
+def is_device_description(description:str) -> bool:
+    for i in EEP_MAPPING:
+        if 'description' in i and i['description'] == description:
+            return True
+    return False
 
 def get_known_device_types() -> list:
     return sorted(list(set([t['hw-type'] for t in EEP_MAPPING])))
