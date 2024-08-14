@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.1.31 Improved Details View
+* Improved template selection in Details View.
+* Improved GUI Details View
+
 ## v0.1.30 Extended device list
 * Extended device list with EEP mapping
 * Fixed sender id duplication check.

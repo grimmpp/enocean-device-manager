@@ -2,6 +2,7 @@ import tkinter as tk
 import copy
 from tkinter import *
 from tkinter import ttk
+from tkscrolledframe import ScrolledFrame
 
 from eltakobus.device import SensorInfo, KeyFunction
 from eltakobus.util import b2s
@@ -15,7 +16,7 @@ from ..data.const import *
 
 class DeviceDetails():
 
-    def __init__(self, main: Tk, app_bus:AppBus, data_manager:DataManager):
+    def __init__(self, window: Tk, main: Tk, app_bus:AppBus, data_manager:DataManager):
         self.main = main
         self.app_bus = app_bus
         self.data_manager = data_manager
@@ -23,27 +24,38 @@ class DeviceDetails():
 
         self.app_bus.add_event_handler(AppBusEventType.SELECTED_DEVICE, self.selected_device_handler)
 
+        main_frame = Frame(main, width=365)
+        main_frame.pack(side=LEFT, fill=BOTH, expand=2)
+
         # main
-        main_frame = Frame(main, width=350)
-        main_frame.pack(fill=BOTH, expand=1)
+        scrolledFrame = ScrolledFrame(main_frame, use_ttk=True)
+        scrolledFrame.pack(side=LEFT, fill=BOTH, expand=2)
+
+        # Bind the arrow keys and scroll wheel
+        scrolledFrame.bind_arrow_keys(window)
+        scrolledFrame.bind_scroll_wheel(window)
 
         # canvas
-        canvas = Canvas(main_frame, width=350)
-        canvas.pack(side=LEFT, fill=BOTH, expand=1)
+        # canvas = Canvas(main_frame, width=350)
+        # canvas.pack(side=LEFT, fill=BOTH, expand=1)
 
         # scrollbar
-        scrollbar = tk.Scrollbar(main_frame, orient=VERTICAL, command=canvas.yview)
-        scrollbar.pack(side=RIGHT, fill=Y)
+        # scrollbar = tk.Scrollbar(main_frame, orient=VERTICAL, command=canvas.yview)
+        # scrollbar.pack(side=RIGHT, fill=Y)
 
-        # configure the canvas
-        canvas.configure(yscrollcommand=scrollbar.set)
-        canvas.bind(
-            '<Configure>', lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
-        )
+        # # configure the canvas
+        # canvas.configure(yscrollcommand=scrollbar.set)
+        # canvas.bind(
+        #     '<Configure>', lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        # )
 
-        inner_frame = LabelFrame(canvas, padx=6, pady=3, text="Device Details")
-        canvas.create_window((0, 0), window=inner_frame, anchor="nw")
-        self.canvas = canvas
+        # inner_frame = LabelFrame(canvas, padx=6, pady=3, text="Device Details")
+        # canvas.create_window((0, 0), window=inner_frame, anchor="nw")
+        # self.canvas = canvas
+
+        inner_frame = scrolledFrame.display_widget(LabelFrame)
+        inner_frame.config(text="Device Details", padx=6, pady=3)
+        
 
         self.root = main_frame
         self.inner_frame = inner_frame
@@ -129,6 +141,7 @@ class DeviceDetails():
             self.cb_device_type.config(state=DISABLED)
         else:
             self.cb_device_type.bind('<Return>', lambda e, d=device: self.update_device(d))
+            self.cb_device_type.bind('<<ComboboxSelected>>', lambda e, d=device: self.update_device(d, False, True) )
 
 
 
@@ -250,7 +263,7 @@ class DeviceDetails():
 
 
 
-    def update_device(self, device:Device):
+    def update_device(self, device:Device, force_update:bool=True, suggest_default_values:bool=False):
         device.name = self.text_name.get()
         device.address = self.text_address.get()
         device.version = self.text_version.get()
@@ -263,9 +276,13 @@ class DeviceDetails():
 
         Device.init_sender_fields(device)
 
-        self.data_manager.update_device(device)
+        if suggest_default_values:
+            Device.set_suggest_ha_config(device, use_in_ha=True)
 
-        self.selected_device_handler(device, force_update=True)
+        if force_update:
+            self.data_manager.update_device(device)
+
+        self.selected_device_handler(device, force_update)
 
     def add_additional_fields(self, device:Device, add_fields:dict, f:Frame, parent_key:str='', _row:int=0, spaces:int=0):
         for key, value in add_fields.items():
@@ -369,3 +386,6 @@ class DeviceDetails():
         if not self.current_device or force_update or self.current_device.external_id != device.external_id:
             self.show_form(copy.deepcopy(device))
             self.current_device = device
+        elif self.current_device.external_id == device.external_id:
+            self.show_form(copy.deepcopy(device))
+
