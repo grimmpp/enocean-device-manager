@@ -4,6 +4,8 @@ from tkinter import *
 from tkinter import ttk
 from tkscrolledframe import ScrolledFrame
 
+from idlelib.tooltip import Hovertip
+
 from eltakobus.device import SensorInfo, KeyFunction
 from eltakobus.util import b2s
 from eltakobus.eep import EEP
@@ -13,10 +15,15 @@ from ..data import data_helper
 from ..controller.app_bus import AppBus, AppBusEventType
 from ..data.const import *
 
+from ..icons.image_gallary import ImageGallery
+
+from .device_info_window import DeviceInfoWindow
+
 
 class DeviceDetails():
 
     def __init__(self, window: Tk, main: Tk, app_bus:AppBus, data_manager:DataManager):
+        self.window = window
         self.main = main
         self.app_bus = app_bus
         self.data_manager = data_manager
@@ -127,11 +134,17 @@ class DeviceDetails():
         self._update_text_field(self.text_version, device.version)
         self.text_version.bind('<Return>', lambda e, d=device: self.update_device(d))
 
-
         # device type
         c_row += 1
-        l = Label(f, text="Device Type")
-        l.grid(row=c_row, column=0, sticky=W, padx=3)
+        f2 = Frame(f)
+        f2.grid(row=c_row, column=0, sticky=W, padx=3 )
+        l = Label(f2, text="Device Type")
+        l.grid(row=0, column=0, sticky=W, padx=(0,3) )
+        
+        device_info_btn = tk.Button(f2, relief=FLAT, borderwidth=0, image=ImageGallery.get_info_icon((16,16)), cursor="hand2")
+        Hovertip(device_info_btn, 'Detailed Device Info', 300)
+        device_info_btn.grid(row=0, column=1, sticky=W, padx=0)
+        device_info_btn.bind("<Button-1>", lambda e: DeviceInfoWindow(self.window))
 
         self.cb_device_type = ttk.Combobox(f, width="20") 
         self.cb_device_type['values'] = data_helper.get_known_device_types()

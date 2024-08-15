@@ -18,6 +18,7 @@ from ..icons.image_gallary import ImageGallery
 
 from .eep_checker_window import EepCheckerWindow
 from .about_window import AboutWindow
+from .device_info_window import DeviceInfoWindow
 from .send_message_window import SendMessageWindow
 from . import DEFAULT_WINDOW_TITLE
 
@@ -104,6 +105,10 @@ class MenuPresenter():
         
         github_icon = ImageGallery.get_github_icon((16,16))
         docs_menu = Menu(help_menu, tearoff=False)
+        help_menu.add_command(label="Supported Devices",
+                             compound=LEFT,
+                             command=lambda: DeviceInfoWindow(main) )
+        docs_menu.add_separator()
         help_menu.add_cascade(menu=docs_menu, 
                              label="Documentation")
         docs_menu.add_command(label="EnOcean Device Manager ...", 

@@ -14,75 +14,99 @@ from eltakobus.util import b2s, AddressExpression
 SENDER_BASE_ID = 0x0000B000
 
 EEP_MAPPING = [
-    {'hw-type': 'BusObject', CONF_EEP: 'unknown', CONF_TYPE: 'unknown', 'description': 'unknown bus device'},
-    {'hw-type': 'FAM14', 'description': 'Bus Gateway', 'device_type': GatewayDeviceType.EltakoFAM14.value},
-    {'hw-type': 'FGW14_USB', 'description': 'Bus Gateway', 'device_type': GatewayDeviceType.EltakoFGW14USB.value},
-    {'hw-type': 'FTD14', 'description': 'Bus Gateway', 'device_type': GatewayDeviceType.EltakoFTD14.value},
+    # gateways and bus connectors
+    {'hw-type': 'BusObject', 'brand': 'unknown', CONF_EEP: 'unknown', CONF_TYPE: 'unknown', 'description': 'unknown bus device'},
+    {'hw-type': 'FAM14', 'brand': 'Eltako', 'description': 'Bus Gateway', 'device_type': GatewayDeviceType.EltakoFAM14.value, 'docs': 'https://github.com/grimmpp/home-assistant-eltako/tree/main/docs/gateways'},
+    {'hw-type': 'FGW14_USB', 'brand': 'Eltako', 'description': 'Bus Gateway', 'device_type': GatewayDeviceType.EltakoFGW14USB.value, 'docs': 'https://github.com/grimmpp/home-assistant-eltako/tree/main/docs/gateways'},
+    {'hw-type': 'FTD14', 'brand': 'Eltako', 'description': 'Bus Gateway', 'device_type': GatewayDeviceType.EltakoFTD14.value, 'docs': 'https://github.com/grimmpp/home-assistant-eltako/tree/main/docs/gateways'},
+    {'hw-type': 'FGW14', 'brand': 'Eltako', 'description': 'Bus Gateway'},
+    {'hw-type': 'FAM-USB', 'brand': 'Eltako', 'description': 'USB Gateway', 'device_type': GatewayDeviceType.EltakoFAMUSB.value, 'docs': 'https://github.com/grimmpp/home-assistant-eltako/tree/main/docs/gateways'},
+    {'hw-type': 'USB300', 'brand': 'unknown', 'description': 'USB Gateway', 'device_type': GatewayDeviceType.USB300.value, 'docs': 'https://github.com/grimmpp/home-assistant-eltako/tree/main/docs/gateways'},
+    {'hw-type': 'MGW (LAN)', 'brand': 'PioTek', 'description': 'USB Gateway', 'device_type': GatewayDeviceType.LAN.value, 'docs': 'https://github.com/grimmpp/home-assistant-eltako/tree/main/docs/gateways'},
+    {'hw-type': 'MGW (USB)', 'brand': 'PioTek', 'description': 'USB Gateway', 'device_type': GatewayDeviceType.ESP3.value, 'docs': 'https://github.com/grimmpp/home-assistant-eltako/tree/main/docs/gateways'},
 
-    {'hw-type': 'FTS14EM', CONF_EEP: 'F6-02-01', CONF_TYPE: Platform.BINARY_SENSOR, 'description': 'Rocker switch', 'address_count': 1},
-    {'hw-type': 'FTS14EM', CONF_EEP: 'F6-02-02', CONF_TYPE: Platform.BINARY_SENSOR, 'description': 'Rocker switch', 'address_count': 1},
-    {'hw-type': 'FTS14EM', CONF_EEP: 'F6-10-00', CONF_TYPE: Platform.BINARY_SENSOR, 'description': 'Window handle', 'address_count': 1},
-    {'hw-type': 'FTS14EM', CONF_EEP: 'D5-00-01', CONF_TYPE: Platform.BINARY_SENSOR, 'description': 'Contact sensor', 'address_count': 1},
-    {'hw-type': 'FTS14EM', CONF_EEP: 'A5-08-01', CONF_TYPE: Platform.BINARY_SENSOR, 'description': 'Occupancy sensor', 'address_count': 1},
+    # Input module    
+    {'hw-type': 'FTS14EM', 'brand': 'Eltako', CONF_EEP: 'F6-02-01', CONF_TYPE: Platform.BINARY_SENSOR, 'description': 'Wired Rocker switch', 'address_count': 1},
+    {'hw-type': 'FTS14EM', 'brand': 'Eltako', CONF_EEP: 'F6-02-02', CONF_TYPE: Platform.BINARY_SENSOR, 'description': 'Wired Rocker switch', 'address_count': 1},
+    {'hw-type': 'FTS14EM', 'brand': 'Eltako', CONF_EEP: 'F6-10-00', CONF_TYPE: Platform.BINARY_SENSOR, 'description': 'Window handle', 'address_count': 1},
+    {'hw-type': 'FTS14EM', 'brand': 'Eltako', CONF_EEP: 'D5-00-01', CONF_TYPE: Platform.BINARY_SENSOR, 'description': 'Contact sensor', 'address_count': 1},
+    {'hw-type': 'FTS14EM', 'brand': 'Eltako', CONF_EEP: 'A5-08-01', CONF_TYPE: Platform.BINARY_SENSOR, 'description': 'Occupancy sensor', 'address_count': 1},
 
-    {'hw-type': 'FFTE', CONF_EEP: 'F6-10-00', CONF_TYPE: Platform.BINARY_SENSOR, 'description': 'window and door contacts', 'address_count': 1},
-    {'hw-type': 'FTKE', CONF_EEP: 'F6-10-00', CONF_TYPE: Platform.BINARY_SENSOR, 'description': 'window and door contacts', 'address_count': 1},
-    {'hw-type': 'FTK', CONF_EEP: 'F6-10-00', CONF_TYPE: Platform.BINARY_SENSOR, 'description': 'window and door contacts', 'address_count': 1},
+    # Wireless 4-way pushbutton
+    {'hw-type': 'FT55', 'brand': 'Eltako', CONF_EEP: 'F6-02-01', CONF_TYPE: Platform.BINARY_SENSOR, 'description': 'Wireless 4-way pushbutton', 'address_count': 1},
+    {'hw-type': 'F4T55E', 'brand': 'Eltako', CONF_EEP: 'F6-02-01', CONF_TYPE: Platform.BINARY_SENSOR, 'description': 'Wireless 4-way pushbutton in E-Design55', 'address_count': 1},
 
-    {'hw-type': 'FSDG14', CONF_EEP: 'A5-12-01', CONF_TYPE: Platform.SENSOR, 'description': 'Automated meter reading - electricity', 'address_count': 1},
-    {'hw-type': 'F3Z14D', CONF_EEP: 'A5-12-01', CONF_TYPE: Platform.SENSOR, 'description': 'Automated meter reading - electricity', 'address_count': 3},
-    {'hw-type': 'F3Z14D', CONF_EEP: 'A5-12-02', CONF_TYPE: Platform.SENSOR, 'description': 'Automated meter reading - gas', 'address_count': 3},
-    {'hw-type': 'F3Z14D', CONF_EEP: 'A5-12-03', CONF_TYPE: Platform.SENSOR, 'description': 'Automated meter reading - water', 'address_count': 3},
+    # window and door contacts
+    {'hw-type': 'FFTE', 'brand': 'Eltako', CONF_EEP: 'F6-10-00', CONF_TYPE: Platform.BINARY_SENSOR, 'description': 'window and door contacts', 'address_count': 1},
+    {'hw-type': 'FTKE', 'brand': 'Eltako', CONF_EEP: 'F6-10-00', CONF_TYPE: Platform.BINARY_SENSOR, 'description': 'window and door contacts', 'address_count': 1},
+    {'hw-type': 'FTK', 'brand': 'Eltako', CONF_EEP: 'F6-10-00', CONF_TYPE: Platform.BINARY_SENSOR, 'description': 'window and door contacts', 'address_count': 1},
+
+    # metering
+    {'hw-type': 'FSDG14', 'brand': 'Eltako', CONF_EEP: 'A5-12-01', CONF_TYPE: Platform.SENSOR, 'description': 'Electricity Meter', 'address_count': 1},
+    {'hw-type': 'F3Z14D', 'brand': 'Eltako', CONF_EEP: 'A5-12-01', CONF_TYPE: Platform.SENSOR, 'description': 'Electricity Meter', 'address_count': 3},
+    {'hw-type': 'F3Z14D', 'brand': 'Eltako', CONF_EEP: 'A5-12-02', CONF_TYPE: Platform.SENSOR, 'description': 'Gas Meter', 'address_count': 3},
+    {'hw-type': 'F3Z14D', 'brand': 'Eltako', CONF_EEP: 'A5-12-03', CONF_TYPE: Platform.SENSOR, 'description': 'Water Meter', 'address_count': 3},
     
-    {'hw-type': 'FWG14', CONF_EEP: 'A5-13-01', CONF_TYPE: Platform.SENSOR, 'description': 'Weather Station', 'address_count': 1},
-    {'hw-type': 'FWG14MS', CONF_EEP: 'A5-13-01', CONF_TYPE: Platform.SENSOR, 'description': 'Weather Station', 'address_count': 1},
-    {'hw-type': 'MS', CONF_EEP: 'A5-13-01', CONF_TYPE: Platform.SENSOR, 'description': 'Weather Station', 'address_count': 1},
-    {'hw-type': 'WMS', CONF_EEP: 'A5-13-01', CONF_TYPE: Platform.SENSOR, 'description': 'Weather Station', 'address_count': 1},
-    {'hw-type': 'FWS61', CONF_EEP: 'A5-13-01', CONF_TYPE: Platform.SENSOR, 'description': 'Weather Station', 'address_count': 1},
+    # Weather Station
+    {'hw-type': 'FWG14MS', 'brand': 'Eltako', CONF_EEP: 'A5-13-01', CONF_TYPE: Platform.SENSOR, 'description': 'Weather Station Gateway', 'address_count': 1},
+    {'hw-type': 'MS', 'brand': 'Eltako', CONF_EEP: 'A5-13-01', CONF_TYPE: Platform.SENSOR, 'description': 'Weather Station', 'address_count': 1},
+    {'hw-type': 'WMS', 'brand': 'Eltako', CONF_EEP: 'A5-13-01', CONF_TYPE: Platform.SENSOR, 'description': 'Weather Station', 'address_count': 1},
+    {'hw-type': 'FWS61', 'brand': 'Eltako', CONF_EEP: 'A5-13-01', CONF_TYPE: Platform.SENSOR, 'description': 'Weather Station', 'address_count': 1},
 
-    {'hw-type': 'FLGTF', CONF_EEP: 'A5-04-02', CONF_TYPE: Platform.SENSOR, 'description': 'Temperature and Humidity Sensor', 'address_count': 1},
-    {'hw-type': 'FLT58', CONF_EEP: 'A5-04-02', CONF_TYPE: Platform.SENSOR, 'description': 'Temperature and Humidity Sensor', 'address_count': 1},
-    {'hw-type': 'FFT60', CONF_EEP: 'A5-04-02', CONF_TYPE: Platform.SENSOR, 'description': 'Temperature and Humidity Sensor', 'address_count': 1},
+    # Temp and humidity sensor
+    {'hw-type': 'FLGTF', 'brand': 'Eltako', CONF_EEP: 'A5-04-02', CONF_TYPE: Platform.SENSOR, 'description': 'Temperature and Humidity Sensor', 'address_count': 1},
+    {'hw-type': 'FLT58', 'brand': 'Eltako', CONF_EEP: 'A5-04-02', CONF_TYPE: Platform.SENSOR, 'description': 'Temperature and Humidity Sensor', 'address_count': 1},
+    {'hw-type': 'FFT60', 'brand': 'Eltako', CONF_EEP: 'A5-04-02', CONF_TYPE: Platform.SENSOR, 'description': 'Temperature and Humidity Sensor', 'address_count': 1},
 
-    {'hw-type': 'FABH65S', CONF_EEP: 'A5-08-01', CONF_TYPE: Platform.SENSOR, 'description': 'Light-, Temperature-, Occupancy Sensor', 'address_count': 1},
-    {'hw-type': 'FBH65', CONF_EEP: 'A5-08-01', CONF_TYPE: Platform.SENSOR, 'description': 'Light-, Temperature-, Occupancy Sensor', 'address_count': 1},
-    {'hw-type': 'FBH65S', CONF_EEP: 'A5-08-01', CONF_TYPE: Platform.SENSOR, 'description': 'Light-, Temperature-, Occupancy Sensor', 'address_count': 1},
-    {'hw-type': 'FBH65TF', CONF_EEP: 'A5-08-01', CONF_TYPE: Platform.SENSOR, 'description': 'Light-, Temperature-, Occupancy Sensor', 'address_count': 1},
+    # occupancy sensor
+    {'hw-type': 'FABH65S', 'brand': 'Eltako', CONF_EEP: 'A5-08-01', CONF_TYPE: Platform.SENSOR, 'description': 'Light-, Temperature-, Occupancy Sensor', 'address_count': 1},
+    {'hw-type': 'FBH65', 'brand': 'Eltako', CONF_EEP: 'A5-08-01', CONF_TYPE: Platform.SENSOR, 'description': 'Light-, Temperature-, Occupancy Sensor', 'address_count': 1},
+    {'hw-type': 'FBH65S', 'brand': 'Eltako', CONF_EEP: 'A5-08-01', CONF_TYPE: Platform.SENSOR, 'description': 'Light-, Temperature-, Occupancy Sensor', 'address_count': 1},
+    {'hw-type': 'FBH65TF', 'brand': 'Eltako', CONF_EEP: 'A5-08-01', CONF_TYPE: Platform.SENSOR, 'description': 'Light-, Temperature-, Occupancy Sensor', 'address_count': 1},
 
-    {'hw-type': 'FLGTF', CONF_EEP: 'A5-09-0C', CONF_TYPE: Platform.SENSOR, 'description': 'Air Quality / VOC⁠ (Volatile Organic Compounds)', 'address_count': 1},
+    # air quality
+    {'hw-type': 'FLGTF', 'brand': 'Eltako', CONF_EEP: 'A5-09-0C', CONF_TYPE: Platform.SENSOR, 'description': 'Air Quality, Temperature and Humidity Sensor', 'address_count': 1},
 
-    {'hw-type': 'FUTH', CONF_EEP: 'A5-10-06', CONF_TYPE: Platform.SENSOR, 'description': 'Temperature Sensor and Controller', 'address_count': 1},
-    {'hw-type': 'FUTH-feature', CONF_EEP: 'A5-10-12', CONF_TYPE: Platform.SENSOR, 'description': 'Temperature Sensor and Controller and Humidity Sensor', 'address_count': 1},
+    # Temp Controller
+    {'hw-type': 'FUTH', 'brand': 'Eltako', CONF_EEP: 'A5-10-06', CONF_TYPE: Platform.SENSOR, 'description': 'Temperature Sensor and Controller', 'address_count': 1},
+    {'hw-type': 'FUTH-feature', 'brand': 'Eltako', CONF_EEP: 'A5-10-12', CONF_TYPE: Platform.SENSOR, 'description': 'Temperature Sensor and Controller and Humidity Sensor', 'address_count': 1},
 
-    {'hw-type': 'FUD14', CONF_EEP: 'A5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 3, 'PCT14-key-function': 32, 'description': 'Central command - gateway', 'address_count': 1},
-    {'hw-type': 'FUD14_800W', CONF_EEP: 'A5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 3, 'PCT14-key-function': 32, 'description': 'Central command - gateway', 'address_count': 1},
+    # light dimmer
+    {'hw-type': 'FUD14', 'brand': 'Eltako', CONF_EEP: 'A5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 3, 'PCT14-key-function': 32, 'description': 'Light dimmer', 'address_count': 1},
+    {'hw-type': 'FUD14_800W', 'brand': 'Eltako', CONF_EEP: 'A5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 3, 'PCT14-key-function': 32, 'description': 'Light dimmer', 'address_count': 1},
 
-    {'hw-type': 'FDG14', CONF_EEP: 'A5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 1, 'PCT14-key-function': 32, 'description': 'Central command - gateway', 'address_count': 16},
-    {'hw-type': 'FD2G14', CONF_EEP: 'A5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 1, 'PCT14-key-function': 32, 'description': 'Central command - gateway', 'address_count': 16},
+    # Dali Gateway
+    {'hw-type': 'FDG14', 'brand': 'Eltako', CONF_EEP: 'A5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 1, 'PCT14-key-function': 32, 'description': 'Dali Gateway', 'address_count': 16},
+    {'hw-type': 'FD2G14', 'brand': 'Eltako', CONF_EEP: 'A5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 1, 'PCT14-key-function': 32, 'description': 'Dali Gateway', 'address_count': 16},
 
-    {'hw-type': 'FMZ14', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 1, 'description': 'Eltako relay', 'address_count': 1},
-    {'hw-type': 'FSR14', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 2, 'PCT14-key-function': 51, 'description': 'Eltako relay', 'address_count': 1},
-    {'hw-type': 'FSR14_1x', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 2, 'PCT14-key-function': 51, 'description': 'Eltako relay', 'address_count': 1},
-    {'hw-type': 'FSR14_2x', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 2, 'PCT14-key-function': 51, 'description': 'Eltako relay', 'address_count': 2},
-    {'hw-type': 'FSR14_4x', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 2, 'PCT14-key-function': 51, 'description': 'Eltako relay', 'address_count': 4},
-    {'hw-type': 'FSR14M_2x', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 2, 'PCT14-key-function': 51, 'description': 'Eltako relay', 'address_count': 2},
-    {'hw-type': 'FSR14M_2x-feature', CONF_EEP: 'A5-12-01', CONF_TYPE: Platform.SENSOR, CONF_METER_TARIFFS: '[]', 'description': 'Automated meter reading - electricity / power', 'address_count': 2},
-    {'hw-type': 'F4SR14_LED', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 2, 'PCT14-key-function': 51, 'description': 'Eltako relay', 'address_count': 4},
+    # relays
+    {'hw-type': 'FMZ14', 'brand': 'Eltako', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 1, 'description': 'Relay', 'address_count': 1},
+    {'hw-type': 'FSR14', 'brand': 'Eltako', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 2, 'PCT14-key-function': 51, 'description': 'Relay', 'address_count': 1},
+    {'hw-type': 'FSR14_1x', 'brand': 'Eltako', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 2, 'PCT14-key-function': 51, 'description': 'Relay', 'address_count': 1},
+    {'hw-type': 'FSR14_2x', 'brand': 'Eltako', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 2, 'PCT14-key-function': 51, 'description': 'Relay', 'address_count': 2},
+    {'hw-type': 'FSR14_4x', 'brand': 'Eltako', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 2, 'PCT14-key-function': 51, 'description': 'Relay', 'address_count': 4},
+    {'hw-type': 'FSR14M_2x', 'brand': 'Eltako', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 2, 'PCT14-key-function': 51, 'description': 'Relay', 'address_count': 2},
+    {'hw-type': 'FSR14M_2x-feature', 'brand': 'Eltako', CONF_EEP: 'A5-12-01', CONF_TYPE: Platform.SENSOR, CONF_METER_TARIFFS: '[]', 'description': 'Electricity Meter', 'address_count': 2},
+    {'hw-type': 'F4SR14_LED', 'brand': 'Eltako', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 2, 'PCT14-key-function': 51, 'description': 'Relay', 'address_count': 4},
 
-    {'hw-type': 'FSB14', CONF_EEP: 'G5-3F-7F', 'sender_eep': 'H5-3F-7F', CONF_TYPE: Platform.COVER, 'PCT14-function-group': 2, 'PCT14-key-function': 31, 'description': 'Eltako cover', 'address_count': 2},
+    # covers
+    {'hw-type': 'FSB14', 'brand': 'Eltako', CONF_EEP: 'G5-3F-7F', 'sender_eep': 'H5-3F-7F', CONF_TYPE: Platform.COVER, 'PCT14-function-group': 2, 'PCT14-key-function': 31, 'description': 'Cover', 'address_count': 2},
 
-    {'hw-type': 'FHK14', CONF_EEP: 'A5-10-06', 'sender_eep': 'A5-10-06', CONF_TYPE: Platform.CLIMATE, 'PCT14-function-group': 3, 'PCT14-key-function': 65, 'description': 'Eltako heating/cooling', 'address_count': 2},
-    {'hw-type': 'F4HK14', CONF_EEP: 'A5-10-06', 'sender_eep': 'A5-10-06', CONF_TYPE: Platform.CLIMATE, 'PCT14-function-group': 3, 'PCT14-key-function': 65, 'description': 'Eltako heating/cooling', 'address_count': 4},
-    {'hw-type': 'FAE14SSR', CONF_EEP: 'A5-10-06', 'sender_eep': 'A5-10-06', CONF_TYPE: Platform.CLIMATE, 'PCT14-function-group': 3, 'PCT14-key-function': 65, 'description': 'Eltako heating/cooling', 'address_count': 2},
+    # heating and cooling
+    {'hw-type': 'FHK14', 'brand': 'Eltako', CONF_EEP: 'A5-10-06', 'sender_eep': 'A5-10-06', CONF_TYPE: Platform.CLIMATE, 'PCT14-function-group': 3, 'PCT14-key-function': 65, 'description': 'Heating/Cooling', 'address_count': 2},
+    {'hw-type': 'F4HK14', 'brand': 'Eltako', CONF_EEP: 'A5-10-06', 'sender_eep': 'A5-10-06', CONF_TYPE: Platform.CLIMATE, 'PCT14-function-group': 3, 'PCT14-key-function': 65, 'description': 'Heating/Cooling', 'address_count': 4},
+    {'hw-type': 'FAE14SSR', 'brand': 'Eltako', CONF_EEP: 'A5-10-06', 'sender_eep': 'A5-10-06', CONF_TYPE: Platform.CLIMATE, 'PCT14-function-group': 3, 'PCT14-key-function': 65, 'description': 'Heating/Cooling', 'address_count': 2},
 
-    {'hw-type': 'FSR61NP', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Eltako relay', 'address_count': 1},
-    {'hw-type': 'FSR61/8-24V UC', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Eltako relay', 'address_count': 1},
-    {'hw-type': 'FSR61-230V', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Eltako relay', 'address_count': 1},
-    {'hw-type': 'FSR61G-230V', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Eltako relay', 'address_count': 1},
-    {'hw-type': 'FSR61LN-230V', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Eltako relay', 'address_count': 1},
+    # decentralized relays
+    {'hw-type': 'FSR61NP', 'brand': 'Eltako', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Relay', 'address_count': 1},
+    {'hw-type': 'FSR61/8-24V UC', 'brand': 'Eltako', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Relay', 'address_count': 1},
+    {'hw-type': 'FSR61-230V', 'brand': 'Eltako', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Relay', 'address_count': 1},
+    {'hw-type': 'FSR61G-230V', 'brand': 'Eltako', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Relay', 'address_count': 1},
+    {'hw-type': 'FSR61LN-230V', 'brand': 'Eltako', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Relay', 'address_count': 1},
 
-    {'hw-type': 'FSB61-230V', CONF_EEP: 'G5-3F-7F', 'sender_eep': 'H5-3F-7F', CONF_TYPE: Platform.COVER, 'address_count': 1, 'description': 'Eltako cover'},
-    {'hw-type': 'FSB61NP-230V', CONF_EEP: 'G5-3F-7F', 'sender_eep': 'H5-3F-7F', CONF_TYPE: Platform.COVER, 'address_count': 1, 'description': 'Eltako cover'},
+    # decentralized covers
+    {'hw-type': 'FSB61-230V', 'brand': 'Eltako', CONF_EEP: 'G5-3F-7F', 'sender_eep': 'H5-3F-7F', CONF_TYPE: Platform.COVER, 'address_count': 1, 'description': 'Cover'},
+    {'hw-type': 'FSB61NP-230V', 'brand': 'Eltako', CONF_EEP: 'G5-3F-7F', 'sender_eep': 'H5-3F-7F', CONF_TYPE: Platform.COVER, 'address_count': 1, 'description': 'Cover'},
 ]
 
 ORG_MAPPING = {

@@ -62,6 +62,10 @@ class ImageGallery():
         return ImageGallery.get_image("Breathe-about.png", size)
 
     @classmethod
+    def get_info_icon(cls, size:tuple[int:int]=(32,32)) -> ImageTk.PhotoImage:
+        return cls.get_about_icon(size)
+
+    @classmethod
     def get_github_icon(cls, size:tuple[int:int]=(32,32)) -> ImageTk.PhotoImage:
         return ImageGallery.get_image("github_icon.png", size)
     
