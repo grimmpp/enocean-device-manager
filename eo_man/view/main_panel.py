@@ -87,6 +87,7 @@ class MainPanel():
 
         #style
         style = ttk.Style()
+        style.configure("TButton", relief="sunken", background='green')
         style_theme = 'xpnative' # 'clam'
         self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Available style themes: {ttk.Style().theme_names()}", 'log-level': 'DEBUG'})
         try:
