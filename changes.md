@@ -1,10 +1,6 @@
 # Change Log
 
-## v0.1.32 Dependency BugFix
-* Missing dependency tkScrolledFrame added
-* Added Supported Device View
-
-## v0.1.31 Improved Details View (Buggy - workaround: `pip install tkScrolledFrame==1.0.4`)
+## v0.1.33 Added Supported Device View
 * Improved template selection in Details View. 
 * Improved GUI Details View
 
