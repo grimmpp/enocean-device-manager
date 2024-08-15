@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.1.31 Dependency BugFix
+## v0.1.32 Dependency BugFix
 * Missing dependency tkScrolledFrame added
 * Added Supported Device View
 
