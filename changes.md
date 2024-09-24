@@ -1,5 +1,12 @@
 # Change Log
 
+## v0.1.34 Added more configuration templates for devices
+* Added more configuration templates for devices
+* Fixed configuration for FMZ
+* Fixed send message for fired gateways
+* Improved writing sender ids into actuators for EEP F6-02-01/02
+* Added List for supported devices.
+
 ## v0.1.33 Added Supported Device View
 * Improved template selection in Details View. 
 * Improved GUI Details View

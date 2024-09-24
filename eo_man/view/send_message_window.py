@@ -376,7 +376,11 @@ class SendMessageWindow():
     
     
     def set_sender_ids(self):
-        base_id = self.serial_controller.current_base_id
+        # not wired gateway
+        if not self.serial_controller.is_connected_gateway_device_bus():
+            base_id = self.serial_controller.current_base_id
+        else:
+            base_id = '00-00-B0-00'
         
         if self.serial_controller.current_base_id and not self.serial_controller.is_connected_gateway_device_bus():
             base_id = self.serial_controller.current_base_id
