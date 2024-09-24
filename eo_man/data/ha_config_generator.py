@@ -40,10 +40,14 @@ class HomeAssistantConfigurationGenerator():
                 return t.value
         return None
 
-    def perform_tests(self):
+    def perform_tests(self) -> str:
         device_list = [d for d in self.data_manager.devices.values() if not d.is_gateway() and d.use_in_ha]
 
-        self.test_unique_sender_ids(device_list)
+        try:
+            self.test_unique_sender_ids(device_list)
+            return None
+        except Exception as e:
+            return str(e)
 
     def test_unique_sender_ids(self, device_list:list[Device]):
         sender_ids = {}
