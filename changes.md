@@ -1,5 +1,8 @@
 # Change Log
 
+## v0.1.35 
+* eo_man can now take EEP from TeachIn telegram and pre-configure device.
+
 ## v0.1.34 Added more configuration templates for devices
 * Added more configuration templates for devices
 * Fixed configuration for FMZ

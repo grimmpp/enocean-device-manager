@@ -187,7 +187,14 @@ class Device():
     @classmethod
     def set_suggest_ha_config(cls, device, use_in_ha:bool=False):
         id = int.from_bytes( AddressExpression.parse(device.address)[0], 'big')
-        info:dict = find_device_info_by_device_type(device.device_type)
+        
+        if device.device_type not in ('', 'unknown', None):
+            info:dict = find_device_info_by_device_type(device.device_type)
+        elif device.eep not in ('', 'unknown', None):
+            info:dict = find_device_info_by_eep(device.eep)
+        else:
+            return
+
         if info is not None:
             device.use_in_ha = (device.device_type != BusObject.__name__) or use_in_ha
             device.ha_platform = info.get(CONF_TYPE, device.ha_platform)

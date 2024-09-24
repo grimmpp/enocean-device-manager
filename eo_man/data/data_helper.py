@@ -184,6 +184,12 @@ def find_device_info_by_device_type(device_type:str, eep:str=None) -> dict:
                 return i
     return {}
 
+def find_device_info_by_eep(eep:str) -> dict:
+    for i in EEP_MAPPING:
+        if CONF_EEP in i and i[CONF_EEP] == eep:
+            return i
+    return {}
+
 def is_device_description(description:str) -> bool:
     for i in EEP_MAPPING:
         if 'description' in i and i['description'] == description:

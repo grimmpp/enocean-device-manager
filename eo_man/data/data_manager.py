@@ -10,7 +10,7 @@ from .message_history import MessageHistoryEntry
 
 from eltakobus.util import AddressExpression, b2s
 from eltakobus.eep import EEP
-from eltakobus.message import RPSMessage, Regular1BSMessage, Regular4BSMessage, EltakoMessage, EltakoWrappedRPS,EltakoWrapped4BS
+from eltakobus.message import RPSMessage, Regular1BSMessage, Regular4BSMessage, EltakoMessage, EltakoWrappedRPS, EltakoWrapped4BS, TeachIn4BSMessage2
 
 class DataManager():
     """Manages EnOcean Devices"""
@@ -126,7 +126,7 @@ class DataManager():
         current_base_id:str = data['base_id']
         gateway_id:str = data['gateway_id']
 
-        if type(message) in [EltakoWrappedRPS,EltakoWrapped4BS, RPSMessage, Regular1BSMessage, Regular4BSMessage]:
+        if type(message) in [EltakoWrappedRPS,EltakoWrapped4BS, RPSMessage, Regular1BSMessage, Regular4BSMessage, TeachIn4BSMessage2]:
             # for decentral devices
             if int.from_bytes(message.address, "big") > 0X0000FFFF:
                 dev_address = b2s(message.address)
@@ -137,6 +137,14 @@ class DataManager():
                     decentralized_device = Device.get_decentralized_device_by_telegram(message)
                     self.devices[dev_address] = decentralized_device
                     self.app_bus.fire_event(AppBusEventType.UPDATE_SENSOR_REPRESENTATION, decentralized_device)
+
+                # set eep if not available
+                if type(message) == TeachIn4BSMessage2:
+                    if self.devices[dev_address].eep in ('', 'unknown', None):
+                        self.devices[dev_address].eep = b2s(message.profile)
+                        Device.set_suggest_ha_config(self.devices[dev_address])
+                        self.app_bus.fire_event(AppBusEventType.UPDATE_SENSOR_REPRESENTATION, self.devices[dev_address])
+
             
             # for bus devices
             elif current_base_id:
