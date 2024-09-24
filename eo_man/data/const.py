@@ -5,7 +5,7 @@ import logging
 
 from typing import Final
 
-from homeassistant.const import Platform
+from homeassistant.const import *
 
 DOMAIN: Final = "eltako"
 DATA_ELTAKO: Final = "eltako"

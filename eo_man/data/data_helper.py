@@ -44,8 +44,10 @@ EEP_MAPPING = [
     # metering
     {'hw-type': 'FSDG14', 'brand': 'Eltako', CONF_EEP: 'A5-12-01', CONF_TYPE: Platform.SENSOR, 'description': 'Electricity Meter', 'address_count': 1},
     {'hw-type': 'F3Z14D', 'brand': 'Eltako', CONF_EEP: 'A5-12-01', CONF_TYPE: Platform.SENSOR, 'description': 'Electricity Meter', 'address_count': 3},
+    {'hw-type': 'FSVA-230V-10A-Power-Meter', 'brand': 'Eltako', CONF_EEP: 'A5-12-01', CONF_TYPE: Platform.SENSOR, CONF_METER_TARIFFS: '[]', 'description': 'Power Meter', 'address_count': 1},
     {'hw-type': 'F3Z14D', 'brand': 'Eltako', CONF_EEP: 'A5-12-02', CONF_TYPE: Platform.SENSOR, 'description': 'Gas Meter', 'address_count': 3},
     {'hw-type': 'F3Z14D', 'brand': 'Eltako', CONF_EEP: 'A5-12-03', CONF_TYPE: Platform.SENSOR, 'description': 'Water Meter', 'address_count': 3},
+    {'hw-type': 'FWZ14_65A', 'brand': 'Eltako', CONF_EEP: 'A5-12-01', CONF_TYPE: Platform.SENSOR, CONF_METER_TARIFFS: '[]', 'description': 'Electricity Meter', 'address_count': 1},
     
     # Weather Station
     {'hw-type': 'FWG14MS', 'brand': 'Eltako', CONF_EEP: 'A5-13-01', CONF_TYPE: Platform.SENSOR, 'description': 'Weather Station Gateway', 'address_count': 1},
@@ -57,6 +59,10 @@ EEP_MAPPING = [
     {'hw-type': 'FLGTF', 'brand': 'Eltako', CONF_EEP: 'A5-04-02', CONF_TYPE: Platform.SENSOR, 'description': 'Temperature and Humidity Sensor', 'address_count': 1},
     {'hw-type': 'FLT58', 'brand': 'Eltako', CONF_EEP: 'A5-04-02', CONF_TYPE: Platform.SENSOR, 'description': 'Temperature and Humidity Sensor', 'address_count': 1},
     {'hw-type': 'FFT60', 'brand': 'Eltako', CONF_EEP: 'A5-04-02', CONF_TYPE: Platform.SENSOR, 'description': 'Temperature and Humidity Sensor', 'address_count': 1},
+    {'hw-type': 'FTFSB', 'brand': 'Eltako', CONF_EEP: 'A5-04-02', CONF_TYPE: Platform.SENSOR, 'description': 'Temperature and Humidity Sensor', 'address_count': 1},
+
+    # light sensor
+    {'hw-type': 'FHD60SB', 'brand': 'Eltako', CONF_EEP: 'A5-06-01', CONF_TYPE: Platform.SENSOR, 'description': 'Light - Twilight and daylight Sensor', 'address_count': 1},
 
     # occupancy sensor
     {'hw-type': 'FABH65S', 'brand': 'Eltako', CONF_EEP: 'A5-08-01', CONF_TYPE: Platform.SENSOR, 'description': 'Light-, Temperature-, Occupancy Sensor', 'address_count': 1},
@@ -80,7 +86,7 @@ EEP_MAPPING = [
     {'hw-type': 'FD2G14', 'brand': 'Eltako', CONF_EEP: 'A5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 1, 'PCT14-key-function': 32, 'description': 'Dali Gateway', 'address_count': 16},
 
     # relays
-    {'hw-type': 'FMZ14', 'brand': 'Eltako', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 1, 'description': 'Relay', 'address_count': 1},
+    {'hw-type': 'FMZ14', 'brand': 'Eltako', CONF_EEP: 'M5-38-08', 'sender_eep': 'F6-02-01', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 1, 'PCT14-key-function': 1, 'description': 'Relay', 'address_count': 1},
     {'hw-type': 'FSR14', 'brand': 'Eltako', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 2, 'PCT14-key-function': 51, 'description': 'Relay', 'address_count': 1},
     {'hw-type': 'FSR14_1x', 'brand': 'Eltako', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 2, 'PCT14-key-function': 51, 'description': 'Relay', 'address_count': 1},
     {'hw-type': 'FSR14_2x', 'brand': 'Eltako', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'PCT14-function-group': 2, 'PCT14-key-function': 51, 'description': 'Relay', 'address_count': 2},
@@ -98,15 +104,33 @@ EEP_MAPPING = [
     {'hw-type': 'FAE14SSR', 'brand': 'Eltako', CONF_EEP: 'A5-10-06', 'sender_eep': 'A5-10-06', CONF_TYPE: Platform.CLIMATE, 'PCT14-function-group': 3, 'PCT14-key-function': 65, 'description': 'Heating/Cooling', 'address_count': 2},
 
     # decentralized relays
-    {'hw-type': 'FSR61NP', 'brand': 'Eltako', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Relay', 'address_count': 1},
+    {'hw-type': 'FMZ61', 'brand': 'Eltako', CONF_EEP: 'M5-38-08', 'sender_eep': 'F6-02-01', CONF_TYPE: Platform.LIGHT, 'description': 'Relay', 'address_count': 1},
+    {'hw-type': 'FSR61-230V', 'brand': 'Eltako', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Relay', 'address_count': 1},
+    {'hw-type': 'FSR61NP-230V', 'brand': 'Eltako', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Relay', 'address_count': 1},
     {'hw-type': 'FSR61/8-24V UC', 'brand': 'Eltako', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Relay', 'address_count': 1},
     {'hw-type': 'FSR61-230V', 'brand': 'Eltako', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Relay', 'address_count': 1},
     {'hw-type': 'FSR61G-230V', 'brand': 'Eltako', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Relay', 'address_count': 1},
-    {'hw-type': 'FSR61LN-230V', 'brand': 'Eltako', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Relay', 'address_count': 1},
+    {'hw-type': 'FSR61LN-230V', 'brand': 'Eltako', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Relay', 'address_count': 2},
+    {'hw-type': 'FLC61NP-230V', 'brand': 'Eltako', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Relay', 'address_count': 1},
+    {'hw-type': 'FR62-230V', 'brand': 'Eltako', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Relay', 'address_count': 1},
+    {'hw-type': 'FR62NP-230V', 'brand': 'Eltako', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Relay', 'address_count': 1},
+    {'hw-type': 'FL62-230V', 'brand': 'Eltako', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Relay', 'address_count': 1},
+    {'hw-type': 'FL62NP-230V', 'brand': 'Eltako', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Relay', 'address_count': 1},
+    {'hw-type': 'FSSA-230V', 'brand': 'Eltako', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Socket Switch Actuator', 'address_count': 1},
+    {'hw-type': 'FSVA-230V-10A', 'brand': 'Eltako', CONF_EEP: 'M5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Socket Switch Actuator', 'address_count': 1},
+    
+    # decentralized dimmers
+    {'hw-type': 'FUD61NP-230V', 'brand': 'Eltako', CONF_EEP: 'A5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Light dimmer', 'address_count': 1},
+    {'hw-type': 'FUD61NPN-230V', 'brand': 'Eltako', CONF_EEP: 'A5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Light dimmer', 'address_count': 1},
+    {'hw-type': 'FD62NP-230V', 'brand': 'Eltako', CONF_EEP: 'A5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Relay', 'address_count': 1},
+    {'hw-type': 'FD62NPN-230V', 'brand': 'Eltako', CONF_EEP: 'A5-38-08', 'sender_eep': 'A5-38-08', CONF_TYPE: Platform.LIGHT, 'description': 'Relay', 'address_count': 1},
 
     # decentralized covers
     {'hw-type': 'FSB61-230V', 'brand': 'Eltako', CONF_EEP: 'G5-3F-7F', 'sender_eep': 'H5-3F-7F', CONF_TYPE: Platform.COVER, 'address_count': 1, 'description': 'Cover'},
     {'hw-type': 'FSB61NP-230V', 'brand': 'Eltako', CONF_EEP: 'G5-3F-7F', 'sender_eep': 'H5-3F-7F', CONF_TYPE: Platform.COVER, 'address_count': 1, 'description': 'Cover'},
+    {'hw-type': 'FJ62/12-36V DC', 'brand': 'Eltako', CONF_EEP: 'G5-3F-7F', 'sender_eep': 'H5-3F-7F', CONF_TYPE: Platform.COVER, 'address_count': 1, 'description': 'Cover'},
+    {'hw-type': 'FJ62NP-230V', 'brand': 'Eltako', CONF_EEP: 'G5-3F-7F', 'sender_eep': 'H5-3F-7F', CONF_TYPE: Platform.COVER, 'address_count': 1, 'description': 'Cover'},
+    {'hw-type': 'FSUD-230V', 'brand': 'Eltako', CONF_EEP: 'G5-3F-7F', 'sender_eep': 'H5-3F-7F', CONF_TYPE: Platform.COVER, 'address_count': 1, 'description': 'Cover'},
 ]
 
 ORG_MAPPING = {
@@ -116,7 +140,6 @@ ORG_MAPPING = {
 }
 
 SENSOR_MESSAGE_TYPES = [EltakoWrappedRPS, EltakoWrapped4BS, RPSMessage, Regular4BSMessage, Regular1BSMessage, EltakoMessage]
-
 
 def get_all_eep_names():
     subclasses = set()

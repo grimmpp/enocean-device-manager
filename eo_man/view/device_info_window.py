@@ -9,7 +9,6 @@ from idlelib.tooltip import Hovertip
 from tkscrolledframe import ScrolledFrame
 
 from ..data.const import *
-from homeassistant.const import *
 
 from .donation_button import DonationButton
 
@@ -55,8 +54,8 @@ class DeviceInfoWindow():
                 m.get('hw-type', ''),
                 m.get('description', ''),
                 m.get(CONF_EEP, ''),
-                m.get(CONF_TYPE, ''),
                 m.get('sender_eep', ''),
+                m.get(CONF_TYPE, ''),
                 m.get('docs', '')
             ))
             

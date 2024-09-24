@@ -67,7 +67,7 @@ class SerialController():
             return []
     
     def is_connected_gateway_device_bus(self):
-        return self.connected_gateway_type == 'FAM14' or self.connected_gateway_type == 'FGW14-USB'
+        return self.connected_gateway_type.startswith('FAM14') or self.connected_gateway_type.startswith('FGW14-USB')
 
     def _get_gateway2serial_port_mapping(self) -> dict[str:list[str]]:
         """ Lists serial port names
