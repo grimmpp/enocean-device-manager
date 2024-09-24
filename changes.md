@@ -6,6 +6,7 @@
 * Fixed send message for fired gateways
 * Improved writing sender ids into actuators for EEP F6-02-01/02
 * Added List for supported devices.
+* Configuration Checks which are made before generating Home Assistant Configuration can be ignored.
 
 ## v0.1.33 Added Supported Device View
 * Improved template selection in Details View. 

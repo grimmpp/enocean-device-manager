@@ -256,7 +256,12 @@ class MenuPresenter():
             self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'color': 'red', 'log-level': 'INFO'})
             
 
-            self.ha_conf_gen.perform_tests()
+            error = self.ha_conf_gen.perform_tests()
+            if error is not None:
+                self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': error, 'log-level': 'ERROR', 'color': 'red'})
+                if not messagebox.askyesno(title="Error in Checking Configuration Data!", message=error+"\n\nDo you want to try to continue?"):
+                    self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': 'Exporting HA Configuration cancelled by user.', 'log-level': 'INFO'})
+                    return
 
             self.ha_conf_gen.save_as_yaml_to_file(self.remember_latest_ha_config_filename)
 
