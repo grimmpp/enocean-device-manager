@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.1.35 Loading PCT14 Import
+## v0.1.35 Loading PCT14 Export
 * Loading exported data from PCT14 introduced.
 * eo_man can now take EEP from TeachIn telegram and pre-configure device.
 

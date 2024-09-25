@@ -6,7 +6,7 @@ from eltakobus.util import AddressExpression
 
 from .const import GatewayDeviceType
 from .device import Device
-from .data_helper import a2s, a2i, add_addresses, find_device_info_by_device_type
+from .data_helper import b2s, a2s, a2i, add_addresses, find_device_info_by_device_type
 
 class PCT14DataManager:
 
@@ -24,19 +24,86 @@ class PCT14DataManager:
         devices[fam14_device.external_id] = fam14_device
 
         for d in pct14_import['devices']['device']:
-            device = await cls._create_device(d, fam14_device)
-            devices[device.external_id] = device
 
-            for si in device.memory_entries:
-                s:Device = Device.get_decentralized_device_by_sensor_info(si)
-                devices[s.external_id] = s
+            dev_size = int(d['header']['addressrange']['#text'])
+            for i in range(1, dev_size+1):
 
-                if device.is_ftd14():                    
-                    s2:Device = Device.get_decentralized_device_by_sensor_info(si, device.additional_fields['second base id'])
-                    devices[s2.external_id] = s2
+                device = await cls._create_device(d, fam14_device, channel=i)
+                devices[device.external_id] = device
+
+                for si in device.memory_entries:
+                    s:Device = Device.get_decentralized_device_by_sensor_info(si)
+                    devices[s.external_id] = s
+
+                    if device.is_ftd14():                    
+                        s2:Device = Device.get_decentralized_device_by_sensor_info(si, device.additional_fields['second base id'])
+                        devices[s2.external_id] = s2
 
         return devices
 
+
+    @classmethod
+    async def write_sender_ids_into_existing_pct14_export(cls, source_filename:str, target_filename:str, devices:dict[str,Device], base_id:str):
+
+        with open(source_filename) as xml_file:
+            data_dict = xmltodict.parse(xml_file.read())
+
+        fam14_device:Device = await cls._create_fam14_device( data_dict['exchange']['rootdevice'] )
+        
+        # iterate through PCT14 devices 
+        for d in data_dict['exchange']['devices']['device']:
+
+            # interate through device channels
+            dev_size = int(d['header']['addressrange']['#text'])
+            hw_info = find_device_info_by_device_type(d['name']['#text'])
+            if hw_info == {} or 'PCT14-key-function' not in hw_info: 
+                print(f"No HW Type fond for: {d['name']['#text']}")
+                continue
+            function_id = hw_info['PCT14-key-function']
+
+            for i in range(1, dev_size+1):
+
+                # check if device is in eo_man
+                external_id = cls._get_external_id(fam14_device, i, d)
+                if external_id in devices:
+                    _d = devices[external_id]
+                    if 'sender' in _d.additional_fields and not cls._is_device_registered(_d, d, i, base_id, function_id):
+                        
+                        # check if HA sender is registered
+                        pass    # is not contained
+                        # TODO: add entries
+                    else:
+                        pass    # is registered
+                        # TODO: log existing entries
+
+        # Convert the modified dictionary back to XML
+        new_xml = xmltodict.unparse(data_dict, pretty=True)
+
+        # Write the updated XML back to a file
+        with open(target_filename, 'w') as xml_file:
+            xml_file.write(new_xml)
+
+
+    @classmethod
+    def _is_device_registered(cls, device:Device, pct14_device, channel:int, base_id:str, function_id:int):
+        if not isinstance(pct14_device['data']['rangeofid']['entry'], list):
+            return False
+        
+        ha_id = add_addresses(base_id, '00-00-00-'+device.additional_fields['sender']['id'])
+
+        for e in pct14_device['data']['rangeofid']['entry']:
+
+            is_registered = int(e['entry_channel']) & (2**(channel-1)) 
+            is_registered = is_registered and (int(e['entry_function']) == function_id)
+            is_registered = is_registered and (b2s(cls._convert_sensor_id_to_bytes(e['entry_id'])) == ha_id)
+            if is_registered:
+                return True
+        return False
+
+    @classmethod 
+    def _get_external_id(cls, fam14:Device, channel:int, xm_device:dict) -> str:
+        id = int(xm_device['header']['address']['#text']) + channel - 1
+        return add_addresses(fam14.base_id, a2s(id))
 
     @classmethod
     async def _create_device(cls, import_obj, fam14:Device, channel:int=1):
@@ -57,8 +124,17 @@ class PCT14DataManager:
         bd.version = f"{hex_version[0]}.{hex_version[1]}"
         bd.key_function = ''
         bd.comment = import_obj['description'].get('#text', '')
+        if isinstance(import_obj['channels']['channel'], list):
+            for c in import_obj['channels']['channel']:
+                if int(c['@channelnumber']) == channel and len(c['@description']) > 0:
+                    bd.comment += f" - {c['@description']}"
+        else:
+            c = import_obj['channels']['channel']
+            if int(c['@channelnumber']) == channel and len(c['@description']) > 0:
+                    bd.comment += f" - {c['@description']}"
+
         bd.bus_device = True
-        bd.external_id = add_addresses(fam14.base_id, a2s(id))
+        bd.external_id = cls._get_external_id(fam14, channel, import_obj)
 
         if 'entry' in import_obj['data']['rangeofid']:
             bd.memory_entries = cls._get_sensors_from_xml(bd, import_obj['data']['rangeofid']['entry'])
