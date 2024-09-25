@@ -14,6 +14,15 @@
             "justMyCode": false
         },
         {
+            "name": "Python: Main Window with PCT14 Data",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/eo_man",
+            "console": "integratedTerminal",
+            "args": ["-v", "--pct14_export", "${workspaceFolder}/tests/resources/20240925_PCT14_export_test.xml"],
+            "justMyCode": false
+        },
+        {
             "name": "Python: Main Window",
             "type": "debugpy",
             "request": "launch",

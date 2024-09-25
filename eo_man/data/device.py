@@ -145,10 +145,10 @@ class Device():
         bd.name = f"{bd.device_type.upper()} {bd.address}"
         if bd.is_fam14():
             bd.name = f"{bd.device_type.upper()} ({bd.external_id})"
-        if bd.is_ftd14():
-            ftd_base_id = await device.get_base_id()
-            bd.additional_fields['second base id'] = ftd_base_id
-            bd.name += f" ({ftd_base_id})"
+        # if bd.is_ftd14():
+        #     ftd_base_id = await device.get_base_id()
+        #     bd.additional_fields['second base id'] = ftd_base_id
+        #     bd.name += f" ({ftd_base_id})"
         
         if bd.dev_size > 1:
             bd.name += f" ({bd.channel}/{bd.dev_size})"

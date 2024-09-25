@@ -22,7 +22,7 @@ required = ['eltako14bus==0.0.63', 'requests==2.31.0', 'enocean==0.60.1', 'pyser
             'pyyaml', 
             'termcolor', 'strenum', 'pillow', 'numpy',
             # 'tzlocal', 
-            'tkinterhtml']
+            'tkinterhtml', 'xmltodict']
 
 
 
