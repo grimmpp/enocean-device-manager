@@ -1,5 +1,7 @@
 import os
+import asyncio
 import threading
+
 from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog
@@ -13,6 +15,7 @@ from ..controller.serial_controller import SerialController
 from ..data.device import Device
 from ..data.data_manager import DataManager
 from ..data.ha_config_generator import HomeAssistantConfigurationGenerator
+from ..data.pct14_data_manager import PCT14DataManager
 
 from ..icons.image_gallary import ImageGallery
 
@@ -49,6 +52,11 @@ class MenuPresenter():
                               compound=LEFT,
                               command=self.import_from_file, 
                               accelerator="Ctrl+I")
+        file_menu.add_separator()
+        file_menu.add_command(label="Load PCT14 Export...", 
+                              image=ImageGallery.get_pct14_icon(size=(16,16)),
+                              compound=LEFT,
+                              command=self.load_pct14_export)
         file_menu.add_separator()
         ha_icon = ImageGallery.get_ha_logo(size=(16,16))
         file_menu.add_command(label="Export Home Assistant Configuration", 
@@ -304,3 +312,29 @@ class MenuPresenter():
         if self.send_message_window is None:
             self.send_message_window = SendMessageWindow(self.main, self.app_bus, self.data_manager, self.serial_controller)
         self.send_message_window.show_window()
+
+    def load_pct14_export(self):
+        
+        initial_dir = os.path.expanduser('~')
+        filename = filedialog.askopenfilename(initialdir=os.path.expanduser('~'), 
+                                              title="Load PCT14 Export",
+                                                filetypes=[("PCT14 Export", "*.xml")],
+                                                defaultextension=".xml")
+        
+        if not filename:
+            return None
+
+        def load():
+            try:
+                devices = asyncio.run( PCT14DataManager.get_devices_from_pct14(filename))
+                self.data_manager.load_devices(devices)
+
+            except Exception as e:
+                msg = f"Loading PCT14 Export '{filename}' failed!"
+                self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
+                logging.exception(msg, exc_info=True)
+
+        t = threading.Thread(target=load)
+        t.start()
+
+        return filename

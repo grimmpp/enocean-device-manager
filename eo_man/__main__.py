@@ -1,6 +1,7 @@
 import sys
 import os
 import argparse
+import asyncio
 from typing import Final
 from logging.handlers import RotatingFileHandler
 
@@ -18,6 +19,7 @@ load_dep_homeassistant()
 
 from .data.app_info import ApplicationInfo
 from .data.data_manager import DataManager
+from .data.pct14_data_manager import PCT14DataManager
 from .data.ha_config_generator import HomeAssistantConfigurationGenerator
 from .view.main_panel import MainPanel
 from .controller.app_bus import AppBus, AppBusEventType
@@ -33,6 +35,7 @@ Home Assistant Configurations for the Home Assistant Eltako Integration (https:/
     p.add_argument('-v', '--verbose', help="Logs all messages.", action='count', default=0)
     p.add_argument('-c', "--app_config", help="Filename of stored application configuration. Filename must end with '.eodm'.", default=None)
     p.add_argument('-ha', "--ha_config", help="Filename for Home Assistant Configuration for Eltako Integration. By passing the filename it will disable the GUI and only generate the Home Assistant Configuration file.")
+    p.add_argument('-pct14', '--pct14_export', help="Load PCT14 exported file. Filename must end with .xml")
     return p.parse_args()
 
 
@@ -91,6 +94,10 @@ def main():
     elif opts.app_config:
        e = {'msg': f"Invalid filename {opts.app_config}. It must end with '.eodm'", 'color': 'darkred'}
        app_bus.fire_event(AppBusEventType.LOG_MESSAGE, e)
+    elif opts.pct14_export and opts.pct14_export.endswith('.xml'):
+        e = {'msg': f"Initially load exported data from PCT14 {opts.pct14_export}", 'color': 'darkred'}
+        devices = asyncio.run( PCT14DataManager.get_devices_from_pct14(opts.pct14_export) )
+        data_manager.load_devices(devices)
 
     # generate home assistant config instead of starting GUI
     if opts.app_config and opts.app_config.endswith('.eodm') and opts.ha_config:

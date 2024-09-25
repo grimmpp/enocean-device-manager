@@ -177,11 +177,25 @@ def a2s(address:int, length:int=4):
 
 def find_device_info_by_device_type(device_type:str, eep:str=None) -> dict:
     for i in EEP_MAPPING:
-        if i['hw-type'] == device_type:
+        hw_type = str(i['hw-type']).replace('-', '_').upper()
+        dev_type = device_type.replace('-', '_').upper()
+        #remove unimportant parts
+        for c in ['/']:
+            index = dev_type.find(c)
+            if index != -1:
+                dev_type = dev_type[:index]
+
+        if hw_type == dev_type:
             if eep is None:
                 return i
             elif i[CONF_EEP] == eep:
                 return i
+    return {}
+
+def find_device_info_by_eep(eep:str) -> dict:
+    for i in EEP_MAPPING:
+        if CONF_EEP in i and i[CONF_EEP] == eep:
+            return i
     return {}
 
 def is_device_description(description:str) -> bool:
@@ -207,7 +221,7 @@ def get_name_from_key_function_name(kf: KeyFunction) -> str:
         return substr
     return ""
 
-def a2i(address:str):
+def a2i(address:str) -> int:
     return int.from_bytes(AddressExpression.parse(address)[0], 'big')
 
 class BusObjectHelper():
