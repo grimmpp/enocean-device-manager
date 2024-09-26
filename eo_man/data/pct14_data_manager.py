@@ -19,7 +19,7 @@ class PCT14DataManager:
             import_data = xmltodict.parse(file.read())
             pct14_import = import_data['exchange']
 
-
+        # detect fam14 first
         fam14_device:Device = await cls._create_fam14_device( pct14_import['rootdevice'] )
         devices[fam14_device.external_id] = fam14_device
 
@@ -157,7 +157,14 @@ class PCT14DataManager:
 
     @classmethod
     def _convert_xml_baseid(cls, xml_baseid):
-        return f"{format(int(xml_baseid['baseid_byte_0']),'X')}-{format(int(xml_baseid['baseid_byte_1']),'X')}-{format(int(xml_baseid['baseid_byte_2']),'X')}-{format(int(xml_baseid['baseid_byte_3']),'X')}"
+        numbers = []
+        for i in range(0,4):
+            number = format(int(xml_baseid['baseid_byte_'+str(i)]),'X')
+            if len(number) == 1: number = '0'+number
+            numbers.append(number)
+        return '-'.join(numbers)
+
+        # return f"{}-{format(int(xml_baseid['baseid_byte_1']),'2X')}-{format(int(xml_baseid['baseid_byte_2']),'2X')}-{format(int(xml_baseid['baseid_byte_3']),'2X')}"
 
     @classmethod
     async def _create_fam14_device(cls, import_obj):
