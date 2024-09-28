@@ -46,8 +46,22 @@ If you need to change device data manually ensure the following info are set so 
 
 <img src="./eo_man_device_data.png" />
 
+
+### Support of different Gateway than FAM14 or FGW14-USB
+If you want to use another gateway instead of FAM14 or FGW14-USB, you need to plug it into your PC as well and connect it once in eo_man so that it just knows it and can read its address.
+
+### Write Sender Ids into Actuators
+In order to make your actuators react on switches in Home Assistant they need to be teached-in. For bus devices it is quite simple you just need to connect with FAM14 again and select the gateway you cant to use in conjunction with Home Assistant later on and push the button 'Write to devices'.
+Alternatively and for decentralized devices you need to push the teach-in button in Home Assistant. See docs [here](https://github.com/grimmpp/home-assistant-eltako/tree/main/docs/teach_in_buttons).
+
+In the following example an USB300 is used for Home Assistant and its addresses are teached-in automatically into the bus devices. Decentralized devices need to be teached-in manually like described in the liked docs above. 
+
+<img src="./eo_man_write_to_devices.png" />
+
 ### Generate Home Assistant Configuration
 To generate the configuration push e.g. the HA shortcut button in the left upper bar or in the `File` menu you can find the button as well.
+
+It automatically creates for all known devices configurations. Don't be confused if you don't need them. You can actually copy all to Home Assistant and then just choose the gateway you want to use. All other configuration will be ignored. 
 
 <img src="./eo_man_HA_button.png" />
 
