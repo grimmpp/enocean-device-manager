@@ -175,15 +175,20 @@ def a2s(address:int, length:int=4):
     
     return b2s( address.to_bytes(length, byteorder = 'big') )
 
+def build_unique_name_for_device_type(device_type:str)->str:
+    dev_type = device_type.replace('-', '_').upper()
+    #remove unimportant parts
+    for c in ['/']:
+        index = dev_type.find(c)
+        if index != -1:
+            dev_type = dev_type[:index]
+
+    return dev_type
+
 def find_device_info_by_device_type(device_type:str, eep:str=None) -> dict:
     for i in EEP_MAPPING:
         hw_type = str(i['hw-type']).replace('-', '_').upper()
-        dev_type = device_type.replace('-', '_').upper()
-        #remove unimportant parts
-        for c in ['/']:
-            index = dev_type.find(c)
-            if index != -1:
-                dev_type = dev_type[:index]
+        dev_type = build_unique_name_for_device_type(device_type)
 
         if hw_type == dev_type:
             if eep is None:
@@ -251,3 +256,15 @@ def print_memory_entires(sensors: list[SensorInfo]) -> None:
         s:SensorInfo = _s
         print(f"{s.memory_line}: {b2s(s.sensor_id, ' ')} {hex(s.key)} {hex(s.key_func)} {hex(s.channel)} (FG: {s.in_func_group})")
         
+
+def get_all_device_classes(cls=BusObject):
+    subclasses = cls.__subclasses__()  # Get immediate subclasses
+    for subclass in subclasses:
+        subclasses.extend(get_all_device_classes(subclass))  # Recursively add subclasses
+    return subclasses
+
+def find_device_class_by_name(name:str) -> BusObject:
+    for dc in get_all_device_classes():
+        if build_unique_name_for_device_type(dc.__name__) == build_unique_name_for_device_type(name):
+            return dc
+    return None

@@ -1,5 +1,11 @@
 # Change Log
 
+## v0.1.36 Added Extending PCT14 Export
+* Changed package build description from setup.py to toml
+* Added install scripts for windows
+* Added install script for ubuntu (detecting of gateway devices is still not working under linux)
+* Added extending PCT14 export
+
 ## v0.1.35 Loading PCT14 Export
 * Loading exported data from PCT14 introduced.
 * eo_man can now take EEP from TeachIn telegram and pre-configure device.

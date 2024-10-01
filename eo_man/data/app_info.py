@@ -1,4 +1,5 @@
 import os
+import tomli
 import requests
 
 class ApplicationInfo():
@@ -11,6 +12,24 @@ class ApplicationInfo():
     def get_app_info(cls, filename:str=None):
         
         if not cls.app_info:
+
+            app_info = {}
+            parent_folder = os.path.join(os.path.dirname(__file__), '..')
+            pyproject_file = os.path.join(parent_folder, 'pyproject.toml')
+            if not os.path.isfile(pyproject_file):
+                pyproject_file = os.path.join(parent_folder, '..', 'pyproject.toml')
+                if not os.path.isfile(pyproject_file):
+                    pyproject_file = None
+                
+            if pyproject_file:
+                with open(pyproject_file, "rb") as f:
+                    pyproject_data = tomli.load(f)
+                app_info['version'] = pyproject_data["project"]["version"]
+                app_info['name'] = pyproject_data["project"]["name"]
+                app_info['author'] = ', '.join([ f"{a.get('name')} {a.get('email', '')}".strip() for a in pyproject_data["project"]["authors"]])
+                app_info['home-page'] = pyproject_data["project"]["urls"]["Homepage"]
+                app_info['license'] = pyproject_data["project"]["license"]["text"]
+
             if not filename:
                 parent_folder = os.path.join(os.path.dirname(__file__), '..', '..')
                 for f in os.listdir(parent_folder):
@@ -24,7 +43,6 @@ class ApplicationInfo():
                             filename = os.path.join(parent_folder, f, 'PKG-INFO')
                             break
             
-            app_info = {}
             if filename and os.path.isfile(filename):
                 with open(filename, 'r', encoding='utf-8') as file:
                     for l in file.readlines():
@@ -43,14 +61,17 @@ class ApplicationInfo():
                         elif l.startswith('Requires-Python:'):
                             app_info['requires-python'] = l.split(':',1)[1].strip()
 
-                # get latest version
-                cls.pypi_info_latest_versino = cls._get_info_from_pypi()
-                app_info['lastest_available_version'] = cls.pypi_info_latest_versino.get('info', {}).get('version', None)
-                # get current/installed version
-                if app_info['version'] is not None and app_info['version'] != '':
-                    cls.pypi_info_current_version = cls._get_info_from_pypi(app_info['version'])
             
-        return app_info
+            # get latest version
+            cls.pypi_info_latest_versino = cls._get_info_from_pypi()
+            app_info['lastest_available_version'] = cls.pypi_info_latest_versino.get('info', {}).get('version', None)
+            # get current/installed version
+            if app_info['version'] is not None and app_info['version'] != '':
+                cls.pypi_info_current_version = cls._get_info_from_pypi(app_info['version'])
+
+            cls.app_info = app_info
+            
+        return cls.app_info
                         
     @classmethod
     def _get_info_from_pypi(cls, version:str=''):
