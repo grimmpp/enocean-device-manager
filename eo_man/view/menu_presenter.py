@@ -57,6 +57,10 @@ class MenuPresenter():
                               image=ImageGallery.get_pct14_icon(size=(16,16)),
                               compound=LEFT,
                               command=self.load_pct14_export)
+        file_menu.add_command(label="Extend existing PCT14 Export...", 
+                              image=ImageGallery.get_pct14_icon(size=(16,16)),
+                              compound=LEFT,
+                              command=self.extend_pct14_export)
         file_menu.add_separator()
         ha_icon = ImageGallery.get_ha_logo(size=(16,16))
         file_menu.add_command(label="Export Home Assistant Configuration", 
@@ -314,8 +318,6 @@ class MenuPresenter():
         self.send_message_window.show_window()
 
     def load_pct14_export(self):
-        
-        initial_dir = os.path.expanduser('~')
         filename = filedialog.askopenfilename(initialdir=os.path.expanduser('~'), 
                                               title="Load PCT14 Export",
                                                 filetypes=[("PCT14 Export", "*.xml")],
@@ -338,3 +340,30 @@ class MenuPresenter():
         t.start()
 
         return filename
+    
+    def extend_pct14_export(self):
+        source_filename = filedialog.askopenfilename(initialdir=os.path.expanduser('~'), 
+                                              title="Extend existing PCT14 Export",
+                                              filetypes=[("PCT14 Export", "*.xml")],
+                                              defaultextension=".xml")        
+        if not source_filename:
+            return None
+
+        def load():
+            try:
+                target_filename = source_filename.replace('.xml', '_extended.xml')
+                asyncio.run( PCT14DataManager.write_sender_ids_into_existing_pct14_export(
+                    source_filename, target_filename, 
+                    self.data_manager.devices,
+                    HomeAssistantConfigurationGenerator.LOCAL_SENDER_OFFSET_ID))
+
+                msg = f"Extended PCT14 Export '{target_filename}'!"
+                self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'INFO', 'color': 'green'})
+
+            except Exception as e:
+                msg = f"Extend PCT14 Export '{target_filename}' failed!"
+                self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
+                logging.exception(msg, exc_info=True)
+
+        t = threading.Thread(target=load)
+        t.start()

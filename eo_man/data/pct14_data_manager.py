@@ -1,9 +1,13 @@
 import xmltodict
 import json
 
-from eltakobus.device import FAM14, SensorInfo
+from eltakobus.device import *
 from eltakobus.util import AddressExpression
 
+from .. import LOGGER
+from . import data_helper
+
+from .ha_config_generator import HomeAssistantConfigurationGenerator
 from .const import GatewayDeviceType
 from .device import Device
 from .data_helper import b2s, a2s, a2i, add_addresses, find_device_info_by_device_type
@@ -68,13 +72,10 @@ class PCT14DataManager:
                 if external_id in devices:
                     _d = devices[external_id]
                     if 'sender' in _d.additional_fields and not cls._is_device_registered(_d, d, i, base_id, function_id):
-                        
                         # check if HA sender is registered
-                        pass    # is not contained
-                        # TODO: add entries
+                        cls._add_ha_sender_id_into_pct14_xml(base_id, d, d['data']['rangeofid']['entry'], _d)
                     else:
-                        pass    # is registered
-                        # TODO: log existing entries
+                        LOGGER.debug(f"PCT14 Export Extender: device {_d.name} ('{_d.external_id}' already registered in actuator {d['name']['#text']})")
 
         # Convert the modified dictionary back to XML
         new_xml = xmltodict.unparse(data_dict, pretty=True)
@@ -82,7 +83,42 @@ class PCT14DataManager:
         # Write the updated XML back to a file
         with open(target_filename, 'w') as xml_file:
             xml_file.write(new_xml)
+        LOGGER.debug(f"PCT14 Export Extender: process completed.")
 
+    @classmethod
+    def _add_ha_sender_id_into_pct14_xml(cls, base_id, xml_device, xml_entries, device: Device):
+        index_range = data_helper.find_device_class_by_name(xml_device['name']['#text']).sensor_address_range
+        free_index = -1
+        for i in index_range:
+            free_index = i
+            for n in xml_entries:
+                if int(n['entry_number']) == i:
+                    free_index = -1
+                    break
+            if free_index > -1:
+                break
+            
+        sender_id = device.additional_fields['sender']['id']
+        if free_index > -1:
+            xml_entries.append({
+                'entry_number': free_index,
+                'entry_id': cls._get_sender_id(base_id, sender_id),
+                'entry_function': device.key_function,
+                'entry_button': 0,
+                'entry_channel': device.channel,
+                'entry_value': 0
+            })
+            LOGGER.debug(f"PCT14 Export Extender: Added sender id '{sender_id}' to PCT14 export for device {device.name} '{device.external_id}'.")
+        else:
+            LOGGER.warning(f"PCT14 Export Extender:  Cannot add sender id '{sender_id}' entry into device  {device.name} '{device.external_id}'.")
+
+    @classmethod
+    def _get_sender_id(cls, base_id: str, sender_id:str):
+        sender_offset_id = base_id
+        str_id = data_helper.a2s( int(sender_id, base=16) + data_helper.a2i(sender_offset_id) )
+        int_id = int(''.join(str_id.split('-')[::-1]), base=16)
+        return int_id
+            
 
     @classmethod
     def _is_device_registered(cls, device:Device, pct14_device, channel:int, base_id:str, function_id:int):

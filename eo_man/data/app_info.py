@@ -24,8 +24,8 @@ class ApplicationInfo():
             if pyproject_file:
                 with open(pyproject_file, "rb") as f:
                     pyproject_data = tomli.load(f)
-                app_info['version'] = pyproject_data["project"]["name"]
-                app_info['name'] = pyproject_data["project"]["version"]
+                app_info['version'] = pyproject_data["project"]["version"]
+                app_info['name'] = pyproject_data["project"]["name"]
                 app_info['author'] = ', '.join([ f"{a.get('name')} {a.get('email', '')}".strip() for a in pyproject_data["project"]["authors"]])
                 app_info['home-page'] = pyproject_data["project"]["urls"]["Homepage"]
                 app_info['license'] = pyproject_data["project"]["license"]["text"]
