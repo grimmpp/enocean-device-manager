@@ -21,6 +21,9 @@ dependencies = [
     "requests>=2.20.0"
 ]
 
+[project.urls]
+"Homepage" = "https://github.com/grimmpp/enocean-device-manager"
+
 [tool.setuptools]
 include-package-data = true  # Enables package data inclusion
 
@@ -33,7 +36,5 @@ include-package-data = true  # Enables package data inclusion
     "../changes.md",
     "../demo.eodm",
     "../eo_man.bat",
+    "../requirements.txt"
 ]
-
-[project.urls]
-"Homepage" = "https://github.com/grimmpp/enocean-device-manager"
