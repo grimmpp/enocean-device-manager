@@ -81,7 +81,7 @@ class DeviceTable():
         # self.menu.add_separator()
         # self.menu.add_command(label="Rename")
 
-        self.treeview.tag_configure('related_devices', background='lightgreen')
+        self.treeview.tag_configure('related_devices')
         self.treeview.tag_configure('blinking', background='lightblue')
 
         # self.treeview.bind('<ButtonRelease-1>', self.on_selected)
