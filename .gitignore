@@ -8,6 +8,8 @@
 # dependencies
 src
 
+installed_official_eo_man
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
