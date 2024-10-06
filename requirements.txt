@@ -15,3 +15,4 @@ zeroconf==0.132.2
 tkScrolledFrame==1.0.4
 xmltodict
 tomli
+tk

@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=42", "wheel"]
+requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "eo_man"
-version = "0.1.36"
+version = "0.1.37"
 description = "Tool to managed EnOcean Devices and to generate Home Assistant Configuration."
 readme = "README.md"
 requires-python = ">=3.7"
@@ -28,13 +28,7 @@ dependencies = [
 include-package-data = true  # Enables package data inclusion
 
 [tool.setuptools.package-dir]
-"my_package" = "eo_man"
+"eo_man" = "eo_man"
 
 [tool.setuptools.package-data]
-"my_package" = [
-    "../docs/**",
-    "../changes.md",
-    "../demo.eodm",
-    "../eo_man.bat",
-    "../requirements.txt"
-]
+"eo_man" = ["icons/*.png", "icons/*.bmp", "icons/*.ico", "icons/*.jpg"]

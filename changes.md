@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.1.37 Fixed new packaging
+* Fixed missing files in 0.1.36
+* Green background removed from buttons in toolbar
+
 ## v0.1.36 Added Extending PCT14 Export
 * Changed package build description from setup.py to toml
 * Added install scripts for windows
