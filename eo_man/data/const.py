@@ -81,13 +81,27 @@ PLATFORMS: Final = [
 ]
 
 class GatewayDeviceType(str, Enum):
+    GatewayEltakoFAM14 = 'fam14'
+    GatewayEltakoFGW14USB = 'fgw14usb'
+    GatewayEltakoFAMUSB = 'fam-usb'     # ESP2 transceiver: https://www.eltako.com/en/product/professional-standard-en/three-phase-energy-meters-and-one-phase-energy-meters/fam-usb/
+    EltakoFTD14 = 'ftd14'
+    EnOceanUSB300 = 'enocean-usb300'
     EltakoFAM14 = 'fam14'
     EltakoFGW14USB = 'fgw14usb'
-    EltakoFAMUSB = 'fam-usb'     # ESP2 transceiver: https://www.eltako.com/en/product/professional-standard-en/three-phase-energy-meters-and-one-phase-energy-meters/fam-usb/
-    EltakoFTD14 = 'ftd14'
+    EltakoFAMUSB = 'fam-usb'
     USB300 = 'enocean-usb300'
     ESP3 = 'esp3-gateway'
     LAN = 'mgw-lan'
+    LAN_ESP2 = "lan-gw-esp2"
+    VirtualNetworkAdapter = 'virtual-network-adapter'
+
+    @classmethod
+    def indexOf(cls, value):
+        return list(cls).index(value)
+    
+    @classmethod
+    def get_by_index(cls, index):
+        return list(cls)[index]
 
     @classmethod
     def find(cls, value):
@@ -123,6 +137,7 @@ GATEWAY_DISPLAY_NAMES = {
     GatewayDeviceType.USB300: 'ESP3 Gateway',
     GatewayDeviceType.ESP3: 'ESP3 Gateway',
     GatewayDeviceType.LAN: 'LAN Gateway (ESP3)',
+    GatewayDeviceType.LAN_ESP2: "Home Assistant - Virtual Gateway Adapter",
 }
 
 def get_display_names():

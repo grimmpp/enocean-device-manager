@@ -1,5 +1,7 @@
 # Change Log
 
+## v0.1.38 Remote detection of messages and gateways in Home Assistant
+
 ## v0.1.37 Fixed new packaging
 * Fixed missing files in 0.1.36
 * Green background removed from buttons in toolbar

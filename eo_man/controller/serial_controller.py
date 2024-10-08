@@ -19,6 +19,9 @@ from eltakobus.message import Regular4BSMessage
 
 from esp2_gateway_adapter.esp3_serial_com import ESP3SerialCommunicator
 from esp2_gateway_adapter.esp3_tcp_com import TCP2SerialCommunicator, detect_lan_gateways
+from esp2_gateway_adapter.esp2_tcp_com import ESP2TCP2SerialCommunicator
+
+from ..data.const import GatewayDeviceType
 
 from ..data import data_helper
 from ..data.device import Device
@@ -63,6 +66,8 @@ class SerialController():
             return self.port_mapping[GDT.USB300.value]
         elif device_type == GDN[GDT.LAN]:
             return self.port_mapping[GDT.LAN]
+        elif device_type == GDN[GDT.LAN_ESP2]:
+            return "homeassistant.local"
         else:
             return []
     
@@ -179,10 +184,21 @@ class SerialController():
     def is_fam14_connection_active(self) -> bool:
         return self.is_serial_connection_active() and self._serial_bus.suppress_echo
 
-    def _received_serial_event(self, message) -> None:
+    def _received_serial_event(self, message: ESP2Message) -> None:
+        if message.body[:2] == b'\x8b\x98':
+            base_id = b2s(message.body[2:6])
+            gw_type = GDT.get_by_index(message.body[6])
+
+            asyncio.run( self.app_bus.async_fire_event(AppBusEventType.ASYNC_TRANSCEIVER_DETECTED, {'type': GDN[gw_type], 
+                                                                                                    'base_id': base_id, 
+                                                                                                    'gateway_id': base_id,
+                                                                                                    'tcm_version': '', 
+                                                                                                    'api_version': ''}) )
+
         if isinstance(message.address, int):
              message.address = message.address.to_bytes(4, 'big')
 
+        # for virtual network gateway check which gateway is really sending
         self.app_bus.fire_event(AppBusEventType.SERIAL_CALLBACK, {'msg': message, 
                                                                   'base_id': self.current_base_id,
                                                                   'gateway_id': self.gateway_id})
@@ -210,6 +226,10 @@ class SerialController():
                                                               esp2_translation_enabled=True,
                                                               auto_reconnect=False
                                                               )
+                elif device_type == GDN[GDT.LAN_ESP2]:
+                    self._serial_bus = ESP2TCP2SerialCommunicator(serial_port, 12345,
+                                                                  callback=self._received_serial_event,
+                                                                  auto_reconnect=False)
                 else:
                     self._serial_bus = RS485SerialInterfaceV2(serial_port, 
                                                               baud_rate=baudrate, 
