@@ -195,7 +195,10 @@ class SerialConnectionBar():
         else:
             self.b_connect.config(text="Connect", state=NORMAL)
             self.b_detect.config(state=NORMAL)
-            self.cb_serial_ports.config(state="readonly")
+            if self.cb_device_type.get() in [GDN[GatewayDeviceType.LAN], GDN[GatewayDeviceType.LAN_ESP2]]:
+                self.cb_serial_ports.config(state=NORMAL)
+            else:
+                self.cb_serial_ports.config(state='readonly')
             self.cb_device_type.config(state="readonly")
             self.b_scan.config(state=DISABLED)
             self.b_sync_ha_sender.config(state=DISABLED)
