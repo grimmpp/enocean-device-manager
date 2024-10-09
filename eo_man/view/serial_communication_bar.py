@@ -16,6 +16,7 @@ from eltakobus.eep import *
 from eltakobus.util import *
 
 from ..data.const import get_display_names, GATEWAY_DISPLAY_NAMES, GatewayDeviceType
+from ..data.const import GATEWAY_DISPLAY_NAMES as GDN
 
 class SerialConnectionBar():
 

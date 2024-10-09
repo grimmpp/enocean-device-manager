@@ -7,7 +7,7 @@ from typing import Iterator
 from termcolor import colored
 import logging
 import threading
-
+import socket
 
 import serial.tools.list_ports
 from serial.tools.list_ports_common import ListPortInfo
@@ -29,6 +29,7 @@ from ..data.const import GatewayDeviceType as GDT, GATEWAY_DISPLAY_NAMES as GDN
 
 from .app_bus import AppBusEventType, AppBus
 
+from zeroconf import Zeroconf, ServiceBrowser, ServiceInfo
 
 class SerialController():
 
@@ -41,20 +42,62 @@ class SerialController():
         self.current_base_id:str = None
         self.gateway_id:str = None
         self.port_mapping = None
+        
+        self.service_reg_lan_gw = {}
+        self.service_reg_virt_lan_gw = {}
+        self.start_service_discovery()
 
         self.app_bus.add_event_handler(AppBusEventType.WINDOW_CLOSED, self.on_window_closed)
     
+    def __del__(self):
+        self.zeroconf.close()
+
+    def add_service(self, zeroconf: Zeroconf, type, name):
+        try:
+            info:ServiceInfo = zeroconf.get_service_info(type, name)
+            obj = {'name': name, 'type': type, 'address': socket.inet_ntoa(info.addresses[0]), 'port': info.port, 'hostname': info.server}
+            msg = f"Detected Network Service: {name}, type: {type}, address: {obj['address']}, port: {obj['address']}, hostname: {obj['address']}"
+            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'INFO', 'color': 'grey'})
+            if 'SmartConn' in name:
+                self.service_reg_lan_gw[name] = obj
+            elif 'Virtual-Network-Gateway-Adapter' in name:
+                self.service_reg_virt_lan_gw[name] = obj
+        except:
+            pass
+
+    def remove_service(self, zeroconf, type, name):
+        if name in self.service_reg_lan_gw[name]:
+            del self.service_reg_lan_gw[name]
+        if name in self.service_reg_virt_lan_gw[name]:
+            del self.service_reg_virt_lan_gw[name]
+
+    def update_service(self, zeroconf, type, name):
+        pass
+
+    def start_service_discovery(self):
+        self.zeroconf = Zeroconf()
+        ServiceBrowser(self.zeroconf, "_bsc-sc-socket._tcp.local.", self)
+
 
     def on_window_closed(self, data) -> None:
         self.kill_serial_connection_before_exit()
 
 
-
+    def get_virtual_network_gateway_service_endpoints(self):
+        return [f"{s['hostname'][:-1]}:{s['port']}"  for s in self.service_reg_virt_lan_gw.values()]
+    
+    def get_lan_gateway_endpoints(self):
+        return [f"{s['address']}:{s['port']}"  for s in self.service_reg_lan_gw.values()]
 
     def get_serial_ports(self, device_type:str, force_reload:bool=False) ->list[str]:
+        
+        if device_type == GDN[GDT.LAN]:
+            return self.get_lan_gateway_endpoints()
+        elif device_type == GDN[GDT.LAN_ESP2]:
+            return self.get_virtual_network_gateway_service_endpoints()
+        
         if force_reload or self.port_mapping is None:
             self.port_mapping = self._get_gateway2serial_port_mapping()
-            self.port_mapping[GDT.LAN] = detect_lan_gateways()
 
         if device_type == GDN[GDT.EltakoFAM14]:
             return self.port_mapping[GDT.EltakoFAM14.value]
@@ -64,10 +107,6 @@ class SerialController():
             return self.port_mapping[GDT.EltakoFAMUSB.value]
         elif device_type == GDN[GDT.USB300]:
             return self.port_mapping[GDT.USB300.value]
-        elif device_type == GDN[GDT.LAN]:
-            return self.port_mapping[GDT.LAN]
-        elif device_type == GDN[GDT.LAN_ESP2]:
-            return "homeassistant.local"
         else:
             return []
     
@@ -214,8 +253,9 @@ class SerialController():
         try:
             if not self.is_serial_connection_active():
                 if device_type == GDN[GDT.LAN]:
-                    baudrate=5100
-                    self._serial_bus = TCP2SerialCommunicator(serial_port, 5100,
+                    ip_address = serial_port[:serial_port.rfind(':')]
+                    port = int(serial_port[serial_port.rfind(':')+1:])
+                    self._serial_bus = TCP2SerialCommunicator(ip_address, port,
                                                               callback=self._received_serial_event,
                                                               esp2_translation_enabled=True,
                                                               auto_reconnect=False
@@ -227,7 +267,9 @@ class SerialController():
                                                               auto_reconnect=False
                                                               )
                 elif device_type == GDN[GDT.LAN_ESP2]:
-                    self._serial_bus = ESP2TCP2SerialCommunicator(serial_port, 12345,
+                    ip_address = serial_port[:serial_port.rfind(':')]
+                    port = int(serial_port[serial_port.rfind(':')+1:])
+                    self._serial_bus = ESP2TCP2SerialCommunicator(ip_address, port,
                                                                   callback=self._received_serial_event,
                                                                   auto_reconnect=False)
                 else:
@@ -244,8 +286,8 @@ class SerialController():
                 
                 if self._serial_bus.is_active():
                     self.connected_gateway_type = device_type
-                    if device_type == GDN[GDT.LAN]:
-                        msg = f"TCP to Serial connection established. Server: {serial_port}:5100"
+                    if device_type in [GDN[GDT.LAN], GDN[GDT.LAN_ESP2] ]:
+                        msg = f"TCP to Serial connection established. Server: {serial_port}"
                     else:
                         msg = f"Serial connection established. serial port: {serial_port}, baudrate: {baudrate}"
                     self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'color':'green'})
@@ -275,7 +317,7 @@ class SerialController():
                 else:
                     self.app_bus.fire_event(AppBusEventType.CONNECTION_STATUS_CHANGE, {'serial_port':  serial_port, 'baudrate': baudrate, 'connected': False})
                     if device_type == GDN[GDT.LAN]:
-                        msg = f"Couldn't establish connection to {serial_port}:5100! Try to restart device."
+                        msg = f"Couldn't establish connection to {serial_port}! Try to restart device."
                     else:
                         msg = f"Establish connection for {device_type} on port {serial_port} failed! Device not ready."
                     self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
@@ -285,7 +327,7 @@ class SerialController():
             self.connected_gateway_type = None
             self.app_bus.fire_event(AppBusEventType.CONNECTION_STATUS_CHANGE, {'serial_port':  serial_port, 'baudrate': baudrate, 'connected': False})
             if device_type == GDN[GDT.LAN]:
-                msg = f"Establish connection for {device_type} to {serial_port}:5100 failed! Retry later."
+                msg = f"Establish connection for {device_type} to {serial_port} failed! Retry later."
             else:
                 msg = f"Establish connection for {device_type} on port {serial_port} failed!"
             self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
