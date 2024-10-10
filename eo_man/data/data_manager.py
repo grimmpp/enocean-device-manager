@@ -171,9 +171,16 @@ class DataManager():
                              )
             if data['type'] == GATEWAY_DISPLAY_NAMES[GatewayDeviceType.LAN]:
                 gw_device.additional_fields['address'] = data['address']
+            
             if gw_device.external_id not in self.devices:
                 self.devices[gw_device.external_id] = gw_device
                 self.app_bus.fire_event(AppBusEventType.UPDATE_SENSOR_REPRESENTATION, gw_device)
+
+            elif data['api_version'] and data['tcm_version']:
+                gw_device = self.devices[base_id]
+                gw_device.version = f"api: {data['api_version']}, tcm: {data['tcm_version']}"
+                self.app_bus.fire_event(AppBusEventType.UPDATE_SENSOR_REPRESENTATION, gw_device)
+                
 
 
 

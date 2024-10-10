@@ -21,7 +21,7 @@ from esp2_gateway_adapter.esp3_serial_com import ESP3SerialCommunicator
 from esp2_gateway_adapter.esp3_tcp_com import TCP2SerialCommunicator, detect_lan_gateways
 from esp2_gateway_adapter.esp2_tcp_com import ESP2TCP2SerialCommunicator
 
-from ..data.const import GatewayDeviceType
+from ..data.const import GatewayDeviceType, get_gateway_type_by_name
 
 from ..data import data_helper
 from ..data.device import Device
@@ -40,6 +40,7 @@ class SerialController():
         self._serial_bus = None
         self.connected_gateway_type = None
         self.current_base_id:str = None
+        self.current_device_type:GatewayDeviceType = None
         self.gateway_id:str = None
         self.port_mapping = None
         
@@ -224,15 +225,7 @@ class SerialController():
         return self.is_serial_connection_active() and self._serial_bus.suppress_echo
 
     def _received_serial_event(self, message: ESP2Message) -> None:
-        if message.body[:2] == b'\x8b\x98':
-            base_id = b2s(message.body[2:6])
-            gw_type = GDT.get_by_index(message.body[6])
-
-            asyncio.run( self.app_bus.async_fire_event(AppBusEventType.ASYNC_TRANSCEIVER_DETECTED, {'type': GDN[gw_type], 
-                                                                                                    'base_id': base_id, 
-                                                                                                    'gateway_id': base_id,
-                                                                                                    'tcm_version': '', 
-                                                                                                    'api_version': ''}) )
+        self.detect_and_create_gateway_device(message)
 
         if isinstance(message.address, int):
              message.address = message.address.to_bytes(4, 'big')
@@ -242,9 +235,36 @@ class SerialController():
                                                                   'base_id': self.current_base_id,
                                                                   'gateway_id': self.gateway_id})
 
+    def detect_and_create_gateway_device(self, message: ESP2Message):
+        # receive base id
+        if message.body[:2] == b'\x8b\x98':
+            self.current_base_id = b2s(message.body[2:6])
+            device_type = message.body[6]
+            if device_type != 0:
+                gw_type = GDT.get_by_index(message.body[6])
+                self.current_device_type = gw_type
+
+            asyncio.run( self.app_bus.async_fire_event(AppBusEventType.ASYNC_TRANSCEIVER_DETECTED, {'type': self.current_device_type, 
+                                                                                                    'base_id': self.current_base_id, 
+                                                                                                    'gateway_id': self.current_base_id,
+                                                                                                    'tcm_version': '', 
+                                                                                                    'api_version': ''}) )
+        # receive software version 
+        if message.body[:2] == b'\x8b\x8c':
+            tcm_sw_v = '.'.join(str(n) for n in message.body[2:6])
+            api_v = '.'.join(str(n) for n in message.body[6:10])
+
+            asyncio.run( self.app_bus.async_fire_event(AppBusEventType.ASYNC_TRANSCEIVER_DETECTED, {'type': self.current_device_type, 
+                                                                                                    'base_id': self.current_base_id, 
+                                                                                                    'gateway_id': self.current_base_id,
+                                                                                                    'tcm_version': tcm_sw_v, 
+                                                                                                    'api_version': api_v}) )
+        
+
     def establish_serial_connection(self, serial_port:str, device_type:str) -> None:
         baudrate:int=57600
         delay_message:float=.1
+        self.current_device_type = get_gateway_type_by_name(device_type)
         if device_type == GDN[GDT.EltakoFAMUSB]:
             baudrate = 9600
         elif device_type == GDN[GDT.EltakoFAM14]:
@@ -360,26 +380,35 @@ class SerialController():
             self._serial_bus.set_callback( self._received_serial_event )     
 
     async def async_create_usb300_device(self):
-        try:
-            self._serial_bus.set_callback( None )
+
+        # get base id
+        data = b'\xAB\x58\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+        await self._serial_bus.send(ESP2Message(bytes(data)))
+
+        # get version
+        data = b'\xAB\x4B\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+        await self._serial_bus.send(ESP2Message(bytes(data)))
+
+        # try:
+        #     self._serial_bus.set_callback( None )
             
-            self.current_base_id = b2s(self._serial_bus.base_id)
-            self.gateway_id = self.current_base_id
+        #     self.current_base_id = b2s(self._serial_bus.base_id)
+        #     self.gateway_id = self.current_base_id
 
-            await self.app_bus.async_fire_event(AppBusEventType.ASYNC_TRANSCEIVER_DETECTED, {'type': GDN[GDT.USB300], 
-                                                                                            'base_id': self.current_base_id, 
-                                                                                            'gateway_id': self.gateway_id,
-                                                                                            'tcm_version': '', 
-                                                                                            'api_version': ''})
+        #     await self.app_bus.async_fire_event(AppBusEventType.ASYNC_TRANSCEIVER_DETECTED, {'type': GDN[GDT.USB300], 
+        #                                                                                     'base_id': self.current_base_id, 
+        #                                                                                     'gateway_id': self.gateway_id,
+        #                                                                                     'tcm_version': '', 
+        #                                                                                     'api_version': ''})
 
 
-        except Exception as e:
-            msg = 'Failed to get information about USB300 (ESP3)!!!'
-            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
-            logging.exception(msg, exc_info=True)
-            raise e
-        finally:
-            self._serial_bus.set_callback( self._received_serial_event )                    
+        # except Exception as e:
+        #     msg = 'Failed to get information about USB300 (ESP3)!!!'
+        #     self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
+        #     logging.exception(msg, exc_info=True)
+        #     raise e
+        # finally:
+        #     self._serial_bus.set_callback( self._received_serial_event )                    
 
 
     async def async_get_base_id_for_fam_usb(self, fam_usb:RS485SerialInterfaceV2, callback) -> str:
@@ -405,36 +434,44 @@ class SerialController():
 
 
     async def async_create_fam_usb_device(self):
-        try:
-            self._serial_bus.set_callback( None )
+        # get base id
+        data = b'\xAB\x58\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+        await self._serial_bus.send(ESP2Message(bytes(data)))
+
+        # get version
+        data = b'\xAB\x4B\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+        await self._serial_bus.send(ESP2Message(bytes(data)))
+
+        # try:
+        #     self._serial_bus.set_callback( None )
             
-            # get base id
-            data = b'\xAB\x58\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-            response:ESP2Message = await self._serial_bus.exchange(ESP2Message(bytes(data)), ESP2Message)
-            base_id = response.body[2:6]
-            self.current_base_id = b2s(base_id)
-            self.gateway_id = self.current_base_id
+        #     # get base id
+        #     data = b'\xAB\x58\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+        #     response:ESP2Message = await self._serial_bus.exchange(ESP2Message(bytes(data)), ESP2Message)
+        #     base_id = response.body[2:6]
+        #     self.current_base_id = b2s(base_id)
+        #     self.gateway_id = self.current_base_id
 
-            # get version
-            data = b'\xAB\x4B\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-            response:ESP2Message = await self._serial_bus.exchange(ESP2Message(bytes(data)), ESP2Message)
-            tcm_sw_v = '.'.join(str(n) for n in response.body[2:6])
-            api_v = '.'.join(str(n) for n in response.body[6:10])
+        #     # get version
+        #     data = b'\xAB\x4B\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+        #     response:ESP2Message = await self._serial_bus.exchange(ESP2Message(bytes(data)), ESP2Message)
+        #     tcm_sw_v = '.'.join(str(n) for n in response.body[2:6])
+        #     api_v = '.'.join(str(n) for n in response.body[6:10])
 
-            await self.app_bus.async_fire_event(AppBusEventType.ASYNC_TRANSCEIVER_DETECTED, {'type': GDN[GDT.EltakoFAMUSB], 
-                                                                                            'base_id': self.current_base_id, 
-                                                                                            'gateway_id': self.gateway_id,
-                                                                                            'tcm_version': tcm_sw_v, 
-                                                                                            'api_version': api_v})
+        #     await self.app_bus.async_fire_event(AppBusEventType.ASYNC_TRANSCEIVER_DETECTED, {'type': GDN[GDT.EltakoFAMUSB], 
+        #                                                                                     'base_id': self.current_base_id, 
+        #                                                                                     'gateway_id': self.gateway_id,
+        #                                                                                     'tcm_version': tcm_sw_v, 
+        #                                                                                     'api_version': api_v})
 
 
-        except Exception as e:
-            msg = 'Failed to get information about FAM-USB!!!'
-            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
-            logging.exception(msg, exc_info=True)
-            raise e
-        finally:
-            self._serial_bus.set_callback( self._received_serial_event )
+        # except Exception as e:
+        #     msg = 'Failed to get information about FAM-USB!!!'
+        #     self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
+        #     logging.exception(msg, exc_info=True)
+        #     raise e
+        # finally:
+        #     self._serial_bus.set_callback( self._received_serial_event )
 
     def stop_serial_connection(self) -> None:
         if self.is_serial_connection_active():
