@@ -12,27 +12,7 @@ from .const import *
 
 class Device():
     """Data representation of a device"""
-    static_info:dict={}
-    address:str = None
-    channel:int=None
-    dev_size:int=None
-    external_id:str=None
-    device_type:str=None
-    key_function:str=None
-    version:str=None
-    name:str=None
-    comment:str = ""
-    base_id:str=None
-    bus_device:bool=False
-    memory_entries:list[SensorInfo]=[]  # only used for bus devices
-
-    # vars for ha
-    use_in_ha:bool=False
-    ha_platform:Platform=None
-    eep:str=None
-    additional_fields:dict={}
-
-
+    
     def __init__(self, 
                  address:str=None, 
                  bus_device:bool=False,
@@ -47,18 +27,26 @@ class Device():
                  use_in_ha:bool=False,
                  memory_entries:list[SensorInfo]=[]):
         
-        self.address = address
-        self.bus_device = bus_device
-        self.channel = channel
-        self.dev_size = dev_size
-        self.external_id = external_id
-        self.device_type = device_type
-        self.version = version
-        self.name = name
-        self.comment = comment
-        self.base_id = base_id
-        self.use_in_ha = use_in_ha
-        self.memory_entries = memory_entries
+        self.address:str = address
+        self.bus_device:bool = bus_device
+        self.channel:int = channel
+        self.dev_size:int = dev_size
+        self.external_id:str = external_id
+        self.device_type:str = device_type
+        self.version:str = version
+        self.name:str = name
+        self.comment:str = comment
+        self.base_id:str = base_id
+        self.use_in_ha:bool = use_in_ha
+        self.memory_entries:list[SensorInfo] = memory_entries
+
+        self.ha_platform:Platform=None
+        self.key_function:str=None
+        self.eep:str=None
+
+        self.static_info:dict={}
+        self.additional_fields:dict={}
+
 
     def is_fam14(self) -> bool:
         return self.device_type is not None and (FAM14.__name__ in self.device_type or self.device_type == GatewayDeviceType.EltakoFAM14.value)
@@ -96,10 +84,10 @@ class Device():
         return self.is_wired_gateway() or self.is_wireless_transceiver()
     
     def is_wired_gateway(self) -> bool:
-        return self.is_fam14() or self.is_fgw14_usb()
+        return self.is_fam14() or self.is_fgw14_usb() or self.is_mgw()
 
     def is_wireless_transceiver(self) -> bool:
-        return self.is_usb300() or self.is_fam_usb() or self.is_lan_gw() or (self.device_type is not None and 'Wireless Transceiver' in self.device_type)
+        return self.is_usb300() or self.is_fam_usb() or self.is_lan_gw() or (self.device_type is not None and 'Wireless Transceiver' in self.device_type) or self.is_EUL_Wifi_gw()
     
     def is_bus_device(self) -> bool:
         return self.bus_device

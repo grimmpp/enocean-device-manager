@@ -174,7 +174,6 @@ class DataManager():
                 self.devices[gw_device.external_id] = gw_device
                 
             elif data['api_version'] and data['tcm_version']:
-                gw_device = self.devices[base_id]
                 gw_device.version = f"api: {data['api_version']}, tcm: {data['tcm_version']}"
 
             if data['type'] in [GatewayDeviceType.LAN, GatewayDeviceType.LAN_ESP2]:

@@ -2,7 +2,8 @@
 
 ## v0.10.39
 * Support for EUL-2PJ3Q tcm515 added. https://busware.de/tiki-index.php?page=EUL
-* Clean up table implemented
+* Clean up of device table implemented
+* Made ESP3 LAN gateway more reactive
 
 ## v0.1.38 Remote detection of messages and gateways in Home Assistant
 

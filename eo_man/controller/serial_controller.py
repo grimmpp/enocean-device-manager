@@ -381,6 +381,8 @@ class SerialController():
 
     async def async_create_gateway_device(self):
 
+        await asyncio.sleep(2)
+
         await self._serial_bus.send_base_id_request()
 
         await self._serial_bus.send_version_request()                 
