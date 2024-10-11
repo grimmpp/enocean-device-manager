@@ -148,8 +148,12 @@ def get_display_names():
     return result
 
 def get_gateway_type_by_name(device_type) -> GatewayDeviceType:
-        for t in GatewayDeviceType:
-            if t.value in GATEWAY_DISPLAY_NAMES:
-                if GATEWAY_DISPLAY_NAMES[t.value].lower() in device_type.lower():
-                    return t.value
+        for t, dn in GATEWAY_DISPLAY_NAMES.items():
+            if device_type.lower() in dn.lower():
+                return t
+
+        # for t in GatewayDeviceType:
+        #     if t.value in GATEWAY_DISPLAY_NAMES:
+        #         if GATEWAY_DISPLAY_NAMES[t.value].lower() in device_type.lower():
+        #             return t.value
         return None

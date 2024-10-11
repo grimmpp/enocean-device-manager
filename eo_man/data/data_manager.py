@@ -165,21 +165,22 @@ class DataManager():
                              bus_device=False,
                              external_id=base_id,
                              base_id=base_id,
-                             name=f"{data['type']} ({base_id})",
-                             device_type=get_gateway_type_by_name(data['type']),
-                             use_in_ha=True
+                             name=f"{data['type'].value} ({base_id})",
+                             device_type=data['type'].value,
+                             use_in_ha=True,
                              )
-            if data['type'] == GATEWAY_DISPLAY_NAMES[GatewayDeviceType.LAN]:
-                gw_device.additional_fields['address'] = data['address']
             
             if gw_device.external_id not in self.devices:
                 self.devices[gw_device.external_id] = gw_device
-                self.app_bus.fire_event(AppBusEventType.UPDATE_SENSOR_REPRESENTATION, gw_device)
-
+                
             elif data['api_version'] and data['tcm_version']:
                 gw_device = self.devices[base_id]
                 gw_device.version = f"api: {data['api_version']}, tcm: {data['tcm_version']}"
-                self.app_bus.fire_event(AppBusEventType.UPDATE_SENSOR_REPRESENTATION, gw_device)
+
+            if data['type'] in [GatewayDeviceType.LAN, GatewayDeviceType.LAN_ESP2]:
+                gw_device.additional_fields['address'] = data['address']
+
+            self.app_bus.fire_event(AppBusEventType.UPDATE_SENSOR_REPRESENTATION, gw_device)
                 
 
 

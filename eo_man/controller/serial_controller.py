@@ -61,15 +61,17 @@ class SerialController():
             self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'INFO', 'color': 'grey'})
             if 'SmartConn' in name:
                 self.service_reg_lan_gw[name] = obj
+            elif 'EUL' in name and 'tcm515' in name:
+                self.service_reg_lan_gw[name] = obj
             elif 'Virtual-Network-Gateway-Adapter' in name:
                 self.service_reg_virt_lan_gw[name] = obj
         except:
             pass
 
     def remove_service(self, zeroconf, type, name):
-        if name in self.service_reg_lan_gw[name]:
+        if name in self.service_reg_lan_gw:
             del self.service_reg_lan_gw[name]
-        if name in self.service_reg_virt_lan_gw[name]:
+        if name in self.service_reg_virt_lan_gw:
             del self.service_reg_virt_lan_gw[name]
 
     def update_service(self, zeroconf, type, name):
@@ -78,6 +80,7 @@ class SerialController():
     def start_service_discovery(self):
         self.zeroconf = Zeroconf()
         ServiceBrowser(self.zeroconf, "_bsc-sc-socket._tcp.local.", self)
+        ServiceBrowser(self.zeroconf, "_tcm515._tcp.local.", self)
 
 
     def on_window_closed(self, data) -> None:
@@ -247,6 +250,7 @@ class SerialController():
             asyncio.run( self.app_bus.async_fire_event(AppBusEventType.ASYNC_TRANSCEIVER_DETECTED, {'type': self.current_device_type, 
                                                                                                     'base_id': self.current_base_id, 
                                                                                                     'gateway_id': self.current_base_id,
+                                                                                                    'address': f"{self._serial_bus._host}:{self._serial_bus._port}",
                                                                                                     'tcm_version': '', 
                                                                                                     'api_version': ''}) )
         # receive software version 
@@ -257,6 +261,7 @@ class SerialController():
             asyncio.run( self.app_bus.async_fire_event(AppBusEventType.ASYNC_TRANSCEIVER_DETECTED, {'type': self.current_device_type, 
                                                                                                     'base_id': self.current_base_id, 
                                                                                                     'gateway_id': self.current_base_id,
+                                                                                                    'address': f"{self._serial_bus._host}:{self._serial_bus._port}",
                                                                                                     'tcm_version': tcm_sw_v, 
                                                                                                     'api_version': api_v}) )
         
@@ -323,12 +328,8 @@ class SerialController():
                         t = threading.Thread(target=run)
                         t.start()
                     else:
-                        if device_type == GDN[GDT.EltakoFAMUSB]: 
-                            asyncio.run( self.async_create_fam_usb_device() )
-                        elif device_type == GDN[GDT.USB300]:
-                            asyncio.run( self.async_create_usb300_device() )
-                        elif device_type == GDN[GDT.LAN]:
-                            asyncio.run( self.async_create_lan_gw_device(serial_port) )
+                        if device_type in [ GDN[GDT.EltakoFAMUSB], GDN[GDT.USB300], GDN[GDT.LAN] ]:
+                            asyncio.run( self.async_create_gateway_device() )
 
                         self.app_bus.fire_event(
                                 AppBusEventType.CONNECTION_STATUS_CHANGE, 
@@ -352,63 +353,13 @@ class SerialController():
                 msg = f"Establish connection for {device_type} on port {serial_port} failed!"
             self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
             logging.exception(msg, exc_info=True)
+   
 
+    async def async_create_gateway_device(self):
 
-    async def async_create_lan_gw_device(self, address):
-        try:
-            self._serial_bus.set_callback( None )
-            
-            time.sleep(.4)
+        await self._serial_bus.send_base_id_request()
 
-            self.current_base_id = b2s(self._serial_bus.base_id)
-            self.gateway_id = self.current_base_id
-
-            await self.app_bus.async_fire_event(AppBusEventType.ASYNC_TRANSCEIVER_DETECTED, {'type': GDN[GDT.LAN], 
-                                                                                            'base_id': self.current_base_id, 
-                                                                                            'gateway_id': self.gateway_id,
-                                                                                            'address': address,
-                                                                                            'tcm_version': '', 
-                                                                                            'api_version': ''})
-
-
-        except Exception as e:
-            msg = 'Failed to get information about LAN GW (TCP2ESP3)!!!'
-            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
-            logging.exception(msg, exc_info=True)
-            raise e
-        finally:
-            self._serial_bus.set_callback( self._received_serial_event )     
-
-    async def async_create_usb300_device(self):
-
-        # get base id
-        data = b'\xAB\x58\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-        await self._serial_bus.send(ESP2Message(bytes(data)))
-
-        # get version
-        data = b'\xAB\x4B\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-        await self._serial_bus.send(ESP2Message(bytes(data)))
-
-        # try:
-        #     self._serial_bus.set_callback( None )
-            
-        #     self.current_base_id = b2s(self._serial_bus.base_id)
-        #     self.gateway_id = self.current_base_id
-
-        #     await self.app_bus.async_fire_event(AppBusEventType.ASYNC_TRANSCEIVER_DETECTED, {'type': GDN[GDT.USB300], 
-        #                                                                                     'base_id': self.current_base_id, 
-        #                                                                                     'gateway_id': self.gateway_id,
-        #                                                                                     'tcm_version': '', 
-        #                                                                                     'api_version': ''})
-
-
-        # except Exception as e:
-        #     msg = 'Failed to get information about USB300 (ESP3)!!!'
-        #     self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
-        #     logging.exception(msg, exc_info=True)
-        #     raise e
-        # finally:
-        #     self._serial_bus.set_callback( self._received_serial_event )                    
+        await self._serial_bus.send_version_request()                 
 
 
     async def async_get_base_id_for_fam_usb(self, fam_usb:RS485SerialInterfaceV2, callback) -> str:
@@ -433,46 +384,6 @@ class SerialController():
         asyncio.run( self._serial_bus.send(msg) ) 
 
 
-    async def async_create_fam_usb_device(self):
-        # get base id
-        data = b'\xAB\x58\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-        await self._serial_bus.send(ESP2Message(bytes(data)))
-
-        # get version
-        data = b'\xAB\x4B\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-        await self._serial_bus.send(ESP2Message(bytes(data)))
-
-        # try:
-        #     self._serial_bus.set_callback( None )
-            
-        #     # get base id
-        #     data = b'\xAB\x58\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-        #     response:ESP2Message = await self._serial_bus.exchange(ESP2Message(bytes(data)), ESP2Message)
-        #     base_id = response.body[2:6]
-        #     self.current_base_id = b2s(base_id)
-        #     self.gateway_id = self.current_base_id
-
-        #     # get version
-        #     data = b'\xAB\x4B\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-        #     response:ESP2Message = await self._serial_bus.exchange(ESP2Message(bytes(data)), ESP2Message)
-        #     tcm_sw_v = '.'.join(str(n) for n in response.body[2:6])
-        #     api_v = '.'.join(str(n) for n in response.body[6:10])
-
-        #     await self.app_bus.async_fire_event(AppBusEventType.ASYNC_TRANSCEIVER_DETECTED, {'type': GDN[GDT.EltakoFAMUSB], 
-        #                                                                                     'base_id': self.current_base_id, 
-        #                                                                                     'gateway_id': self.gateway_id,
-        #                                                                                     'tcm_version': tcm_sw_v, 
-        #                                                                                     'api_version': api_v})
-
-
-        # except Exception as e:
-        #     msg = 'Failed to get information about FAM-USB!!!'
-        #     self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
-        #     logging.exception(msg, exc_info=True)
-        #     raise e
-        # finally:
-        #     self._serial_bus.set_callback( self._received_serial_event )
-
     def stop_serial_connection(self) -> None:
         if self.is_serial_connection_active():
             self._serial_bus.stop()
@@ -488,9 +399,11 @@ class SerialController():
             self.connected_gateway_type = None
             self._serial_bus = None
 
+
     def kill_serial_connection_before_exit(self) -> None:
         if self.is_serial_connection_active():
             self._serial_bus.stop()
+
 
     def scan_for_devices(self, force_overwrite:bool=False) -> None:
         # if connected to FAM14

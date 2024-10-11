@@ -71,6 +71,9 @@ class Device():
 
     def is_usb300(self) -> bool:
         return self.device_type is not None and ('USB300' in self.device_type or self.device_type == GatewayDeviceType.USB300)
+    
+    def is_lan_gw(self) -> bool:
+        return self.device_type is not None and ('lan' in self.device_type or self.device_type in [GatewayDeviceType.LAN, GatewayDeviceType.LAN_ESP2])
 
     def is_ftd14(self) -> bool:
         return self.device_type == GatewayDeviceType.EltakoFTD14.value
@@ -82,7 +85,7 @@ class Device():
         return self.is_fam14() or self.is_fgw14_usb()
 
     def is_wireless_transceiver(self) -> bool:
-        return self.is_usb300() or self.is_fam_usb() or (self.device_type is not None and 'Wireless Transceiver' in self.device_type)
+        return self.is_usb300() or self.is_fam_usb() or self.is_lan_gw() or (self.device_type is not None and 'Wireless Transceiver' in self.device_type)
     
     def is_bus_device(self) -> bool:
         return self.bus_device
