@@ -124,3 +124,7 @@ class ImageGallery():
     @classmethod
     def get_mgw_piotek_icon(cls, size:tuple[int:int]=(32,32)) -> ImageTk.PhotoImage:
         return ImageGallery.get_image("mgw_piotek.png", size)
+    
+    @classmethod
+    def get_clear_icon(cls, size:tuple[int:int]=(32,32)) -> ImageTk.PhotoImage:
+        return ImageGallery.get_image("Oxygen480-actions-edit-clear.png", size)

@@ -62,6 +62,11 @@ class MenuPresenter():
                               compound=LEFT,
                               command=self.extend_pct14_export)
         file_menu.add_separator()
+        file_menu.add_command(label="Remove all Device from Table", 
+                              image=ImageGallery.get_clear_icon(size=(16,16)),
+                              compound=LEFT,
+                              command=self.remove_all_device_from_table)
+        file_menu.add_separator()
         ha_icon = ImageGallery.get_ha_logo(size=(16,16))
         file_menu.add_command(label="Export Home Assistant Configuration", 
                               image=ha_icon, 
@@ -367,3 +372,12 @@ class MenuPresenter():
 
         t = threading.Thread(target=load)
         t.start()
+
+    def remove_all_device_from_table(self):
+        if self.serial_controller.is_serial_connection_active():
+            self.serial_controller.stop_serial_connection()
+
+        self.data_manager.devices = {}
+        self.data_manager.load_devices({})
+        self.app_bus.fire_event(AppBusEventType.SET_DATA_TABLE_FILTER, None)
+        self.app_bus.fire_event(AppBusEventType.SELECTED_DEVICE, None)
