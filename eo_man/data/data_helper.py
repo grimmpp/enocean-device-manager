@@ -139,6 +139,18 @@ ORG_MAPPING = {
     7: {'Telegram': '4BS', 'RORG': 'A5', CONF_NAME: '4 Byte Communication', CONF_TYPE: Platform.SENSOR, CONF_EEP: 'A5-??-??' },
 }
 
+KNOWN_MDNS_SERVICES = {
+    'SmartConn': '_bsc-sc-socket._tcp.local.',
+    'Virtual-Network-Gateway-Adapter': '_bsc-sc-socket._tcp.local.',
+    'EUL': '_tcm515._tcp.local.'
+}
+
+MDNS_SERVICE_2_GW_TYPE_MAPPING = {
+    'SmartConn': GatewayDeviceType.LAN,
+    'EUL': GatewayDeviceType.LAN,
+    'Virtual-Network-Gateway-Adapter': GatewayDeviceType.LAN_ESP2,
+}
+
 SENSOR_MESSAGE_TYPES = [EltakoWrappedRPS, EltakoWrapped4BS, RPSMessage, Regular4BSMessage, Regular1BSMessage, EltakoMessage]
 
 def get_all_eep_names():

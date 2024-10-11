@@ -1,5 +1,8 @@
 # Change Log
 
+## v0.10.39
+* Support for EUL-2PJ3Q tcm515 added. https://busware.de/tiki-index.php?page=EUL
+
 ## v0.1.38 Remote detection of messages and gateways in Home Assistant
 
 ## v0.1.37 Fixed new packaging

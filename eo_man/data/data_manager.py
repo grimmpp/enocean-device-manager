@@ -180,6 +180,9 @@ class DataManager():
             if data['type'] in [GatewayDeviceType.LAN, GatewayDeviceType.LAN_ESP2]:
                 gw_device.additional_fields['address'] = data['address']
 
+            if 'mdns_service' in data and data['mdns_service'] is not None:
+                gw_device.additional_fields['mdns_service'] = data['mdns_service']
+
             self.app_bus.fire_event(AppBusEventType.UPDATE_SENSOR_REPRESENTATION, gw_device)
                 
 

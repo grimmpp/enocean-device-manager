@@ -39,6 +39,7 @@ class SerialController():
         self.app_bus = app_bus
         self._serial_bus = None
         self.connected_gateway_type = None
+        self.connected_mdns_service = ''
         self.current_base_id:str = None
         self.current_device_type:GatewayDeviceType = None
         self.gateway_id:str = None
@@ -53,18 +54,34 @@ class SerialController():
     def __del__(self):
         self.zeroconf.close()
 
+    def find_mdns_service_by_ip_address(self, address:str):
+        for s_list in [self.service_reg_virt_lan_gw.values(), self.service_reg_lan_gw.values()]:
+            for s in s_list:
+                dns_name = f"{s['hostname'][:-1]}:{s['port']}"
+                ip_address = f"{s['address']}:{s['port']}"
+                if dns_name == address or ip_address == address:
+                    return s['name']
+                
+        return ''
+        
+
     def add_service(self, zeroconf: Zeroconf, type, name):
         try:
             info:ServiceInfo = zeroconf.get_service_info(type, name)
             obj = {'name': name, 'type': type, 'address': socket.inet_ntoa(info.addresses[0]), 'port': info.port, 'hostname': info.server}
             msg = f"Detected Network Service: {name}, type: {type}, address: {obj['address']}, port: {obj['address']}, hostname: {obj['address']}"
             self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'INFO', 'color': 'grey'})
-            if 'SmartConn' in name:
-                self.service_reg_lan_gw[name] = obj
-            elif 'EUL' in name and 'tcm515' in name:
-                self.service_reg_lan_gw[name] = obj
-            elif 'Virtual-Network-Gateway-Adapter' in name:
-                self.service_reg_virt_lan_gw[name] = obj
+            
+            for mdns_name in data_helper.MDNS_SERVICE_2_GW_TYPE_MAPPING:
+                if mdns_name in name:
+                    gw_type: GatewayDeviceType = data_helper.MDNS_SERVICE_2_GW_TYPE_MAPPING[mdns_name]
+                    if gw_type == GatewayDeviceType.LAN:
+                        self.service_reg_lan_gw[name] = obj
+                        break
+                    elif gw_type == GatewayDeviceType.LAN_ESP2:
+                        self.service_reg_virt_lan_gw[name] = obj
+                        break
+
         except:
             pass
 
@@ -79,8 +96,8 @@ class SerialController():
 
     def start_service_discovery(self):
         self.zeroconf = Zeroconf()
-        ServiceBrowser(self.zeroconf, "_bsc-sc-socket._tcp.local.", self)
-        ServiceBrowser(self.zeroconf, "_tcm515._tcp.local.", self)
+        for mdns_type in data_helper.KNOWN_MDNS_SERVICES.values():
+            ServiceBrowser(self.zeroconf, mdns_type, self)
 
 
     def on_window_closed(self, data) -> None:
@@ -248,6 +265,7 @@ class SerialController():
                 self.current_device_type = gw_type
 
             asyncio.run( self.app_bus.async_fire_event(AppBusEventType.ASYNC_TRANSCEIVER_DETECTED, {'type': self.current_device_type, 
+                                                                                                    'mdns_service': self.connected_mdns_service,
                                                                                                     'base_id': self.current_base_id, 
                                                                                                     'gateway_id': self.current_base_id,
                                                                                                     'address': f"{self._serial_bus._host}:{self._serial_bus._port}",
@@ -259,6 +277,7 @@ class SerialController():
             api_v = '.'.join(str(n) for n in message.body[6:10])
 
             asyncio.run( self.app_bus.async_fire_event(AppBusEventType.ASYNC_TRANSCEIVER_DETECTED, {'type': self.current_device_type, 
+                                                                                                    'mdns_service': self.connected_mdns_service,
                                                                                                     'base_id': self.current_base_id, 
                                                                                                     'gateway_id': self.current_base_id,
                                                                                                     'address': f"{self._serial_bus._host}:{self._serial_bus._port}",
@@ -270,6 +289,7 @@ class SerialController():
         baudrate:int=57600
         delay_message:float=.1
         self.current_device_type = get_gateway_type_by_name(device_type)
+        self.connected_mdns_service = None
         if device_type == GDN[GDT.EltakoFAMUSB]:
             baudrate = 9600
         elif device_type == GDN[GDT.EltakoFAM14]:
@@ -280,11 +300,13 @@ class SerialController():
                 if device_type == GDN[GDT.LAN]:
                     ip_address = serial_port[:serial_port.rfind(':')]
                     port = int(serial_port[serial_port.rfind(':')+1:])
+                    self.connected_mdns_service = self.find_mdns_service_by_ip_address(serial_port)
                     self._serial_bus = TCP2SerialCommunicator(ip_address, port,
                                                               callback=self._received_serial_event,
                                                               esp2_translation_enabled=True,
                                                               auto_reconnect=False
                                                               )
+
                 elif device_type == GDN[GDT.ESP3]:
                     self._serial_bus = ESP3SerialCommunicator(serial_port, 
                                                               callback=self._received_serial_event,
@@ -294,9 +316,11 @@ class SerialController():
                 elif device_type == GDN[GDT.LAN_ESP2]:
                     ip_address = serial_port[:serial_port.rfind(':')]
                     port = int(serial_port[serial_port.rfind(':')+1:])
+                    self.connected_mdns_service = self.find_mdns_service_by_ip_address(serial_port)
                     self._serial_bus = ESP2TCP2SerialCommunicator(ip_address, port,
                                                                   callback=self._received_serial_event,
                                                                   auto_reconnect=False)
+                    
                 else:
                     self._serial_bus = RS485SerialInterfaceV2(serial_port, 
                                                               baud_rate=baudrate, 

@@ -70,13 +70,27 @@ class Device():
         return self.device_type is not None and ('FGW14_USB' in self.device_type or self.device_type == GatewayDeviceType.EltakoFGW14USB.value)
 
     def is_usb300(self) -> bool:
-        return self.device_type is not None and ('USB300' in self.device_type or self.device_type == GatewayDeviceType.USB300)
+        return self.device_type is not None and ('USB300' in self.device_type or self.device_type == GatewayDeviceType.USB300.value)
     
     def is_lan_gw(self) -> bool:
-        return self.device_type is not None and ('lan' in self.device_type or self.device_type in [GatewayDeviceType.LAN, GatewayDeviceType.LAN_ESP2])
+        return self.device_type is not None and ('lan' in self.device_type or self.device_type in [GatewayDeviceType.LAN.value, GatewayDeviceType.LAN_ESP2.value])
 
     def is_ftd14(self) -> bool:
         return self.device_type == GatewayDeviceType.EltakoFTD14.value
+    
+    def is_EUL_Wifi_gw(self) -> bool:
+        return self.is_mdns_service('EUL')
+    
+    def is_mgw(self) -> bool:
+        return self.is_mdns_service('SmartConn')
+    
+    def is_virtual_home_assistant_gw(self) -> bool:
+        return self.is_mdns_service('Virtual-Network-Gateway-Adapter')
+
+    def is_mdns_service(self, service_name) -> bool:
+        if 'mdns_service' in self.additional_fields and self.additional_fields['mdns_service'] is not None:
+            return service_name in self.additional_fields['mdns_service']
+        return False
 
     def is_gateway(self) -> bool:
         return self.is_wired_gateway() or self.is_wireless_transceiver()
