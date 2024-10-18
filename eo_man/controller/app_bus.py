@@ -1,4 +1,5 @@
 from enum import Enum
+from .. import LOGGER
 
 class AppBusEventType(Enum):
     LOG_MESSAGE = 0                     # dict with keys: msg:str, color:str
@@ -44,8 +45,17 @@ class AppBus():
 
     def fire_event(self, event:AppBusEventType, data) -> None:
         # print(f"[Controller] Fire event {event}")
-        for h in self._controller_event_handlers[event].values(): h(data)
+        for h in self._controller_event_handlers[event].values(): 
+            try:
+                h(data)
+            except:
+                LOGGER.exception(f"Error handling event {event}")
+                
 
     async def async_fire_event(self, event:AppBusEventType, data) -> None:
         # print(f"[Controller] Fire async event {event}")
-        for h in self._controller_event_handlers[event].values(): await h(data)
+        for h in self._controller_event_handlers[event].values(): 
+            try:
+                await h(data)
+            except:
+                LOGGER.exception(f"Error handling event {event}")

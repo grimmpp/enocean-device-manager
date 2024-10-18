@@ -51,7 +51,7 @@ class LogOutputPanel():
         current_base_id:str = data['base_id']
 
         # filter out poll messages
-        filter = type(telegram) not in [EltakoPoll, EltakoDiscoveryReply, EltakoDiscoveryRequest]
+        filter = type(telegram) not in [EltakoPoll]
         # filter out empty telegrams (generated when sending telegrams with FAM-USB)
         try:
             filter &= (int.from_bytes(telegram.address, 'big') > 0 and int.from_bytes(telegram.payload, 'big'))
@@ -60,7 +60,9 @@ class LogOutputPanel():
 
         if filter:
             tt = type(telegram).__name__
-            adr = b2s(telegram.address)
+            adr = str(telegram.address) if isinstance(telegram.address, int) else b2s(telegram.address)
+            if hasattr(telegram, 'reported_address'):
+                adr = telegram.reported_address
             payload = ''
             if hasattr(telegram, 'data'):
                 payload += ', data: '+b2s(telegram.data)

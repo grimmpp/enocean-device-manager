@@ -10,7 +10,7 @@ from .message_history import MessageHistoryEntry
 
 from eltakobus.util import AddressExpression, b2s
 from eltakobus.eep import EEP
-from eltakobus.message import RPSMessage, Regular1BSMessage, Regular4BSMessage, EltakoMessage, EltakoWrappedRPS, EltakoWrapped4BS, TeachIn4BSMessage2
+from eltakobus.message import *
 
 class DataManager():
     """Manages EnOcean Devices"""
@@ -157,6 +157,8 @@ class DataManager():
                     self.devices[centralized_device.external_id] = centralized_device
                     self.app_bus.fire_event(AppBusEventType.UPDATE_DEVICE_REPRESENTATION, centralized_device)
 
+            
+
 
     async def _async_transceiver_detected(self, data):
         base_id = data['base_id']
@@ -189,7 +191,7 @@ class DataManager():
 
     async def _async_device_detected_handler(self, data):
         for channel in range(1, data['device'].size+1):
-            bd:Device = await Device.async_get_bus_device_by_natvice_bus_object(data['device'], data['fam14'], channel)
+            bd:Device = await Device.async_get_bus_device_by_natvice_bus_object(data['device'], data['base_id'], channel)
             
             update = data['force_overwrite']
             update |= bd.external_id not in self.devices
@@ -202,7 +204,7 @@ class DataManager():
                 self.app_bus.fire_event(AppBusEventType.UPDATE_DEVICE_REPRESENTATION, bd)
 
                 for si in bd.memory_entries:
-                    _bd:Device = await Device.async_get_decentralized_device_by_sensor_info(si, data['device'], data['fam14'], channel)
+                    _bd:Device = Device.get_decentralized_device_by_sensor_info(si, data['base_id'])
 
                     if _bd.external_id not in self.devices or not self.devices[_bd.external_id].bus_device:
                         self.devices[_bd.external_id] = _bd
@@ -325,23 +327,26 @@ class DataManager():
 
 
     def get_values_from_message_to_string(self, message:EltakoMessage, base_id:str=None) -> str:
-        # get ext id
-        ext_id_str = b2s(message.address)
-        if ext_id_str.startswith('00-00-00-') and base_id is not None:
-            device:Device = self.find_device_by_local_address(ext_id_str, base_id)
-            if device is None: 
-                return None, None
-            else:
-                ext_id_str = device.external_id
+        try:
+            eep = None
+            # get ext id
+            ext_id_str = b2s(message.address)
+            if ext_id_str.startswith('00-00-00-') and base_id is not None:
+                device:Device = self.find_device_by_local_address(ext_id_str, base_id)
+                if device is None: 
+                    return None, None
+                else:
+                    ext_id_str = device.external_id
 
-        eep = None
-        if ext_id_str in self.devices:
-            device = self.devices[ext_id_str]
-            try:
-                eep:EEP = data_helper.find_eep_by_name(device.eep)
-                return eep, ', '.join(data_helper.get_values_for_eep(eep, message))
-            except:
-                pass
+            if ext_id_str in self.devices:
+                device = self.devices[ext_id_str]
+                try:
+                    eep:EEP = data_helper.find_eep_by_name(device.eep)
+                    return eep, ', '.join(data_helper.get_values_for_eep(eep, message))
+                except:
+                    pass
+        except:
+            pass
         return eep, None
     
 

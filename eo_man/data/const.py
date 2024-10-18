@@ -91,9 +91,11 @@ class GatewayDeviceType(str, Enum):
     EltakoFAMUSB = 'fam-usb'
     USB300 = 'enocean-usb300'
     ESP3 = 'esp3-gateway'
-    LAN = 'mgw-lan'
+    LAN = 'lan'
+    MGW_LAN = 'mgw-lan'
+    EUL_LAN = 'EUL_LAN'
     LAN_ESP2 = "lan-gw-esp2"
-    VirtualNetworkAdapter = 'virtual-network-adapter'
+    VirtualNetworkAdapter = 'esp2-netowrk-reverse-bridge'   # subtype of LAN_ESP2
 
     @classmethod
     def indexOf(cls, value):
@@ -112,15 +114,24 @@ class GatewayDeviceType(str, Enum):
 
     @classmethod
     def is_transceiver(cls, dev_type) -> bool:
-        return dev_type in [GatewayDeviceType.EltakoFAMUSB, GatewayDeviceType.USB300]
+        return dev_type in [GatewayDeviceType.GatewayEltakoFAMUSB, GatewayDeviceType.EnOceanUSB300, GatewayDeviceType.USB300, GatewayDeviceType.ESP3, GatewayDeviceType.LAN, 
+                            GatewayDeviceType.LAN_ESP2, GatewayDeviceType.MGW_LAN, GatewayDeviceType.EUL_LAN]
 
     @classmethod
     def is_bus_gateway(cls, dev_type) -> bool:
-        return dev_type in [GatewayDeviceType.EltakoFAM14, GatewayDeviceType.EltakoFGW14USB]
+        return dev_type in [GatewayDeviceType.GatewayEltakoFAM14, GatewayDeviceType.GatewayEltakoFGW14USB,
+                            GatewayDeviceType.EltakoFAM14, GatewayDeviceType.EltakoFAMUSB, GatewayDeviceType.EltakoFGW14USB]
     
     @classmethod
     def is_esp2_gateway(cls, dev_type) -> bool:
-        return dev_type in [GatewayDeviceType.EltakoFAM14, GatewayDeviceType.EltakoFGW14USB, GatewayDeviceType.EltakoFAMUSB]
+        return dev_type in [GatewayDeviceType.GatewayEltakoFAM14, GatewayDeviceType.GatewayEltakoFGW14USB, GatewayDeviceType.GatewayEltakoFAMUSB, 
+                            GatewayDeviceType.EltakoFAM14, GatewayDeviceType.EltakoFAMUSB, GatewayDeviceType.EltakoFGW14USB, GatewayDeviceType.LAN_ESP2, 
+                            GatewayDeviceType.VirtualNetworkAdapter]
+    
+    @classmethod
+    def is_lan_gateway(cls, dev_type) -> bool:
+        return dev_type in [GatewayDeviceType.LAN, GatewayDeviceType.LAN_ESP2, GatewayDeviceType.MGW_LAN, GatewayDeviceType.EUL_LAN, GatewayDeviceType.VirtualNetworkAdapter]
+
 
 BAUD_RATE_DEVICE_TYPE_MAPPING: dict = {
     GatewayDeviceType.EltakoFAM14: 57600,

@@ -67,13 +67,13 @@ class Device():
         return self.device_type == GatewayDeviceType.EltakoFTD14.value
     
     def is_EUL_Wifi_gw(self) -> bool:
-        return self.is_mdns_service('EUL')
+        return self.device_type == GatewayDeviceType.EUL_LAN.value or self.is_mdns_service('EUL')
     
     def is_mgw(self) -> bool:
-        return self.is_mdns_service('SmartConn')
+        return self.device_type == GatewayDeviceType.MGW_LAN.value or self.is_mdns_service('SmartConn')
     
     def is_virtual_home_assistant_gw(self) -> bool:
-        return self.is_mdns_service('Virtual-Network-Gateway-Adapter')
+        return self.device_type == GatewayDeviceType.VirtualNetworkAdapter.value or self.is_mdns_service('Virtual-Network-Gateway-Adapter')
 
     def is_mdns_service(self, service_name) -> bool:
         if 'mdns_service' in self.additional_fields and self.additional_fields['mdns_service'] is not None:
@@ -119,7 +119,7 @@ class Device():
                 d1.additional_fields[k] = v
 
     @classmethod
-    async def async_get_bus_device_by_natvice_bus_object(cls, device: BusObject, fam14: FAM14, channel:int=1):
+    async def async_get_bus_device_by_natvice_bus_object(cls, device: BusObject, base_id: str, channel:int=1):
         bd = Device()
         bd.additional_fields = {}
         id = device.address + channel -1
@@ -127,7 +127,7 @@ class Device():
         bd.channel = channel
         bd.dev_size = device.size
         bd.use_in_ha = True
-        bd.base_id = await fam14.get_base_id()
+        bd.base_id = base_id
         bd.device_type = type(device).__name__
         if bd.device_type == 'FAM14': bd.device_type = GatewayDeviceType.EltakoFAM14.value
         if bd.device_type == 'FGW14_USB': bd.device_type = GatewayDeviceType.EltakoFGW14USB.value
@@ -140,9 +140,9 @@ class Device():
             bd.external_id = bd.base_id
         elif isinstance(device, FTD14):
             # bd.base_id = await device.get_base_id()    # TODO: needs to have different base id
-            bd.external_id = a2s( (await fam14.get_base_id_in_int()) + id )
+            bd.external_id = add_addresses(bd.address, base_id)
         else:
-            bd.external_id = a2s( (await fam14.get_base_id_in_int()) + id )
+            bd.external_id = add_addresses(bd.address, base_id)
         bd.memory_entries = [m for m in (await device.get_all_sensors()) if b2s(m.dev_adr) == bd.address]
         # print(f"{bd.device_type} {bd.address}")
         # print_memory_entires( bd.memory_entries)
@@ -279,7 +279,7 @@ class Device():
         return bd
     
     @classmethod
-    async def async_get_decentralized_device_by_sensor_info(cls, sensor_info:SensorInfo, device: BusObject, fam14: FAM14, channel:int=1):
+    async def async_get_decentralized_device_by_sensor_info(cls, sensor_info:SensorInfo, fam14: FAM14):
         return cls.get_decentralized_device_by_sensor_info(sensor_info, (await fam14.get_base_id()) )
     
     @classmethod 

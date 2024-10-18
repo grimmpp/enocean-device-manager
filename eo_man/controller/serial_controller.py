@@ -48,6 +48,10 @@ class SerialController():
         self.service_reg_lan_gw = {}
         self.service_reg_virt_lan_gw = {}
         self.start_service_discovery()
+        
+        self.received_bus_device_discovery:Dict[str,List[EltakoDiscoveryReply]] = {}
+        self.current_discovery_reply = None
+        self.received_bus_device_memory:Dict[str,List[EltakoMemoryResponse]] = {}
 
         self.app_bus.add_event_handler(AppBusEventType.WINDOW_CLOSED, self.on_window_closed)
     
@@ -245,23 +249,69 @@ class SerialController():
         return self.is_serial_connection_active() and self._serial_bus.suppress_echo
 
     def _received_serial_event(self, message: ESP2Message) -> None:
-        self.detect_and_create_gateway_device(message)
+        try:
+            self.detect_and_create_gateway_device(message)
 
-        if isinstance(message.address, int):
-             message.address = message.address.to_bytes(4, 'big')
+            if isinstance(message, EltakoDiscoveryReply):
+                self.current_discovery_reply = message
+                if self.current_base_id not in self.received_bus_device_discovery:
+                    self.received_bus_device_discovery[self.current_base_id] = []
+                self.received_bus_device_discovery[self.current_base_id].append( message )
+                
+                dev = None
+                for o in sorted_known_objects:
+                    if message.model[0:2] in o.discovery_names and (o.size is None or o.size == message.reported_size):
+                        dev = o(message)
+                        break
+                if dev is None:
+                    dev = BusObject(message)
+                
+                async def get_all_sensors(): return []
+                dev.get_all_sensors = get_all_sensors
 
-        # for virtual network gateway check which gateway is really sending
-        self.app_bus.fire_event(AppBusEventType.SERIAL_CALLBACK, {'msg': message, 
-                                                                  'base_id': self.current_base_id,
-                                                                  'gateway_id': self.gateway_id})
+                self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Found device: {dev}", 'color':'grey'})
+                self.app_bus.fire_event(AppBusEventType.DEVICE_SCAN_STATUS, 'DEVICE_DETECTED')
+                asyncio.run( self.app_bus.async_fire_event(AppBusEventType.ASYNC_DEVICE_DETECTED, {'device': dev, 'base_id': self.current_base_id, 'force_overwrite': False}) )
+
+            if self.current_discovery_reply and isinstance(message, EltakoMemoryResponse):
+                if self.current_discovery_reply not in self.received_bus_device_memory:
+                    self.received_bus_device_memory[self.current_discovery_reply] = []
+                self.received_bus_device_memory[self.current_discovery_reply].append( message )
+                
+                if message.row == self.current_discovery_reply.memory_size-1:
+                    
+                    dev = None
+                    for o in sorted_known_objects:
+                        if self.current_discovery_reply.model[0:2] in o.discovery_names and (o.size is None or o.size == self.current_discovery_reply.reported_size):
+                            dev = o(self.current_discovery_reply)
+                            break
+                    if dev is None:
+                        dev = BusObject(self.current_discovery_reply)
+                    dev.memory = [r.value for r in self.received_bus_device_memory[self.current_discovery_reply]]
+                    
+                    self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Found device: {dev}", 'color':'grey'})
+                    self.app_bus.fire_event(AppBusEventType.DEVICE_SCAN_STATUS, 'DEVICE_DETECTED')
+                    asyncio.run( self.app_bus.async_fire_event(AppBusEventType.ASYNC_DEVICE_DETECTED, {'device': dev, 'base_id': self.current_base_id, 'force_overwrite': True}) )
+
+            # if isinstance(message.address, int):
+            #      message.address = message.address.to_bytes(4, 'big')
+                
+            self.app_bus.fire_event(AppBusEventType.SERIAL_CALLBACK, {'msg': message, 
+                                                                    'base_id': self.current_base_id,
+                                                                    'gateway_id': self.gateway_id})
+        except Exception as e:
+            logging.exception(e)
+            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': e, 'log-level': 'ERROR', 'color': 'red'})
+            
 
     def detect_and_create_gateway_device(self, message: ESP2Message):
         # receive base id
         if message.body[:2] == b'\x8b\x98':
             self.current_base_id = b2s(message.body[2:6])
-            device_type = message.body[6]
-            if device_type != 0:
-                gw_type = GDT.get_by_index(message.body[6])
+            device_type_index = message.body[6]
+            # for virtual network gateway check which gateway is really sending
+            if device_type_index > 0:
+                gw_type = GDT.get_by_index(device_type_index-1)
                 self.current_device_type = gw_type
 
             asyncio.run( self.app_bus.async_fire_event(AppBusEventType.ASYNC_TRANSCEIVER_DETECTED, {'type': self.current_device_type, 
@@ -284,6 +334,8 @@ class SerialController():
                                                                                                     'tcm_version': tcm_sw_v, 
                                                                                                     'api_version': api_v}) )
         
+    def connection_status_handler(self, connected: bool):
+        self.app_bus.fire_event(AppBusEventType.CONNECTION_STATUS_CHANGE, {'connected': connected})
 
     def establish_serial_connection(self, serial_port:str, device_type:str) -> None:
         baudrate:int=57600
@@ -329,6 +381,7 @@ class SerialController():
                                                               auto_reconnect=False)
                 self._serial_bus.start()
                 self._serial_bus.is_serial_connected.wait(timeout=2)
+                self._serial_bus.set_status_changed_handler(self.connection_status_handler)
                 
                 if not self._serial_bus.is_active():
                     self._serial_bus.stop()
@@ -473,7 +526,7 @@ class SerialController():
             self.current_base_id = await fam14.get_base_id()
             self.gateway_id = data_helper.a2s( (await fam14.get_base_id_in_int()) + 0xFF )
             self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Found device: {fam14}", 'color':'grey'})
-            await self.app_bus.async_fire_event(AppBusEventType.ASYNC_DEVICE_DETECTED, {'device': fam14, 'fam14': fam14, 'force_overwrite': force_overwrite})
+            await self.app_bus.async_fire_event(AppBusEventType.ASYNC_DEVICE_DETECTED, {'device': fam14, 'base_id': self.current_base_id, 'force_overwrite': force_overwrite})
 
         except Exception as e:
             msg = 'Failed to load FAM14!!!'
@@ -501,14 +554,14 @@ class SerialController():
             # first get fam14 and make it know to data manager
             fam14:FAM14 = await create_busobject(bus=self._serial_bus, id=255)
             logging.debug(colored(f"Found device: {fam14}",'grey'))
-            await self.app_bus.async_fire_event(AppBusEventType.ASYNC_DEVICE_DETECTED, {'device': fam14, 'fam14': fam14, 'force_overwrite': force_overwrite})
+            await self.app_bus.async_fire_event(AppBusEventType.ASYNC_DEVICE_DETECTED, {'device': fam14, 'base_id': self.current_base_id, 'force_overwrite': force_overwrite})
 
             # iterate through all devices
             async for dev in self.enumerate_bus():
                 try:
                     self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Found device: {dev}", 'color':'grey'})
                     self.app_bus.fire_event(AppBusEventType.DEVICE_SCAN_STATUS, 'DEVICE_DETECTED')
-                    await self.app_bus.async_fire_event(AppBusEventType.ASYNC_DEVICE_DETECTED, {'device': dev, 'fam14': fam14, 'force_overwrite': force_overwrite})
+                    await self.app_bus.async_fire_event(AppBusEventType.ASYNC_DEVICE_DETECTED, {'device': dev, 'base_id': self.current_base_id, 'force_overwrite': force_overwrite})
 
                 except TimeoutError:
                     logging.error("Read error, skipping: Device %s announces %d memory but produces timeouts at reading" % (dev, dev.discovery_response.memory_size))

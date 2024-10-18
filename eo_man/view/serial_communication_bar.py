@@ -46,10 +46,10 @@ class SerialConnectionBar():
         l = ttk.Label(f, text="Serial Port: ")
         l.pack(side=tk.LEFT, padx=(0, 5), pady=5)
 
-        self.cb_serial_ports = ttk.Combobox(f, state="readonly", width="14") 
+        self.cb_serial_ports = ttk.Combobox(f, state=NORMAL, width="14") 
         self.cb_serial_ports.pack(side=tk.LEFT, padx=(0, 5), pady=5)
 
-        self.b_connect = ttk.Button(f, text="Connect", state=DISABLED, command=self.toggle_serial_connection_command)
+        self.b_connect = ttk.Button(f, text="Connect", state=NORMAL, command=self.toggle_serial_connection_command)
         self.b_connect.pack(side=tk.LEFT, padx=(0, 5), pady=5)
 
         s = ttk.Separator(f, orient=VERTICAL )
