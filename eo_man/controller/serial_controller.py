@@ -559,6 +559,7 @@ class SerialController():
             # iterate through all devices
             async for dev in self.enumerate_bus():
                 try:
+                    await dev.read_mem()
                     self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Found device: {dev}", 'color':'grey'})
                     self.app_bus.fire_event(AppBusEventType.DEVICE_SCAN_STATUS, 'DEVICE_DETECTED')
                     await self.app_bus.async_fire_event(AppBusEventType.ASYNC_DEVICE_DETECTED, {'device': dev, 'base_id': self.current_base_id, 'force_overwrite': force_overwrite})

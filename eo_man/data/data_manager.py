@@ -203,30 +203,30 @@ class DataManager():
                 self.devices[bd.external_id] = bd
                 self.app_bus.fire_event(AppBusEventType.UPDATE_DEVICE_REPRESENTATION, bd)
 
-                for si in bd.memory_entries:
-                    _bd:Device = Device.get_decentralized_device_by_sensor_info(si, data['base_id'])
+            for si in bd.memory_entries:
+                _bd:Device = Device.get_decentralized_device_by_sensor_info(si, data['base_id'])
 
-                    if _bd.external_id not in self.devices or not self.devices[_bd.external_id].bus_device:
+                if _bd.external_id not in self.devices or update or not self.devices[_bd.external_id].bus_device:
+                    self.devices[_bd.external_id] = _bd
+                    self.app_bus.fire_event(AppBusEventType.UPDATE_SENSOR_REPRESENTATION, _bd)
+
+                # add device a second time with base id of FTD14
+                if bd.is_ftd14():                    
+                    _bd:Device = Device.get_decentralized_device_by_sensor_info(si, bd.additional_fields['second base id'])
+                
+                    if _bd.external_id not in self.devices or update or not self.devices[_bd.external_id].bus_device:
                         self.devices[_bd.external_id] = _bd
                         self.app_bus.fire_event(AppBusEventType.UPDATE_SENSOR_REPRESENTATION, _bd)
-
-                    # add device a second time with base id of FTD14
-                    if bd.is_ftd14():                    
-                        _bd:Device = Device.get_decentralized_device_by_sensor_info(si, bd.additional_fields['second base id'])
-                    
-                        if _bd.external_id not in self.devices or not self.devices[_bd.external_id].bus_device:
-                            self.devices[_bd.external_id] = _bd
-                            self.app_bus.fire_event(AppBusEventType.UPDATE_SENSOR_REPRESENTATION, _bd)
                 
-                # add features of device as own entity/device
-                feature = Device.get_feature_as_device(bd)
-                if feature is not None: 
-                    self.devices[feature.external_id] = feature
-                    self.app_bus.fire_event(AppBusEventType.UPDATE_DEVICE_REPRESENTATION, feature)
+            # add features of device as own entity/device
+            feature = Device.get_feature_as_device(bd)
+            if feature is not None and (feature.external_id not in self.devices or update): 
+                self.devices[feature.external_id] = feature
+                self.app_bus.fire_event(AppBusEventType.UPDATE_DEVICE_REPRESENTATION, feature)
 
-                # if a new gateway was detected check if there are already devices detected which should be moved as child nodes under the newly detected gateway.
-                if bd.is_fam14():
-                    await self._find_and_update_devices_belonging_to_gateway(bd.base_id)
+            # if a new gateway was detected check if there are already devices detected which should be moved as child nodes under the newly detected gateway.
+            if bd.is_fam14():
+                await self._find_and_update_devices_belonging_to_gateway(bd.base_id)
 
 
     async def _find_and_update_devices_belonging_to_gateway(self, base_id:str):
