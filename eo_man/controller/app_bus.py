@@ -1,3 +1,6 @@
+import inspect
+import asyncio
+
 from enum import Enum
 from .. import LOGGER
 
@@ -18,10 +21,14 @@ class AppBusEventType(Enum):
     SET_DATA_TABLE_FILTER = 13          # applies data filter to data table
     ADDED_DATA_TABLE_FILTER = 14        # adds data filter to application data
     REMOVED_DATA_TABLE_FILTER = 15      # remove data filter from application data
-    ASYNC_TRANSCEIVER_DETECTED = 17      # type:str (FAM-USB), base_id:str 00-00-00-00
+    ASYNC_TRANSCEIVER_DETECTED = 17     # type:str (FAM-USB), base_id:str 00-00-00-00
     SEND_MESSAGE_TEMPLATE_LIST_UPDATED = 18
+    REQUEST_SERVICE_ENDPOINT_DETECTION = 19
+    SERVICE_ENDPOINTS_UPDATES = 20     # fired when new services are detected
 
 class AppBus():
+
+    
 
     def __init__(self) -> None:
         self.handler_count = 0
@@ -47,7 +54,10 @@ class AppBus():
         # print(f"[Controller] Fire event {event}")
         for h in self._controller_event_handlers[event].values(): 
             try:
-                h(data)
+                if inspect.iscoroutinefunction(h):
+                    asyncio.run(h(data))
+                else:
+                    h(data)
             except:
                 LOGGER.exception(f"Error handling event {event}")
                 
@@ -56,6 +66,9 @@ class AppBus():
         # print(f"[Controller] Fire async event {event}")
         for h in self._controller_event_handlers[event].values(): 
             try:
-                await h(data)
+                if inspect.iscoroutinefunction(h):
+                    await h(data)
+                else:
+                    h(data)
             except:
                 LOGGER.exception(f"Error handling event {event}")

@@ -145,7 +145,7 @@ GATEWAY_DISPLAY_NAMES = {
     GatewayDeviceType.EltakoFAM14: "FAM14 (ESP2)",
     GatewayDeviceType.EltakoFGW14USB: 'FGW14-USB (ESP2)',
     GatewayDeviceType.EltakoFAMUSB: 'FAM-USB (ESP2)',
-    GatewayDeviceType.USB300: 'ESP3 Gateway',
+    # GatewayDeviceType.USB300: 'ESP3 Gateway',
     GatewayDeviceType.ESP3: 'ESP3 Gateway',
     GatewayDeviceType.LAN: 'LAN Gateway (ESP3)',
     GatewayDeviceType.LAN_ESP2: "Home Assistant - Virtual Gateway Adapter",

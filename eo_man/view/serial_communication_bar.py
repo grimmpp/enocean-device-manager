@@ -1,3 +1,5 @@
+from typing import Dict, List
+
 import tkinter as tk
 from tkinter import *
 from tkinter import ttk
@@ -10,6 +12,7 @@ from ..controller.app_bus import AppBus, AppBusEventType
 from ..controller.serial_controller import SerialController
 from ..data.data_manager import DataManager
 from ..data import data_helper
+from ..data.data_helper import get_gateway_type_by_name
 
 from eltakobus.message import *
 from eltakobus.eep import *
@@ -25,6 +28,8 @@ class SerialConnectionBar():
         self.app_bus = app_bus
         self.data_manager = data_manager
         self.serial_cntr = serial_controller
+
+        self.endpoint_list:Dict[str, List[str]]={}
 
         f = LabelFrame(main, text="Serial Connection", bd=1)#, relief=SUNKEN)
         f.grid(row=row, column=0, columnspan=1, sticky=W+E+N+S, pady=(0,2), padx=2)
@@ -92,6 +97,7 @@ class SerialConnectionBar():
         self.app_bus.add_event_handler(AppBusEventType.WINDOW_LOADED, self.on_window_loaded)
         self.app_bus.add_event_handler(AppBusEventType.UPDATE_DEVICE_REPRESENTATION, self.update_cb_gateways_for_HA)
         self.app_bus.add_event_handler(AppBusEventType.UPDATE_SENSOR_REPRESENTATION, self.update_cb_gateways_for_HA)
+        self.app_bus.add_event_handler(AppBusEventType.SERVICE_ENDPOINTS_UPDATES, self.update_service_endpoints)
         
 
     def update_cb_gateways_for_HA(self, event=None):
@@ -110,7 +116,7 @@ class SerialConnectionBar():
         self.cb_serial_ports['values'] = []
         self.cb_serial_ports.set('')
 
-        self.detect_serial_ports_command()
+        self.update_combobox_serial_port()
 
 
     def write_ha_senders_to_devices(self):
@@ -204,31 +210,64 @@ class SerialConnectionBar():
             self.b_sync_ha_sender.config(state=DISABLED)
             if not skipp_serial_port_detection: self.detect_serial_ports_command()
 
+    def update_service_endpoints(self, data:Dict[str, List[str]]=None):
+
+        self.endpoint_list = data
+        self.update_combobox_serial_port()
+
+    def update_combobox_serial_port(self):
+
+        self.b_detect.config(state=NORMAL)
+        self.cb_device_type.config(state="readonly")
+        try:
+            self.cb_serial_ports['values'] = self.endpoint_list[get_gateway_type_by_name(self.cb_device_type.get())]
+            if len(self.cb_serial_ports['values']) > 0:
+                self.cb_serial_ports.set(self.cb_serial_ports['values'][0])
+                self.b_connect.config(state=NORMAL)
+                self.cb_serial_ports.config(state=NORMAL)
+            else:
+                # self.b_connect.config(state=DISABLED)
+                self.cb_serial_ports.config(state=NORMAL)
+                self.cb_serial_ports.set('')
+        except:
+            # self.b_connect.config(state=DISABLED)
+            self.cb_serial_ports.config(state=NORMAL)
+            self.cb_serial_ports.set('')
+            
+        self.main.config(cursor="")
 
     def detect_serial_ports_command(self, force_reload:bool=False):
 
-        def detect_serial_ports():
-            try:
-                self.main.config(cursor="watch")    #set cursor for waiting
-                self.b_detect.config(state=DISABLED)
-                self.b_connect.config(state=DISABLED)
-                self.cb_device_type.config(state=DISABLED)
-                self.cb_serial_ports.config(state=DISABLED)
-                serial_ports = self.serial_cntr.get_serial_ports(self.cb_device_type.get(), force_reload)
-                self.b_detect.config(state=NORMAL)
-                self.cb_device_type.config(state=NORMAL)
-                self.cb_serial_ports['values'] = serial_ports
-                if len(self.cb_serial_ports['values']) > 0:
-                    self.cb_serial_ports.set(self.cb_serial_ports['values'][0])
-                    self.b_connect.config(state=NORMAL)
-                else:
-                    self.b_connect.config(state=DISABLED)
-                    self.cb_serial_ports.set('')
-            except:
-                # reset buttons
-                LOGGER.exception("Was not able to detect serial ports.")
-            else:
-                self.is_connected_handler(data={'connected': False}, skipp_serial_port_detection=True)
+        self.main.config(cursor="watch")    #set cursor for waiting
+        self.b_detect.config(state=DISABLED)
+        self.b_connect.config(state=DISABLED)
+        self.cb_device_type.config(state=DISABLED)
+        self.cb_serial_ports.config(state=DISABLED)
+        self.app_bus.fire_event(AppBusEventType.REQUEST_SERVICE_ENDPOINT_DETECTION, force_reload)
 
-        t = threading.Thread(target=detect_serial_ports)
-        t.start()
+        # def detect_serial_ports():
+        #     try:
+        #         self.main.config(cursor="watch")    #set cursor for waiting
+        #         self.b_detect.config(state=DISABLED)
+        #         self.b_connect.config(state=DISABLED)
+        #         self.cb_device_type.config(state=DISABLED)
+        #         self.cb_serial_ports.config(state=DISABLED)
+        #         self.app_bus.fire_event(AppBusEventType.REQUEST_SERVICE_ENDPOINT_DETECTION, None)
+        #         serial_ports = self.serial_cntr.get_serial_ports(self.cb_device_type.get(), force_reload)
+        #         self.b_detect.config(state=NORMAL)
+        #         self.cb_device_type.config(state=NORMAL)
+        #         self.cb_serial_ports['values'] = serial_ports
+        #         if len(self.cb_serial_ports['values']) > 0:
+        #             self.cb_serial_ports.set(self.cb_serial_ports['values'][0])
+        #             self.b_connect.config(state=NORMAL)
+        #         else:
+        #             self.b_connect.config(state=DISABLED)
+        #             self.cb_serial_ports.set('')
+        #     except:
+        #         # reset buttons
+        #         LOGGER.exception("Was not able to detect serial ports.")
+        #     else:
+        #         self.is_connected_handler(data={'connected': False}, skipp_serial_port_detection=True)
+
+        # t = threading.Thread(target=detect_serial_ports)
+        # t.start()
