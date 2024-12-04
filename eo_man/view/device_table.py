@@ -230,6 +230,10 @@ class DeviceTable():
                 image = ImageGallery.get_fgw14_usb_icon(self.ICON_SIZE)
             elif d.is_ftd14():
                 image = ImageGallery.get_ftd14_icon(self.ICON_SIZE)
+            elif d.is_EUL_Wifi_gw():
+                image = ImageGallery.get_eul_gateway_icon(self.ICON_SIZE)
+            elif d.is_mgw():
+                image = ImageGallery.get_mgw_piotek_icon(self.ICON_SIZE)
             else:
                 image = ImageGallery.get_blank(self.ICON_SIZE)
 

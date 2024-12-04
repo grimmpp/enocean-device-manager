@@ -12,27 +12,7 @@ from .const import *
 
 class Device():
     """Data representation of a device"""
-    static_info:dict={}
-    address:str = None
-    channel:int=None
-    dev_size:int=None
-    external_id:str=None
-    device_type:str=None
-    key_function:str=None
-    version:str=None
-    name:str=None
-    comment:str = ""
-    base_id:str=None
-    bus_device:bool=False
-    memory_entries:list[SensorInfo]=[]  # only used for bus devices
-
-    # vars for ha
-    use_in_ha:bool=False
-    ha_platform:Platform=None
-    eep:str=None
-    additional_fields:dict={}
-
-
+    
     def __init__(self, 
                  address:str=None, 
                  bus_device:bool=False,
@@ -47,18 +27,26 @@ class Device():
                  use_in_ha:bool=False,
                  memory_entries:list[SensorInfo]=[]):
         
-        self.address = address
-        self.bus_device = bus_device
-        self.channel = channel
-        self.dev_size = dev_size
-        self.external_id = external_id
-        self.device_type = device_type
-        self.version = version
-        self.name = name
-        self.comment = comment
-        self.base_id = base_id
-        self.use_in_ha = use_in_ha
-        self.memory_entries = memory_entries
+        self.address:str = address
+        self.bus_device:bool = bus_device
+        self.channel:int = channel
+        self.dev_size:int = dev_size
+        self.external_id:str = external_id
+        self.device_type:str = device_type
+        self.version:str = version
+        self.name:str = name
+        self.comment:str = comment
+        self.base_id:str = base_id
+        self.use_in_ha:bool = use_in_ha
+        self.memory_entries:list[SensorInfo] = memory_entries
+
+        self.ha_platform:Platform=None
+        self.key_function:str=None
+        self.eep:str=None
+
+        self.static_info:dict={}
+        self.additional_fields:dict={}
+
 
     def is_fam14(self) -> bool:
         return self.device_type is not None and (FAM14.__name__ in self.device_type or self.device_type == GatewayDeviceType.EltakoFAM14.value)
@@ -70,19 +58,36 @@ class Device():
         return self.device_type is not None and ('FGW14_USB' in self.device_type or self.device_type == GatewayDeviceType.EltakoFGW14USB.value)
 
     def is_usb300(self) -> bool:
-        return self.device_type is not None and ('USB300' in self.device_type or self.device_type == GatewayDeviceType.USB300)
+        return self.device_type is not None and ('USB300' in self.device_type or self.device_type == GatewayDeviceType.USB300.value)
+    
+    def is_lan_gw(self) -> bool:
+        return self.device_type is not None and ('lan' in self.device_type or self.device_type in [GatewayDeviceType.LAN.value, GatewayDeviceType.LAN_ESP2.value])
 
     def is_ftd14(self) -> bool:
         return self.device_type == GatewayDeviceType.EltakoFTD14.value
+    
+    def is_EUL_Wifi_gw(self) -> bool:
+        return self.device_type == GatewayDeviceType.EUL_LAN.value or self.is_mdns_service('EUL')
+    
+    def is_mgw(self) -> bool:
+        return self.device_type == GatewayDeviceType.MGW_LAN.value or self.is_mdns_service('SmartConn')
+    
+    def is_virtual_home_assistant_gw(self) -> bool:
+        return self.device_type == GatewayDeviceType.VirtualNetworkAdapter.value or self.is_mdns_service('Virtual-Network-Gateway-Adapter')
+
+    def is_mdns_service(self, service_name) -> bool:
+        if 'mdns_service' in self.additional_fields and self.additional_fields['mdns_service'] is not None:
+            return service_name in self.additional_fields['mdns_service']
+        return False
 
     def is_gateway(self) -> bool:
         return self.is_wired_gateway() or self.is_wireless_transceiver()
     
     def is_wired_gateway(self) -> bool:
-        return self.is_fam14() or self.is_fgw14_usb()
+        return self.is_fam14() or self.is_fgw14_usb() or self.is_mgw()
 
     def is_wireless_transceiver(self) -> bool:
-        return self.is_usb300() or self.is_fam_usb() or (self.device_type is not None and 'Wireless Transceiver' in self.device_type)
+        return self.is_usb300() or self.is_fam_usb() or self.is_lan_gw() or (self.device_type is not None and 'Wireless Transceiver' in self.device_type) or self.is_EUL_Wifi_gw()
     
     def is_bus_device(self) -> bool:
         return self.bus_device
@@ -114,7 +119,7 @@ class Device():
                 d1.additional_fields[k] = v
 
     @classmethod
-    async def async_get_bus_device_by_natvice_bus_object(cls, device: BusObject, fam14: FAM14, channel:int=1):
+    async def async_get_bus_device_by_natvice_bus_object(cls, device: BusObject, base_id: str, channel:int=1):
         bd = Device()
         bd.additional_fields = {}
         id = device.address + channel -1
@@ -122,7 +127,7 @@ class Device():
         bd.channel = channel
         bd.dev_size = device.size
         bd.use_in_ha = True
-        bd.base_id = await fam14.get_base_id()
+        bd.base_id = base_id
         bd.device_type = type(device).__name__
         if bd.device_type == 'FAM14': bd.device_type = GatewayDeviceType.EltakoFAM14.value
         if bd.device_type == 'FGW14_USB': bd.device_type = GatewayDeviceType.EltakoFGW14USB.value
@@ -135,9 +140,9 @@ class Device():
             bd.external_id = bd.base_id
         elif isinstance(device, FTD14):
             # bd.base_id = await device.get_base_id()    # TODO: needs to have different base id
-            bd.external_id = a2s( (await fam14.get_base_id_in_int()) + id )
+            bd.external_id = add_addresses(bd.address, base_id)
         else:
-            bd.external_id = a2s( (await fam14.get_base_id_in_int()) + id )
+            bd.external_id = add_addresses(bd.address, base_id)
         bd.memory_entries = [m for m in (await device.get_all_sensors()) if b2s(m.dev_adr) == bd.address]
         # print(f"{bd.device_type} {bd.address}")
         # print_memory_entires( bd.memory_entries)
@@ -274,7 +279,7 @@ class Device():
         return bd
     
     @classmethod
-    async def async_get_decentralized_device_by_sensor_info(cls, sensor_info:SensorInfo, device: BusObject, fam14: FAM14, channel:int=1):
+    async def async_get_decentralized_device_by_sensor_info(cls, sensor_info:SensorInfo, fam14: FAM14):
         return cls.get_decentralized_device_by_sensor_info(sensor_info, (await fam14.get_base_id()) )
     
     @classmethod 

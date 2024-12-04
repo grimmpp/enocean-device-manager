@@ -5,6 +5,7 @@ from tkinter import ttk
 import tkinter.scrolledtext as ScrolledText
 
 from eltakobus.message import EltakoPoll, EltakoDiscoveryReply, EltakoDiscoveryRequest, EltakoMessage, prettify, Regular1BSMessage, EltakoWrapped1BS
+from esp2_gateway_adapter.esp3_serial_com import ESP3SerialCommunicator
 
 from eo_man import LOGGER
 
@@ -32,8 +33,16 @@ class LogOutputPanel():
         # self.e_search.pack(side=LEFT, padx=(2,0))
 
         self.show_telegram_values = tk.BooleanVar(value=True)
-        cb = ttk.Checkbutton(tool_bar, text="Show Telegram Values", variable=self.show_telegram_values)
-        cb.pack(side=LEFT, padx=(2,0))
+        cb_show_values = ttk.Checkbutton(tool_bar, text="Show Telegram Values", variable=self.show_telegram_values)
+        cb_show_values.pack(side=LEFT, padx=(2,0))
+
+        self.show_esp2_binary =tk.BooleanVar(value=False)
+        cb_show_es2_binary = ttk.Checkbutton(tool_bar, text="Show ESP2 Binary", variable=self.show_esp2_binary)
+        cb_show_es2_binary.pack(side=LEFT, padx=(2,0))
+
+        self.show_esp3_binary =tk.BooleanVar(value=False)
+        cb_show_es3_binary = ttk.Checkbutton(tool_bar, text="Show ESP3 Binary", variable=self.show_esp3_binary)
+        cb_show_es3_binary.pack(side=LEFT, padx=(2,0))
 
         self.st = ScrolledText.ScrolledText(pane, border=3,  height=150, 
                                             state=DISABLED, bg='black', fg='lightgrey', 
@@ -51,7 +60,7 @@ class LogOutputPanel():
         current_base_id:str = data['base_id']
 
         # filter out poll messages
-        filter = type(telegram) not in [EltakoPoll, EltakoDiscoveryReply, EltakoDiscoveryRequest]
+        filter = type(telegram) not in [EltakoPoll]
         # filter out empty telegrams (generated when sending telegrams with FAM-USB)
         try:
             filter &= (int.from_bytes(telegram.address, 'big') > 0 and int.from_bytes(telegram.payload, 'big'))
@@ -60,7 +69,9 @@ class LogOutputPanel():
 
         if filter:
             tt = type(telegram).__name__
-            adr = b2s(telegram.address)
+            adr = str(telegram.address) if isinstance(telegram.address, int) else b2s(telegram.address)
+            if hasattr(telegram, 'reported_address'):
+                adr = telegram.reported_address
             payload = ''
             if hasattr(telegram, 'data'):
                 payload += ', data: '+b2s(telegram.data)
@@ -81,10 +92,14 @@ class LogOutputPanel():
                 values = ''
 
             display_values:str = values if self.show_telegram_values.get() else ''
+            display_esp2:str = f", ESP2: {telegram.serialize().hex()}" if self.show_esp2_binary.get() else ''
+            display_esp3:str = f", ESP3: { ''.join(f'{num:02x}' for num in ESP3SerialCommunicator.convert_esp2_to_esp3_message(telegram).build())}" if self.show_esp3_binary.get() else ''
+
             log_msg     = f"Received Telegram: {tt} from {adr}{payload}{values}"
-            display_msg = f"Received Telegram: {tt} from {adr}{payload}{display_values}"
-            self.receive_log_message({'msg': display_msg, 'color': 'darkgrey'})
             LOGGER.info(log_msg)
+
+            display_msg = f"Received Telegram: {tt} from {adr}{payload}{display_values}{display_esp2}{display_esp3}"
+            self.receive_log_message({'msg': display_msg, 'color': 'darkgrey'})
 
 
     def receive_log_message(self, data):

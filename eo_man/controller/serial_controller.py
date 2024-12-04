@@ -1,16 +1,12 @@
 from enum import Enum
-import sys
-import glob
-import serial
 from serial import rs485
 from typing import Iterator
 from termcolor import colored
 import logging
 import threading
-
+import socket
 
 import serial.tools.list_ports
-from serial.tools.list_ports_common import ListPortInfo
 
 from eltakobus import *
 from eltakobus.device import *
@@ -19,177 +15,169 @@ from eltakobus.message import Regular4BSMessage
 
 from esp2_gateway_adapter.esp3_serial_com import ESP3SerialCommunicator
 from esp2_gateway_adapter.esp3_tcp_com import TCP2SerialCommunicator, detect_lan_gateways
+from esp2_gateway_adapter.esp2_tcp_com import ESP2TCP2SerialCommunicator
 
+from ..data.const import GatewayDeviceType, get_gateway_type_by_name
 from ..data import data_helper
-from ..data.device import Device
 from ..data.const import GatewayDeviceType as GDT, GATEWAY_DISPLAY_NAMES as GDN
 
-from .app_bus import AppBusEventType, AppBus
+from .gateway_registry import GatewayRegistry
 
+from .app_bus import AppBusEventType, AppBus
 
 class SerialController():
 
     USB_VENDOR_ID = 0x0403
 
-    def __init__(self, app_bus:AppBus) -> None:
+    def __init__(self, app_bus:AppBus, gw_registry: GatewayRegistry) -> None:
         self.app_bus = app_bus
         self._serial_bus = None
         self.connected_gateway_type = None
+        self.connected_mdns_service = ''
         self.current_base_id:str = None
+        self.current_device_type:GatewayDeviceType = None
         self.gateway_id:str = None
-        self.port_mapping = None
+
+        self.gw_registry:GatewayRegistry = gw_registry
+        
+        self.received_bus_device_discovery:Dict[str,List[EltakoDiscoveryReply]] = {}
+        self.current_discovery_reply = None
+        self.received_bus_device_memory:Dict[str,List[EltakoMemoryResponse]] = {}
 
         self.app_bus.add_event_handler(AppBusEventType.WINDOW_CLOSED, self.on_window_closed)
     
-
+    
+    
     def on_window_closed(self, data) -> None:
         self.kill_serial_connection_before_exit()
 
 
-
-
-    def get_serial_ports(self, device_type:str, force_reload:bool=False) ->list[str]:
-        if force_reload or self.port_mapping is None:
-            self.port_mapping = self._get_gateway2serial_port_mapping()
-            self.port_mapping[GDT.LAN] = detect_lan_gateways()
-
-        if device_type == GDN[GDT.EltakoFAM14]:
-            return self.port_mapping[GDT.EltakoFAM14.value]
-        elif device_type == GDN[GDT.EltakoFGW14USB]:
-            return self.port_mapping[GDT.EltakoFGW14USB.value]
-        elif device_type == GDN[GDT.EltakoFAMUSB]:
-            return self.port_mapping[GDT.EltakoFAMUSB.value]
-        elif device_type == GDN[GDT.USB300]:
-            return self.port_mapping[GDT.USB300.value]
-        elif device_type == GDN[GDT.LAN]:
-            return self.port_mapping[GDT.LAN]
-        else:
-            return []
-    
     def is_connected_gateway_device_bus(self):
         return self.connected_gateway_type.startswith('FAM14') or self.connected_gateway_type.startswith('FGW14-USB')
 
-    def _get_gateway2serial_port_mapping(self) -> dict[str:list[str]]:
-        """ Lists serial port names
-
-            :raises EnvironmentError:
-                On unsupported or unknown platforms
-            :returns:
-                A list of the serial ports available on the system
-        """
-        # python -m serial.tools.miniterm COM10 57600 --encoding hexlify
-        
-        # _ports:list[ListPortInfo] = serial.tools.list_ports.comports()
-        # for p in _ports:
-        #     print(f"port: {p.device}, hwid: {p.hwid}")
-        # print(len(_ports), 'ports found')
-
-        if sys.platform.startswith('win'):
-            ports = ['COM%s' % (i + 1) for i in range(256)]
-        elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
-            # this excludes your current terminal "/dev/tty"
-            ports = glob.glob('/dev/tty[A-Za-z]*')
-        elif sys.platform.startswith('darwin'):
-            ports = glob.glob('/dev/tty.*')
-        else:
-            raise EnvironmentError('Unsupported platform')
-        
-        # ports = [p.device for p in _ports if p.vid == self.USB_VENDOR_ID]
-
-        fam14 = GDT.EltakoFAM14.value
-        usb300 = GDT.USB300.value
-        famusb = GDT.EltakoFAMUSB.value
-        fgw14usb = GDT.EltakoFGW14USB.value
-        result = { fam14: [], usb300: [], famusb: [], fgw14usb: [], 'all': [] }
-
-        count = 0
-        for baud_rate in [9600, 57600]:
-            for port in ports:
-                count += 1
-                # take in 10 as one step and start with 10 to see directly process is running
-                progress = min(round((count/(2*256.0))*10)*10 + 10, 100)
-                self.app_bus.fire_event(AppBusEventType.DEVICE_ITERATION_PROGRESS, progress) 
-
-                try:
-                    # is faster to precheck with serial
-                    s = serial.Serial(port, baudrate=baud_rate, timeout=0.2)
-                    s.rs485_mode = serial.rs485.RS485Settings()
-                    s.close()
-
-                    # test usb300
-                    if baud_rate == 57600:
-                        s = ESP3SerialCommunicator(port, auto_reconnect=False)
-                        s.start()
-                        s.is_serial_connected.wait()
-
-                        if s.base_id and isinstance(s.base_id, list) and port not in result['all']:
-                            result[usb300].append(port)
-                            result['all'].append(port)
-                            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"USB300 detected on serial port {port},(baudrate: {baud_rate})", 'color':'lightgreen'})
-                            s.stop()
-                            continue
-
-                        s.stop()
-                    
-                    # test fam14, fgw14-usb and fam-usb
-                    s = RS485SerialInterfaceV2(port, baud_rate=baud_rate, delay_message=0.2, auto_reconnect=False)
-                    s.start()
-                    s.is_serial_connected.wait()
-
-                    # test fam14
-                    if s.suppress_echo and port not in result['all']:
-                        result[fam14].append(port)
-                        result['all'].append(port)
-                        self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"FAM14 detected on serial port {port},(baudrate: {baud_rate})", 'color':'lightgreen'})
-                        s.stop()
-                        continue
-
-                    # test fam-usb
-                    if baud_rate == 9600:
-                        # try to get base id of fam-usb to test if device is fam-usb
-                        base_id = asyncio.run( self.async_get_base_id_for_fam_usb(s, None) )
-                        # fam14 can answer on both baud rates but fam-usb cannot echo
-                        if base_id is not None and base_id != '00-00-00-00' and not s.suppress_echo and port not in result['all']:
-                            result[famusb].append(port)
-                            result['all'].append(port)
-                            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"FAM-USB detected on serial port {port},(baudrate: {baud_rate})", 'color':'lightgreen'})
-                            s.stop()
-                            continue
-
-                    # fgw14-usb
-                    if baud_rate == 57600:
-                        if not s.suppress_echo and port not in result['all']:
-                            result[fgw14usb].append(port)
-                            result['all'].append(port)
-                            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"FGW14-USB could be on serial port {port},(baudrate: {baud_rate})", 'color':'lightgreen'})
-                            s.stop()
-                            continue
-                
-                    s.stop()
-
-                except (OSError, serial.SerialException) as e:
-                    pass
-
-        self.app_bus.fire_event(AppBusEventType.DEVICE_ITERATION_PROGRESS, 0)
-        return result
     
     def is_serial_connection_active(self) -> bool:
         return self._serial_bus is not None and self._serial_bus.is_active()
-    
+
+
     def is_fam14_connection_active(self) -> bool:
         return self.is_serial_connection_active() and self._serial_bus.suppress_echo
 
-    def _received_serial_event(self, message) -> None:
-        if isinstance(message.address, int):
-             message.address = message.address.to_bytes(4, 'big')
 
-        self.app_bus.fire_event(AppBusEventType.SERIAL_CALLBACK, {'msg': message, 
-                                                                  'base_id': self.current_base_id,
-                                                                  'gateway_id': self.gateway_id})
+    def _received_serial_event(self, message: ESP2Message) -> None:
+        try:
+            self.process_base_id_and_version_info(message)
+
+            self.process_discovery_message(message)
+
+            # log received message
+            self.app_bus.fire_event(AppBusEventType.SERIAL_CALLBACK, {'msg': message, 
+                                                                    'base_id': self.current_base_id,
+                                                                    'gateway_id': self.gateway_id})
+            
+        except Exception as e:
+            logging.exception(e)
+            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': e, 'log-level': 'ERROR', 'color': 'red'})
+            
+
+    def process_base_id_and_version_info(self, message: ESP2Message):
+        # receive base id
+        if message.body[:2] == b'\x8b\x98':
+            self.current_base_id = b2s(message.body[2:6])
+            device_type_index = message.body[6]
+            # for virtual network gateway check which gateway is really sending
+            if device_type_index > 0:
+                gw_type = GDT.get_by_index(device_type_index-1)
+                self.current_device_type = gw_type
+
+            data = {
+                'type': self.current_device_type, 
+                'mdns_service': self.connected_mdns_service,
+                'base_id': self.current_base_id, 
+                'gateway_id': self.current_base_id,
+                'tcm_version': '', 
+                'api_version': ''
+            }
+
+            if hasattr(self._serial_bus, 'host') and hasattr(self._serial_bus, 'port'):
+                data['address'] = f"{self._serial_bus._host}:{self._serial_bus._port}"
+
+            self.app_bus.fire_event(AppBusEventType.ASYNC_TRANSCEIVER_DETECTED, data)
+
+        # receive software version 
+        if message.body[:2] == b'\x8b\x8c':
+            tcm_sw_v = '.'.join(str(n) for n in message.body[2:6])
+            api_v = '.'.join(str(n) for n in message.body[6:10])
+
+            data = {
+                'type': self.current_device_type, 
+                'mdns_service': self.connected_mdns_service,
+                'base_id': self.current_base_id, 
+                'gateway_id': self.current_base_id,
+                'tcm_version': tcm_sw_v, 
+                'api_version': api_v
+            }
+
+            if hasattr(self._serial_bus, 'host') and hasattr(self._serial_bus, 'port'):
+                data['address'] = f"{self._serial_bus._host}:{self._serial_bus._port}"
+
+            self.app_bus.fire_event(AppBusEventType.ASYNC_TRANSCEIVER_DETECTED, data)
+        
+    def process_discovery_message(self, message: EltakoDiscoveryReply):
+        
+        if isinstance(message, EltakoDiscoveryReply):
+            self.current_discovery_reply = message
+            if self.current_base_id not in self.received_bus_device_discovery:
+                self.received_bus_device_discovery[self.current_base_id] = []
+            self.received_bus_device_discovery[self.current_base_id].append( message )
+            
+            dev = None
+            for o in sorted_known_objects:
+                if message.model[0:2] in o.discovery_names and (o.size is None or o.size == message.reported_size):
+                    dev = o(message)
+                    break
+            if dev is None:
+                dev = BusObject(message)
+            
+            async def get_all_sensors(): return []
+            dev.get_all_sensors = get_all_sensors
+
+            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Found device: {dev}", 'color':'grey'})
+            self.app_bus.fire_event(AppBusEventType.DEVICE_SCAN_STATUS, 'DEVICE_DETECTED')
+            self.app_bus.fire_event(AppBusEventType.ASYNC_DEVICE_DETECTED, {'device': dev, 'base_id': self.current_base_id, 'force_overwrite': False})
+
+
+    def process_memory_response(self, message: EltakoMemoryResponse):
+        if self.current_discovery_reply and isinstance(message, EltakoMemoryResponse):
+            if self.current_discovery_reply not in self.received_bus_device_memory:
+                self.received_bus_device_memory[self.current_discovery_reply] = []
+            self.received_bus_device_memory[self.current_discovery_reply].append( message )
+            
+            if message.row == self.current_discovery_reply.memory_size-1:
+                
+                dev = None
+                for o in sorted_known_objects:
+                    if self.current_discovery_reply.model[0:2] in o.discovery_names and (o.size is None or o.size == self.current_discovery_reply.reported_size):
+                        dev = o(self.current_discovery_reply)
+                        break
+                if dev is None:
+                    dev = BusObject(self.current_discovery_reply)
+                dev.memory = [r.value for r in self.received_bus_device_memory[self.current_discovery_reply]]
+                
+                self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Found device: {dev}", 'color':'grey'})
+                self.app_bus.fire_event(AppBusEventType.DEVICE_SCAN_STATUS, 'DEVICE_DETECTED')
+                asyncio.run( self.app_bus.fire_event(AppBusEventType.ASYNC_DEVICE_DETECTED, {'device': dev, 'base_id': self.current_base_id, 'force_overwrite': True}) )
+
+
+    def connection_status_handler(self, connected: bool):
+        self.app_bus.fire_event(AppBusEventType.CONNECTION_STATUS_CHANGE, {'connected': connected})
+
 
     def establish_serial_connection(self, serial_port:str, device_type:str) -> None:
         baudrate:int=57600
         delay_message:float=.1
+        self.current_device_type = get_gateway_type_by_name(device_type)
+        self.connected_mdns_service = None
         if device_type == GDN[GDT.EltakoFAMUSB]:
             baudrate = 9600
         elif device_type == GDN[GDT.EltakoFAM14]:
@@ -198,18 +186,29 @@ class SerialController():
         try:
             if not self.is_serial_connection_active():
                 if device_type == GDN[GDT.LAN]:
-                    baudrate=5100
-                    self._serial_bus = TCP2SerialCommunicator(serial_port, 5100,
+                    ip_address = serial_port[:serial_port.rfind(':')]
+                    port = int(serial_port[serial_port.rfind(':')+1:])
+                    self.connected_mdns_service = self.gw_registry.find_mdns_service_by_ip_address(serial_port)
+                    self._serial_bus = TCP2SerialCommunicator(ip_address, port,
                                                               callback=self._received_serial_event,
                                                               esp2_translation_enabled=True,
                                                               auto_reconnect=False
                                                               )
+
                 elif device_type == GDN[GDT.ESP3]:
                     self._serial_bus = ESP3SerialCommunicator(serial_port, 
                                                               callback=self._received_serial_event,
                                                               esp2_translation_enabled=True,
                                                               auto_reconnect=False
                                                               )
+                elif device_type == GDN[GDT.LAN_ESP2]:
+                    ip_address = serial_port[:serial_port.rfind(':')]
+                    port = int(serial_port[serial_port.rfind(':')+1:])
+                    self.connected_mdns_service = self.gw_registry.find_mdns_service_by_ip_address(serial_port)
+                    self._serial_bus = ESP2TCP2SerialCommunicator(ip_address, port,
+                                                                  callback=self._received_serial_event,
+                                                                  auto_reconnect=False)
+                    
                 else:
                     self._serial_bus = RS485SerialInterfaceV2(serial_port, 
                                                               baud_rate=baudrate, 
@@ -218,14 +217,15 @@ class SerialController():
                                                               auto_reconnect=False)
                 self._serial_bus.start()
                 self._serial_bus.is_serial_connected.wait(timeout=2)
+                self._serial_bus.set_status_changed_handler(self.connection_status_handler)
                 
                 if not self._serial_bus.is_active():
                     self._serial_bus.stop()
                 
                 if self._serial_bus.is_active():
                     self.connected_gateway_type = device_type
-                    if device_type == GDN[GDT.LAN]:
-                        msg = f"TCP to Serial connection established. Server: {serial_port}:5100"
+                    if device_type in [GDN[GDT.LAN], GDN[GDT.LAN_ESP2] ]:
+                        msg = f"TCP to Serial connection established. Server: {serial_port}"
                     else:
                         msg = f"Serial connection established. serial port: {serial_port}, baudrate: {baudrate}"
                     self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'color':'green'})
@@ -241,12 +241,8 @@ class SerialController():
                         t = threading.Thread(target=run)
                         t.start()
                     else:
-                        if device_type == GDN[GDT.EltakoFAMUSB]: 
-                            asyncio.run( self.async_create_fam_usb_device() )
-                        elif device_type == GDN[GDT.USB300]:
-                            asyncio.run( self.async_create_usb300_device() )
-                        elif device_type == GDN[GDT.LAN]:
-                            asyncio.run( self.async_create_lan_gw_device(serial_port) )
+                        if device_type in [ GDN[GDT.EltakoFAMUSB], GDN[GDT.ESP3], GDN[GDT.LAN] ]:
+                            asyncio.run( self.async_create_gateway_device() )
 
                         self.app_bus.fire_event(
                                 AppBusEventType.CONNECTION_STATUS_CHANGE, 
@@ -255,7 +251,7 @@ class SerialController():
                 else:
                     self.app_bus.fire_event(AppBusEventType.CONNECTION_STATUS_CHANGE, {'serial_port':  serial_port, 'baudrate': baudrate, 'connected': False})
                     if device_type == GDN[GDT.LAN]:
-                        msg = f"Couldn't establish connection to {serial_port}:5100! Try to restart device."
+                        msg = f"Couldn't establish connection to {serial_port}! Try to restart device."
                     else:
                         msg = f"Establish connection for {device_type} on port {serial_port} failed! Device not ready."
                     self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
@@ -265,114 +261,26 @@ class SerialController():
             self.connected_gateway_type = None
             self.app_bus.fire_event(AppBusEventType.CONNECTION_STATUS_CHANGE, {'serial_port':  serial_port, 'baudrate': baudrate, 'connected': False})
             if device_type == GDN[GDT.LAN]:
-                msg = f"Establish connection for {device_type} to {serial_port}:5100 failed! Retry later."
+                msg = f"Establish connection for {device_type} to {serial_port} failed! Retry later."
             else:
                 msg = f"Establish connection for {device_type} on port {serial_port} failed!"
             self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
             logging.exception(msg, exc_info=True)
+   
 
+    async def async_create_gateway_device(self):
 
-    async def async_create_lan_gw_device(self, address):
-        try:
-            self._serial_bus.set_callback( None )
-            
-            time.sleep(.4)
+        await asyncio.sleep(2)
 
-            self.current_base_id = b2s(self._serial_bus.base_id)
-            self.gateway_id = self.current_base_id
+        await self._serial_bus.send_base_id_request()
 
-            await self.app_bus.async_fire_event(AppBusEventType.ASYNC_TRANSCEIVER_DETECTED, {'type': GDN[GDT.LAN], 
-                                                                                            'base_id': self.current_base_id, 
-                                                                                            'gateway_id': self.gateway_id,
-                                                                                            'address': address,
-                                                                                            'tcm_version': '', 
-                                                                                            'api_version': ''})
+        await self._serial_bus.send_version_request()                 
 
-
-        except Exception as e:
-            msg = 'Failed to get information about LAN GW (TCP2ESP3)!!!'
-            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
-            logging.exception(msg, exc_info=True)
-            raise e
-        finally:
-            self._serial_bus.set_callback( self._received_serial_event )     
-
-    async def async_create_usb300_device(self):
-        try:
-            self._serial_bus.set_callback( None )
-            
-            self.current_base_id = b2s(self._serial_bus.base_id)
-            self.gateway_id = self.current_base_id
-
-            await self.app_bus.async_fire_event(AppBusEventType.ASYNC_TRANSCEIVER_DETECTED, {'type': GDN[GDT.USB300], 
-                                                                                            'base_id': self.current_base_id, 
-                                                                                            'gateway_id': self.gateway_id,
-                                                                                            'tcm_version': '', 
-                                                                                            'api_version': ''})
-
-
-        except Exception as e:
-            msg = 'Failed to get information about USB300 (ESP3)!!!'
-            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
-            logging.exception(msg, exc_info=True)
-            raise e
-        finally:
-            self._serial_bus.set_callback( self._received_serial_event )                    
-
-
-    async def async_get_base_id_for_fam_usb(self, fam_usb:RS485SerialInterfaceV2, callback) -> str:
-        base_id:str = None
-        try:
-            fam_usb.set_callback( None )
-            
-            # get base id
-            data = b'\xAB\x58\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-            # timeout really requires for this command sometimes 1sec!
-            response:ESP2Message = await fam_usb.exchange(ESP2Message(bytes(data)), ESP2Message, retries=3, timeout=1)
-            base_id = b2s(response.body[2:6])
-        except:
-            pass
-        finally:
-            fam_usb.set_callback( callback )
-
-        return base_id
     
 
     def send_message(self, msg: EltakoMessage) -> None:
         asyncio.run( self._serial_bus.send(msg) ) 
 
-
-    async def async_create_fam_usb_device(self):
-        try:
-            self._serial_bus.set_callback( None )
-            
-            # get base id
-            data = b'\xAB\x58\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-            response:ESP2Message = await self._serial_bus.exchange(ESP2Message(bytes(data)), ESP2Message)
-            base_id = response.body[2:6]
-            self.current_base_id = b2s(base_id)
-            self.gateway_id = self.current_base_id
-
-            # get version
-            data = b'\xAB\x4B\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-            response:ESP2Message = await self._serial_bus.exchange(ESP2Message(bytes(data)), ESP2Message)
-            tcm_sw_v = '.'.join(str(n) for n in response.body[2:6])
-            api_v = '.'.join(str(n) for n in response.body[6:10])
-
-            await self.app_bus.async_fire_event(AppBusEventType.ASYNC_TRANSCEIVER_DETECTED, {'type': GDN[GDT.EltakoFAMUSB], 
-                                                                                            'base_id': self.current_base_id, 
-                                                                                            'gateway_id': self.gateway_id,
-                                                                                            'tcm_version': tcm_sw_v, 
-                                                                                            'api_version': api_v})
-
-
-        except Exception as e:
-            msg = 'Failed to get information about FAM-USB!!!'
-            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
-            logging.exception(msg, exc_info=True)
-            raise e
-        finally:
-            self._serial_bus.set_callback( self._received_serial_event )
 
     def stop_serial_connection(self) -> None:
         if self.is_serial_connection_active():
@@ -389,9 +297,11 @@ class SerialController():
             self.connected_gateway_type = None
             self._serial_bus = None
 
+
     def kill_serial_connection_before_exit(self) -> None:
         if self.is_serial_connection_active():
             self._serial_bus.stop()
+
 
     def scan_for_devices(self, force_overwrite:bool=False) -> None:
         # if connected to FAM14
@@ -435,7 +345,7 @@ class SerialController():
             self.current_base_id = await fam14.get_base_id()
             self.gateway_id = data_helper.a2s( (await fam14.get_base_id_in_int()) + 0xFF )
             self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Found device: {fam14}", 'color':'grey'})
-            await self.app_bus.async_fire_event(AppBusEventType.ASYNC_DEVICE_DETECTED, {'device': fam14, 'fam14': fam14, 'force_overwrite': force_overwrite})
+            await self.app_bus.async_fire_event(AppBusEventType.ASYNC_DEVICE_DETECTED, {'device': fam14, 'base_id': self.current_base_id, 'force_overwrite': force_overwrite})
 
         except Exception as e:
             msg = 'Failed to load FAM14!!!'
@@ -463,14 +373,15 @@ class SerialController():
             # first get fam14 and make it know to data manager
             fam14:FAM14 = await create_busobject(bus=self._serial_bus, id=255)
             logging.debug(colored(f"Found device: {fam14}",'grey'))
-            await self.app_bus.async_fire_event(AppBusEventType.ASYNC_DEVICE_DETECTED, {'device': fam14, 'fam14': fam14, 'force_overwrite': force_overwrite})
+            await self.app_bus.async_fire_event(AppBusEventType.ASYNC_DEVICE_DETECTED, {'device': fam14, 'base_id': self.current_base_id, 'force_overwrite': force_overwrite})
 
             # iterate through all devices
             async for dev in self.enumerate_bus():
                 try:
+                    await dev.read_mem()
                     self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Found device: {dev}", 'color':'grey'})
                     self.app_bus.fire_event(AppBusEventType.DEVICE_SCAN_STATUS, 'DEVICE_DETECTED')
-                    await self.app_bus.async_fire_event(AppBusEventType.ASYNC_DEVICE_DETECTED, {'device': dev, 'fam14': fam14, 'force_overwrite': force_overwrite})
+                    await self.app_bus.async_fire_event(AppBusEventType.ASYNC_DEVICE_DETECTED, {'device': dev, 'base_id': self.current_base_id, 'force_overwrite': force_overwrite})
 
                 except TimeoutError:
                     logging.error("Read error, skipping: Device %s announces %d memory but produces timeouts at reading" % (dev, dev.discovery_response.memory_size))

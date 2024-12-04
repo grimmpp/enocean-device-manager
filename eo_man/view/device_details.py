@@ -42,24 +42,6 @@ class DeviceDetails():
         scrolledFrame.bind_arrow_keys(window)
         scrolledFrame.bind_scroll_wheel(window)
 
-        # canvas
-        # canvas = Canvas(main_frame, width=350)
-        # canvas.pack(side=LEFT, fill=BOTH, expand=1)
-
-        # scrollbar
-        # scrollbar = tk.Scrollbar(main_frame, orient=VERTICAL, command=canvas.yview)
-        # scrollbar.pack(side=RIGHT, fill=Y)
-
-        # # configure the canvas
-        # canvas.configure(yscrollcommand=scrollbar.set)
-        # canvas.bind(
-        #     '<Configure>', lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
-        # )
-
-        # inner_frame = LabelFrame(canvas, padx=6, pady=3, text="Device Details")
-        # canvas.create_window((0, 0), window=inner_frame, anchor="nw")
-        # self.canvas = canvas
-
         inner_frame = scrolledFrame.display_widget(LabelFrame)
         inner_frame.config(text="Device Details", padx=6, pady=3)
         
@@ -396,9 +378,12 @@ class DeviceDetails():
 
     def selected_device_handler(self, device:Device, force_update:bool=False) -> None:
         # do not overwrite values if clicking on the same
-        if not self.current_device or force_update or self.current_device.external_id != device.external_id:
-            self.show_form(copy.deepcopy(device))
-            self.current_device = device
-        elif self.current_device.external_id == device.external_id:
-            self.show_form(copy.deepcopy(device))
+        if device is None:
+            self.clean_and_disable(self.inner_frame)
+        else:
+            if not self.current_device or force_update or self.current_device.external_id != device.external_id:
+                self.show_form(copy.deepcopy(device))
+                self.current_device = device
+            elif self.current_device.external_id == device.external_id:
+                self.show_form(copy.deepcopy(device))
 

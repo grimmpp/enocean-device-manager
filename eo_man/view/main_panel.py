@@ -7,6 +7,7 @@ from ..icons.image_gallary import ImageGallery
 
 from ..controller.app_bus import AppBus, AppBusEventType
 from ..controller.serial_controller import SerialController
+from ..controller.gateway_registry import GatewayRegistry
 
 from ..data.data_manager import DataManager
 
@@ -42,7 +43,8 @@ class MainPanel():
         self.main.rowconfigure(row_status_bar, weight=0, minsize=30)      # status bar
         self.main.columnconfigure(0, weight=1, minsize=100)
 
-        serial_controller = SerialController(app_bus)
+        gateway_registry = GatewayRegistry(app_bus)
+        serial_controller = SerialController(app_bus, gateway_registry)
 
         ## init presenters
         mp = MenuPresenter(self.main, app_bus, data_manager, serial_controller)

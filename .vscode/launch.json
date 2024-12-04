@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/eo_man",
             "console": "integratedTerminal",
-            "args": ["-v", "--app_config", "${workspaceFolder}/demo.eodm"],
+            "args": ["-v", "--app_config", "${workspaceFolder}/demo2.eodm"],
             "justMyCode": false
         },
         {
