@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.10.39
+## v0.1.39
 * Support for EUL-2PJ3Q tcm515 added. https://busware.de/tiki-index.php?page=EUL
 * Clean up of device table implemented
 * Made ESP3 LAN gateway more reactive
