@@ -6,6 +6,7 @@
 * Made ESP3 LAN gateway more reactive
 * Improved communication of remote connection to Home Assistant
 * Added binary output optionally to logout put
+* Improved installation script
 
 ## v0.1.38 Remote detection of messages and gateways in Home Assistant
 
