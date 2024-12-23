@@ -11,7 +11,8 @@ class ApplicationData():
 
     class_version:Final = '1.0.0'
 
-    def __init__(self, version:str='unknown', 
+    def __init__(self, 
+                 version:str='unknown', 
                  selected_data_filter:str=None, data_filters:dict[str:DataFilter]={},
                  devices:dict[str:Device]={},
                  recoreded_messages:list[RecordedMessage]=[]):
@@ -71,6 +72,32 @@ class ApplicationData():
 
         if not hasattr(obj, 'send_message_template_list'):
             setattr(obj, 'send_message_template_list', [])
+
+        for d in obj.devices.values():
+            if not hasattr(d, 'additional_fields'):
+                d.additional_fields = {}
+            if not hasattr(d, 'ha_platform'):
+                d.ha_platform = None
+            if not hasattr(d, 'eep'):
+                d.eep = None
+            if not hasattr(d, 'key_function'):
+                d.key_function = None
+            if not hasattr(d, 'comment'):
+                d.comment = None
+            if not hasattr(d, 'device_type'):
+                d.device_type = None
+
+            if 'sender' in d.additional_fields and 'id' in d.additional_fields['sender']:
+                try:
+                    sender_id = d.additional_fields['sender']['id']
+                    if isinstance(sender_id, str) and '-' in sender_id:
+                        id = int( sender_id.split('-')[-1], 16 )
+                        if id > 128: id -= 128
+                        hex_id = hex(id)[2:].upper()
+                        if len(hex_id) == 1: hex_id = "0"+hex_id
+                        d.additional_fields['sender']['id'] = hex_id
+                except:
+                    pass
 
     @classmethod
     def read_from_yaml_file(cls, filename:str):

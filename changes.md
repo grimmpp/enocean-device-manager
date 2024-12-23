@@ -7,6 +7,7 @@
 * Improved communication of remote connection to Home Assistant
 * Added binary output optionally to logout put
 * Improved installation script
+* Migration function/compatibility for loading older data added.
 
 ## v0.1.38 Remote detection of messages and gateways in Home Assistant
 

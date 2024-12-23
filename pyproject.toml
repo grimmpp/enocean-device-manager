@@ -1,6 +1,8 @@
 [build-system]
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
+# requires = ["hatchling"]
+# build-backend = "hatchling.build"
 
 [project]
 name = "eo_man"
@@ -8,7 +10,8 @@ version = "0.1.39"
 description = "Tool to managed EnOcean Devices and to generate Home Assistant Configuration."
 readme = "README.md"
 requires-python = ">=3.7"
-license = { text = "MIT" }
+license = {file = "LICENSE", text = "MIT" }
+keywords = ["enocean", "device manager", "eltako"]
 authors = [
     { name = "Philipp Grimm" }
 ]
@@ -22,7 +25,9 @@ dependencies = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/grimmpp/enocean-device-manager"
+Homepage = "https://github.com/grimmpp/enocean-device-manager"
+Documentation = "https://github.com/grimmpp/enocean-device-manager/tree/main/docs/getting-started"
+Repository = "https://github.com/grimmpp/enocean-device-manager.git"
 
 [tool.setuptools]
 include-package-data = true  # Enables package data inclusion
@@ -32,3 +37,10 @@ include-package-data = true  # Enables package data inclusion
 
 [tool.setuptools.package-data]
 "eo_man" = ["icons/*.png", "icons/*.bmp", "icons/*.ico", "icons/*.jpg"]
+
+
+# [project.script]
+# eo_man_script = "eo_man.__main__:main"
+
+# [project.gui-script]
+# eo_man_gui  = "eo_man.__main__:main"
