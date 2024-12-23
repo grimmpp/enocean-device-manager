@@ -10,7 +10,7 @@ version = "0.1.39"
 description = "Tool to managed EnOcean Devices and to generate Home Assistant Configuration."
 readme = "README.md"
 requires-python = ">=3.7"
-license = {file = "LICENSE", text = "MIT" }
+license = {text = "MIT" }
 keywords = ["enocean", "device manager", "eltako"]
 authors = [
     { name = "Philipp Grimm" }
