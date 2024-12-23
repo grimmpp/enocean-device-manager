@@ -21,5 +21,5 @@ class TestDetectingUsbDevices(unittest.TestCase):
     
     def test_port_detection(self):
         spd = SerialPortDetector(AppBusMock())
-        mapping = asyncio.run( spd.get_gateway2serial_port_mapping() )
+        mapping = asyncio.run( spd.async_get_gateway2serial_port_mapping() )
         pass
