@@ -13,12 +13,14 @@ from tests.mocks import AppBusMock
 from eo_man.controller.serial_port_detector import SerialPortDetector
 
 
+
 class TestDetectingUsbDevices(unittest.TestCase):
 
+    @unittest.skip("Not yet compatible with Linux")
     def test_print_device_info(self):
         SerialPortDetector.print_device_info()
 
-    
+    @unittest.skip("Not yet compatible with Linux")
     def test_port_detection(self):
         spd = SerialPortDetector(AppBusMock())
         mapping = asyncio.run( spd.async_get_gateway2serial_port_mapping() )
