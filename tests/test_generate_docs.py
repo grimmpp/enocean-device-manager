@@ -26,7 +26,7 @@ class TestGenerateDocs(unittest.TestCase):
         text += "| \n"
 
         for e in EEP_MAPPING:
-            if e.get('hw-type', '') is not 'BusObject':
+            if e.get('hw-type', '') != 'BusObject':
                 for k in keys:
                     text += f"| {e.get(k, '')} "
                 text += "| \n"
