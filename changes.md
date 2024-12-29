@@ -1,5 +1,8 @@
 # Change Log
 
+## v0.1.40 Dependency fix
+* Updated to current lib of esp2-gateway-adapter 0.2.18
+
 ## v0.1.39
 * Support for EUL-2PJ3Q tcm515 added. https://busware.de/tiki-index.php?page=EUL
 * Clean up of device table implemented
