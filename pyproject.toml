@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "eo_man"
-version = "0.1.39"
+version = "0.1.40"
 description = "Tool to managed EnOcean Devices and to generate Home Assistant Configuration."
 readme = "README.md"
 requires-python = ">=3.7"

@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.1.40 Dependency fix
+## v0.1.40 Dependency Fix
 * Updated to current lib of esp2-gateway-adapter 0.2.18
 
 ## v0.1.39
