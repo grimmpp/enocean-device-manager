@@ -259,6 +259,7 @@ class DeviceDetails():
 
 
     def update_device(self, device:Device, force_update:bool=True, suggest_default_values:bool=False):
+
         device.name = self.text_name.get()
         device.address = self.text_address.get()
         device.version = self.text_version.get()

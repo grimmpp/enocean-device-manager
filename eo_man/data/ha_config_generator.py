@@ -84,8 +84,8 @@ class HomeAssistantConfigurationGenerator():
             gw_fam14 = GatewayDeviceType.EltakoFAM14.value
             gw_fgw14usb = GatewayDeviceType.EltakoFGW14USB.value
             
-            # gw_type = self.get_gateway_by(gw_d)
-            out += f"    {CONF_DEVICE_TYPE}: {gw_d.device_type}   # you can simply change {gw_fam14} to {gw_fgw14usb}\n"
+            # if gw_d.is_fam14(): out += f"   # you can simply change {gw_fam14} to {gw_fgw14usb}\n"
+            out += f"    {CONF_DEVICE_TYPE}: {GatewayDeviceType.getValueByKeyOrValue(gw_d.device_type)}\n"
             out += f"    {CONF_BASE_ID}: {gw_d.base_id}\n"
             out += f"    # {CONF_COMMENT}: {gw_d.comment}\n"
             if gw_d.device_type == GatewayDeviceType.LAN:

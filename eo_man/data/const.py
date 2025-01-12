@@ -113,6 +113,14 @@ class GatewayDeviceType(str, Enum):
         return None
 
     @classmethod
+    def getValueByKeyOrValue(cls, input, default_value = None):
+        if input in GatewayDeviceType.__members__:
+            return GatewayDeviceType.__members__[input].value
+        if input in [m.value for m in GatewayDeviceType]:
+            return input
+        return default_value
+
+    @classmethod
     def is_transceiver(cls, dev_type) -> bool:
         return dev_type in [GatewayDeviceType.GatewayEltakoFAMUSB, GatewayDeviceType.EnOceanUSB300, GatewayDeviceType.USB300, GatewayDeviceType.ESP3, GatewayDeviceType.LAN, 
                             GatewayDeviceType.LAN_ESP2, GatewayDeviceType.MGW_LAN, GatewayDeviceType.EUL_LAN]

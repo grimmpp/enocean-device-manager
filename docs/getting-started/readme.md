@@ -50,6 +50,18 @@ If you need to change device data manually ensure the following info are set so 
 ### Support of different Gateway than FAM14 or FGW14-USB
 If you want to use another gateway instead of FAM14 or FGW14-USB, you need to plug it into your PC as well and connect it once in eo_man so that it just knows it and can read its address.
 
+If you want to use e.g. USB300 for Home Assistant then:
+1. Disconnect from FAM14
+2. Plugin USB300 into your PC
+3. Select `Gateway Type` `ESP3 Gateway` in drop down menu.
+4. Run port scan and therefore push button `Detect Serial Port`
+5. It should automatically propose a COM port. Connect to this port. 
+6. A new device named `esp3-gateway (BASE ID)` was inserted into the device table.
+7. Change device type by clicking on the entry and select in the detail view on the right, `USB300`  in the combobox `Device Type`. 
+8. After clicking on apply at the bottom of this area, `USB300` will appear in the column `Device Type` of the device table on the left.
+
+<img src="./eo_man_connect.png" />
+
 ### Write Sender Ids into Actuators
 In order to make your actuators react on switches in Home Assistant they need to be teached-in. For bus devices it is quite simple you just need to connect with FAM14 again and select the gateway you cant to use in conjunction with Home Assistant later on and push the button 'Write to devices'.
 Alternatively and for decentralized devices you need to push the teach-in button in Home Assistant. See docs [here](https://github.com/grimmpp/home-assistant-eltako/tree/main/docs/teach_in_buttons).
