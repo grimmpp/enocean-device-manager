@@ -60,7 +60,7 @@ If you want to use e.g. USB300 for Home Assistant then:
 7. Change device type by clicking on the entry and select in the detail view on the right, `USB300`  in the combobox `Device Type`. 
 8. After clicking on apply at the bottom of this area, `USB300` will appear in the column `Device Type` of the device table on the left.
 
-<img src="./eo_man_connect.png" />
+<img src="./eo_man_connect_usb300.png" />
 
 ### Write Sender Ids into Actuators
 In order to make your actuators react on switches in Home Assistant they need to be teached-in. For bus devices it is quite simple you just need to connect with FAM14 again and select the gateway you cant to use in conjunction with Home Assistant later on and push the button 'Write to devices'.
