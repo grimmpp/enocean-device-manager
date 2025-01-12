@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.1.41 HA Config Generation Fix for USB300
+* device type of USB300 was wrong
+* Getting started docs improved.
+
 ## v0.1.40 Dependency Fix
 * Updated to current lib of esp2-gateway-adapter 0.2.18
 
