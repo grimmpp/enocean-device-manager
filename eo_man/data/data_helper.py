@@ -1,4 +1,3 @@
-
 from .const import *
 from homeassistant.const import (
     CONF_NAME,

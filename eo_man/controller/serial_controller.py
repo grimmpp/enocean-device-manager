@@ -616,7 +616,7 @@ class SerialController:
 
                         if update_result is None:
                             msg = f"Update for device {type(dev).__name__} ({device_ext_id_str}) NOT supported."
-                        elif update_result == True:
+                        elif update_result is True:
                             msg = f"Updated Home Assistant sender id {sender_id_str} for eep {sender_eep_str} in device {type(dev).__name__} {device_ext_id_str}."
                         else:
                             msg = f"Sender id {sender_id_str} for eep {sender_eep_str} in device {type(dev).__name__} {device_ext_id_str} already exists."

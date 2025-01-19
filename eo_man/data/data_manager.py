@@ -171,7 +171,7 @@ class DataManager:
                     )
 
                 # set eep if not available
-                if type(message) == TeachIn4BSMessage2:
+                if type(message) is TeachIn4BSMessage2:
                     if self.devices[dev_address].eep in ("", "unknown", None):
                         self.devices[dev_address].eep = b2s(message.profile)
                         Device.set_suggest_ha_config(self.devices[dev_address])

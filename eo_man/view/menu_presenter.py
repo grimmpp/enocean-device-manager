@@ -304,7 +304,7 @@ class MenuPresenter:
         return filename
 
     def load_file(self, filename: str = None):
-        if filename == None:
+        if filename is None:
             filename = self.import_from_file()
 
         if filename:
