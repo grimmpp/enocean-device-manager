@@ -1,3 +1,4 @@
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Generic badge](https://img.shields.io/github/commit-activity/y/grimmpp/home-assistant-eltako.svg?style=flat&color=3498db)](https://github.com/grimmpp/home-assistant-eltako/commits/main)
 [![Generic badge](https://img.shields.io/badge/Community-Forum-3498db.svg)](https://community.home-assistant.io/)
 [![Generic badge](https://img.shields.io/badge/Community_Forum-Eltako_Integration_Debugging-3498db.svg)](https://community.home-assistant.io/t/eltako-baureihe-14-rs485-enocean-debugging/49712)
@@ -25,7 +26,7 @@ For the moment I recommend a laptop with Windows and Python installed. You shoul
 
 ## Install python package in virtual environment (Recommended)
 1. Create virtual python environment: `python.exe -m venv .\.venv`
-2. Install application: `.\.venv\Scripts\pip.exe install eo_man  --force-reinstall` (Package available under pypi: [eo_man](https://pypi.org/project/eo-man/))
+2. Install application: `.\.venv\Scripts\pip.exe install eo_man --force-reinstall` (Package available under pypi: [eo_man](https://pypi.org/project/eo-man/))
 3. Run application: `.\.venv\Scripts\python.exe -m eo_man`
 
 ## Install python package in gloabl environment
@@ -36,16 +37,16 @@ For the moment I recommend a laptop with Windows and Python installed. You shoul
 1. Clone/Download the repo.
 2. Change into the repo directory.
 3. Create virtual environment for python: `python.exe -m venv .venv`
-4. Install dependencies: `.\.venv\Scripts\python.exe setup.py install`
+4. Install in development mode: `.\.venv\Scripts\pip.exe install -e ".[dev]"`
 5. Start the app: `.\.venv\Scripts\python.exe -m eo_man` or `.\.venv\Scripts\python.exe -m eo_man demo.eodm` (Directly loads demo data)
 
 For update you can execute:
 1. `git pull` (Gets newest state of the code)
 2. Optionally change branch: `git checkout BRANCH_NAME`
-3. Reinstall`.\.venv\Scripts\python.exe setup.py install --force`
+3. Reinstall: `.\.venv\Scripts\pip.exe install -e ".[dev]" --force-reinstall`
 4. Run app: `.\.venv\Scripts\python.exe -m eo_man`
 
-## Bugs and Features 
+## Bugs and Features
 Please open [issues](/issues) if you encounter bugs or if you have ideas for new features. Also quite a lot of devices are not yet supported.
 
 ## Run unittests
