@@ -21,9 +21,9 @@ from ..view.serial_communication_bar import SerialConnectionBar
 from ..view.status_bar import StatusBar
 from ..view.tool_bar import ToolBar
 
-class MainPanel():
 
-    def __init__(self, app_bus:AppBus, data_manager: DataManager):
+class MainPanel:
+    def __init__(self, app_bus: AppBus, data_manager: DataManager):
         self.main = Tk()
         self.app_bus = app_bus
         ## init main window
@@ -35,12 +35,14 @@ class MainPanel():
         row_filter_bar = 2
         row_main_area = 3
         row_status_bar = 4
-        self.main.rowconfigure(row_button_bar, weight=0, minsize=38)      # button bar
-        self.main.rowconfigure(row_serial_con_bar, weight=0, minsize=38)      # serial connection bar
-        self.main.rowconfigure(row_filter_bar, weight=0, minsize=38)      # table filter bar
-        self.main.rowconfigure(row_main_area, weight=5, minsize=100)     # treeview
+        self.main.rowconfigure(row_button_bar, weight=0, minsize=38)  # button bar
+        self.main.rowconfigure(
+            row_serial_con_bar, weight=0, minsize=38
+        )  # serial connection bar
+        self.main.rowconfigure(row_filter_bar, weight=0, minsize=38)  # table filter bar
+        self.main.rowconfigure(row_main_area, weight=5, minsize=100)  # treeview
         # main.rowconfigure(2, weight=1, minsize=30)    # logview
-        self.main.rowconfigure(row_status_bar, weight=0, minsize=30)      # status bar
+        self.main.rowconfigure(row_status_bar, weight=0, minsize=30)  # status bar
         self.main.columnconfigure(0, weight=1, minsize=100)
 
         gateway_registry = GatewayRegistry(app_bus)
@@ -48,19 +50,21 @@ class MainPanel():
 
         ## init presenters
         mp = MenuPresenter(self.main, app_bus, data_manager, serial_controller)
-        
+
         ToolBar(self.main, mp, row=row_button_bar)
-        SerialConnectionBar(self.main, app_bus, data_manager, serial_controller, row=row_serial_con_bar)
+        SerialConnectionBar(
+            self.main, app_bus, data_manager, serial_controller, row=row_serial_con_bar
+        )
         FilterBar(self.main, app_bus, data_manager, row=row_filter_bar)
         # main area
         main_split_area = ttk.PanedWindow(self.main, orient=VERTICAL)
         main_split_area.grid(row=row_main_area, column=0, sticky=NSEW, columnspan=4)
-        
+
         data_split_area = ttk.PanedWindow(main_split_area, orient=HORIZONTAL)
         # data_split_area = Frame(main_split_area)
         # data_split_area.columnconfigure(0, weight=5)
         # data_split_area.columnconfigure(0, weight=0, minsize=100)
-        
+
         dt = DeviceTable(data_split_area, app_bus, data_manager)
         dd = DeviceDetails(self.main, data_split_area, app_bus, data_manager)
         lo = LogOutputPanel(main_split_area, app_bus, data_manager)
@@ -80,22 +84,30 @@ class MainPanel():
         ## start main loop
         self.main.mainloop()
 
-        
-        
-
-
     def _init_window(self):
         self.main.title(DEFAULT_WINDOW_TITLE)
 
-        #style
+        # style
         style = ttk.Style()
-        style.configure("TButton", relief="sunken", background='green')
-        style_theme = 'xpnative' # 'clam'
-        self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Available style themes: {ttk.Style().theme_names()}", 'log-level': 'DEBUG'})
+        style.configure("TButton", relief="sunken", background="green")
+        style_theme = "xpnative"  # 'clam'
+        self.app_bus.fire_event(
+            AppBusEventType.LOG_MESSAGE,
+            {
+                "msg": f"Available style themes: {ttk.Style().theme_names()}",
+                "log-level": "DEBUG",
+            },
+        )
         try:
             style.theme_use(style_theme)
         except:
-            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Cannot load style theme {style_theme}!", 'log-level': 'WARNING'})
+            self.app_bus.fire_event(
+                AppBusEventType.LOG_MESSAGE,
+                {
+                    "msg": f"Cannot load style theme {style_theme}!",
+                    "log-level": "WARNING",
+                },
+            )
 
         self.main.geometry("1400x600")  # set starting size of window
         # self.main.attributes('-fullscreen', True)

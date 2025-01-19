@@ -1,4 +1,5 @@
 """Constants used by Home Assistant components."""
+
 from __future__ import annotations
 
 from enum import StrEnum
@@ -502,7 +503,6 @@ class UnitOfEnergy(StrEnum):
     WATT_HOUR = "Wh"
 
 
-
 # Electric_current units
 class UnitOfElectricCurrent(StrEnum):
     """Electric current units."""
@@ -537,7 +537,6 @@ class UnitOfTemperature(StrEnum):
     KELVIN = "K"
 
 
-
 # Time units
 class UnitOfTime(StrEnum):
     """Time units."""
@@ -553,7 +552,6 @@ class UnitOfTime(StrEnum):
     YEARS = "y"
 
 
-
 # Length units
 class UnitOfLength(StrEnum):
     """Length units."""
@@ -566,7 +564,6 @@ class UnitOfLength(StrEnum):
     FEET = "ft"
     YARDS = "yd"
     MILES = "mi"
-
 
 
 # Frequency units
@@ -602,7 +599,6 @@ class UnitOfSoundPressure(StrEnum):
     WEIGHTED_DECIBEL_A = "dBA"
 
 
-
 # Volume units
 class UnitOfVolume(StrEnum):
     """Volume units."""
@@ -620,7 +616,6 @@ class UnitOfVolume(StrEnum):
     """Assumed to be US fluid ounces in conversion utilities.
 
     British/Imperial fluid ounces are not yet supported"""
-
 
 
 # Volume Flow Rate units
@@ -672,7 +667,6 @@ class UnitOfIrradiance(StrEnum):
     BTUS_PER_HOUR_SQUARE_FOOT = "BTU/(h⋅ft²)"
 
 
-
 class UnitOfVolumetricFlux(StrEnum):
     """Volumetric flux, commonly used for precipitation intensity.
 
@@ -709,6 +703,7 @@ class UnitOfPrecipitationDepth(StrEnum):
     CENTIMETERS = "cm"
     """Derived from cm³/cm²"""
 
+
 # Concentration units
 CONCENTRATION_MICROGRAMS_PER_CUBIC_METER: Final = "µg/m³"
 CONCENTRATION_MILLIGRAMS_PER_CUBIC_METER: Final = "mg/m³"
@@ -727,7 +722,6 @@ class UnitOfSpeed(StrEnum):
     KILOMETERS_PER_HOUR = "km/h"
     KNOTS = "kn"
     MILES_PER_HOUR = "mph"
-
 
 
 # Signal_strength units
@@ -760,7 +754,6 @@ class UnitOfInformation(StrEnum):
     EXBIBYTES = "EiB"
     ZEBIBYTES = "ZiB"
     YOBIBYTES = "YiB"
-
 
 
 # Data_rate units
@@ -928,4 +921,3 @@ SIGNAL_BOOTSTRAP_INTEGRATIONS = "bootstrap_integrations"
 FORMAT_DATE: Final = "%Y-%m-%d"
 FORMAT_TIME: Final = "%H:%M:%S"
 FORMAT_DATETIME: Final = f"{FORMAT_DATE} {FORMAT_TIME}"
-

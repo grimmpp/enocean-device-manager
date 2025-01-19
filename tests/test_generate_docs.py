@@ -2,15 +2,15 @@ import os
 import sys
 import unittest
 
-file_dir = os.path.join( os.path.dirname(__file__), '..', 'eo_man', 'data')
+file_dir = os.path.join(os.path.dirname(__file__), "..", "eo_man", "data")
 sys.path.append(file_dir)
-__import__('homeassistant') 
+__import__("homeassistant")
 
 from eo_man.data.data_helper import EEP_MAPPING
 from eo_man.data.const import CONF_EEP, CONF_TYPE
 
-class TestGenerateDocs(unittest.TestCase):
 
+class TestGenerateDocs(unittest.TestCase):
     def test_generate_list_of_supported_devices(self):
         text = "# List of Supported Devices \n"
         text += "Devices not contained in this list are quite likely already supported by existing devices in this list. \n"
@@ -20,17 +20,17 @@ class TestGenerateDocs(unittest.TestCase):
         text += "<br />\n"
 
         text += "| Brand | Name | Description | EEP | Sender EEP | HA Platform | \n"
-        keys = ['brand', 'hw-type', 'description', CONF_EEP, 'sender_eep', CONF_TYPE]
+        keys = ["brand", "hw-type", "description", CONF_EEP, "sender_eep", CONF_TYPE]
         for k in keys:
             text += "|-----"
         text += "| \n"
 
         for e in EEP_MAPPING:
-            if e.get('hw-type', '') != 'BusObject':
+            if e.get("hw-type", "") != "BusObject":
                 for k in keys:
                     text += f"| {e.get(k, '')} "
                 text += "| \n"
 
-        file='./docs/supported-devices.md' 
-        with open(file, 'w') as filetowrite:
+        file = "./docs/supported-devices.md"
+        with open(file, "w") as filetowrite:
             filetowrite.write(text)
