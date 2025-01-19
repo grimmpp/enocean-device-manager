@@ -1,6 +1,5 @@
 import tkinter as tk  # Python 3 only
 import tkinter.ttk as ttk
-import tkinter.font as tkfont
 import numpy as np
 
 # GUI features to test (X means completed):

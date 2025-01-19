@@ -8,7 +8,6 @@ from .checklistcombobox import ChecklistCombobox
 from ..controller.app_bus import AppBus, AppBusEventType
 from ..data.data_manager import DataManager
 from ..data import data_helper
-from ..data.const import CONF_EEP
 from ..data.filter import DataFilter
 
 

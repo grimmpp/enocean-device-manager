@@ -4,7 +4,6 @@ import tkinter as tk
 from tkinter import *
 from tkinter import ttk
 from idlelib.tooltip import Hovertip
-import threading
 
 from eo_man import LOGGER
 

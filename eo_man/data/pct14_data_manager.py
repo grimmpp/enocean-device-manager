@@ -1,5 +1,4 @@
 import xmltodict
-import json
 
 from eltakobus.device import *
 from eltakobus.util import AddressExpression
@@ -7,7 +6,6 @@ from eltakobus.util import AddressExpression
 from .. import LOGGER
 from . import data_helper
 
-from .ha_config_generator import HomeAssistantConfigurationGenerator
 from .const import GatewayDeviceType
 from .device import Device
 from .data_helper import b2s, a2s, a2i, add_addresses, find_device_info_by_device_type
@@ -98,7 +96,7 @@ class PCT14DataManager:
         # Write the updated XML back to a file
         with open(target_filename, "w") as xml_file:
             xml_file.write(new_xml)
-        LOGGER.debug(f"PCT14 Export Extender: process completed.")
+        LOGGER.debug("PCT14 Export Extender: process completed.")
 
     @classmethod
     def _add_ha_sender_id_into_pct14_xml(

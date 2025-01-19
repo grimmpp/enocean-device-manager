@@ -2,17 +2,11 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import *
 from tkinter.font import *
-import webbrowser
-from tkinterhtml import HtmlFrame
-from PIL import Image, ImageTk
-from idlelib.tooltip import Hovertip
 from tkscrolledframe import ScrolledFrame
 
 from ..data.const import *
 
-from .donation_button import DonationButton
 
-from ..data.app_info import ApplicationInfo as AppInfo
 from ..data.data_helper import EEP_MAPPING
 
 

@@ -7,10 +7,6 @@ from eltakobus.eep import *
 
 from homeassistant.const import (
     CONF_ID,
-    CONF_DEVICE,
-    CONF_DEVICES,
-    CONF_NAME,
-    CONF_PLATFORM,
     CONF_TYPE,
     CONF_DEVICE_CLASS,
     CONF_TEMPERATURE_UNIT,

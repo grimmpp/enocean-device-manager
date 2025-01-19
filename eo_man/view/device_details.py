@@ -7,8 +7,6 @@ from tkscrolledframe import ScrolledFrame
 from idlelib.tooltip import Hovertip
 
 from eltakobus.device import SensorInfo, KeyFunction
-from eltakobus.util import b2s
-from eltakobus.eep import EEP
 
 from ..data.data_manager import DataManager, Device
 from ..data import data_helper
@@ -450,7 +448,7 @@ class DeviceDetails:
             if value is None:
                 value = ""
             text_field.insert(END, value)
-        except Exception as e:
+        except Exception:
             pass
         else:
             text_field.config(state=state)

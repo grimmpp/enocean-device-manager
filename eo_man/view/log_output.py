@@ -6,12 +6,7 @@ import tkinter.scrolledtext as ScrolledText
 
 from eltakobus.message import (
     EltakoPoll,
-    EltakoDiscoveryReply,
-    EltakoDiscoveryRequest,
     EltakoMessage,
-    prettify,
-    Regular1BSMessage,
-    EltakoWrapped1BS,
 )
 from esp2_gateway_adapter.esp3_serial_com import ESP3SerialCommunicator
 

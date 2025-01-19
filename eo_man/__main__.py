@@ -14,7 +14,7 @@ sys.path.append(file_dir)
 __import__(PACKAGE_NAME)
 __package__ = PACKAGE_NAME
 
-from eo_man import load_dep_homeassistant, LOGGER
+from eo_man import load_dep_homeassistant
 
 load_dep_homeassistant()
 

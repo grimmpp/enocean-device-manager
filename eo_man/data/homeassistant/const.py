@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from functools import partial
 from typing import Final
 
 

@@ -3,7 +3,6 @@ import asyncio
 import threading
 
 from tkinter import *
-from tkinter import ttk
 from tkinter import filedialog
 import logging
 from tkinter import messagebox
@@ -258,7 +257,7 @@ class MenuPresenter:
                 },
             )
 
-        except Exception as e:
+        except Exception:
             msg = f"Saving application configuration to file '{filename}' failed!"
             self.app_bus.fire_event(
                 AppBusEventType.LOG_MESSAGE,
@@ -291,7 +290,7 @@ class MenuPresenter:
                 self.data_manager.load_application_data_from_file(filename)
                 # with open(filename, 'rb') as file:
                 #     self.data_manager.load_devices( pickle.load(file) )
-            except Exception as e:
+            except Exception:
                 msg = f"Loading application configuration file '{filename}' failed!"
                 self.app_bus.fire_event(
                     AppBusEventType.LOG_MESSAGE,
@@ -372,7 +371,7 @@ class MenuPresenter:
                 self.remember_latest_ha_config_filename
             )
 
-            msg = f"Export finished!"
+            msg = "Export finished!"
             self.app_bus.fire_event(
                 AppBusEventType.LOG_MESSAGE,
                 {"msg": msg, "color": "grey", "log-level": "DEBUG"},
@@ -447,7 +446,7 @@ class MenuPresenter:
                 devices = asyncio.run(PCT14DataManager.get_devices_from_pct14(filename))
                 self.data_manager.load_devices(devices)
 
-            except Exception as e:
+            except Exception:
                 msg = f"Loading PCT14 Export '{filename}' failed!"
                 self.app_bus.fire_event(
                     AppBusEventType.LOG_MESSAGE,
@@ -488,7 +487,7 @@ class MenuPresenter:
                     {"msg": msg, "log-level": "INFO", "color": "green"},
                 )
 
-            except Exception as e:
+            except Exception:
                 msg = f"Extend PCT14 Export '{target_filename}' failed!"
                 self.app_bus.fire_event(
                     AppBusEventType.LOG_MESSAGE,

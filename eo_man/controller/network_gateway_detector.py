@@ -1,7 +1,6 @@
 import time
 import threading
 from esp2_gateway_adapter.esp3_tcp_com import (
-    TCP2SerialCommunicator,
     detect_lan_gateways,
 )
 

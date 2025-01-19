@@ -2,7 +2,7 @@ from typing import Dict, List
 import threading
 import asyncio
 
-from ..data.const import GatewayDeviceType as GDT, GATEWAY_DISPLAY_NAMES as GDN
+from ..data.const import GatewayDeviceType as GDT
 
 from .app_bus import AppBus, AppBusEventType
 

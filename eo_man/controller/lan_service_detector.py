@@ -5,7 +5,7 @@ from zeroconf import Zeroconf, ServiceBrowser, ServiceInfo
 import socket
 
 from .app_bus import AppBus, AppBusEventType
-from ..data.const import GatewayDeviceType, get_gateway_type_by_name
+from ..data.const import GatewayDeviceType
 from ..data import data_helper
 
 

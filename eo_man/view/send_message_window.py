@@ -1,11 +1,9 @@
 from functools import reduce
 
 from tkinter import *
-import tkinter as tk
 from tkinter import Tk, ttk
 
 from eltakobus.message import *
-from eltakobus.eep import A5_08_01
 from eltakobus.util import AddressExpression
 
 from ..controller.app_bus import AppBus, AppBusEventType
@@ -524,7 +522,7 @@ class SendMessageWindow:
                         "log-level": "INFO",
                     },
                 )
-        except Exception as e:
+        except Exception:
             self.show_telegram_text("Invalid telegram!")
             self.current_telegram = None
 

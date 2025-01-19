@@ -3,7 +3,6 @@ from tkinter import ttk
 from tkinter import *
 from tkinter.font import *
 import webbrowser
-from tkinterhtml import HtmlFrame
 from idlelib.tooltip import Hovertip
 
 from .donation_button import DonationButton

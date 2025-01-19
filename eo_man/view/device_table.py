@@ -5,7 +5,7 @@ from tkinter import ttk
 
 from ..controller.app_bus import AppBus, AppBusEventType
 from ..data.const import *
-from ..data.homeassistant.const import CONF_ID, CONF_NAME
+from ..data.homeassistant.const import CONF_ID
 from ..data.filter import DataFilter
 from ..data.data_manager import DataManager, Device
 from ..data import data_helper

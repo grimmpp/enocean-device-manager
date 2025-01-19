@@ -1,23 +1,16 @@
 import serial
-from serial import rs485
 import serial.tools.list_ports
 import logging
 import sys
 
 from esp2_gateway_adapter.esp3_serial_com import ESP3SerialCommunicator
-from esp2_gateway_adapter.esp3_tcp_com import (
-    TCP2SerialCommunicator,
-    detect_lan_gateways,
-)
-from esp2_gateway_adapter.esp2_tcp_com import ESP2TCP2SerialCommunicator
 
 from eltakobus.serial import RS485SerialInterfaceV2
 from eltakobus.message import ESP2Message
 from eltakobus.util import b2s
 
 from .app_bus import AppBusEventType, AppBus
-from ..data.data_helper import GatewayDeviceType
-from ..data.const import GatewayDeviceType as GDT, GATEWAY_DISPLAY_NAMES as GDN
+from ..data.const import GatewayDeviceType as GDT
 
 
 class SerialPortDetector:
@@ -56,7 +49,7 @@ class SerialPortDetector:
     async def async_get_gateway2serial_port_mapping(self) -> dict[str : list[str]]:
         self.app_bus.fire_event(
             AppBusEventType.LOG_MESSAGE,
-            {"msg": f"Start detecting serial ports", "color": "grey"},
+            {"msg": "Start detecting serial ports", "color": "grey"},
         )
 
         if sys.platform.startswith("win"):
@@ -183,7 +176,7 @@ class SerialPortDetector:
 
                     s.stop()
 
-                except Exception as e:
+                except Exception:
                     pass
 
         self.app_bus.fire_event(AppBusEventType.DEVICE_ITERATION_PROGRESS, 0)

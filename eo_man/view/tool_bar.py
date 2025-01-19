@@ -1,15 +1,10 @@
-import threading
-import tkinter as tk
 from tkinter import ttk
 import os
 from tkinter import *
 from tkinter import messagebox
-from PIL import Image, ImageTk
+from PIL import ImageTk
 from idlelib.tooltip import Hovertip
-import webbrowser
-import subprocess
 
-from eo_man import LOGGER
 
 from .donation_button import DonationButton
 from .menu_presenter import MenuPresenter
@@ -114,8 +109,8 @@ class ToolBar:
         new_version = AppInfo.get_lastest_available_version()
 
         msg = f"A new version 'v{new_version}' of 'EnOcean Device Manager' is available. \n\n"
-        msg += f"You can update this application by entering \n"
+        msg += "You can update this application by entering \n"
         msg += f"'{os.path.join(base_path, 'pip')}' install eo_man --upgrade'\n"
-        msg += f"into the command line."
+        msg += "into the command line."
 
         messagebox.showinfo("Update Available", msg)

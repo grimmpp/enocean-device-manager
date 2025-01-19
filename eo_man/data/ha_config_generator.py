@@ -2,7 +2,7 @@ from datetime import datetime
 
 from homeassistant.const import CONF_ID, CONF_DEVICES, CONF_NAME
 
-from ..controller.app_bus import AppBus, AppBusEventType
+from ..controller.app_bus import AppBus
 
 from .app_info import ApplicationInfo as AppInfo
 from .data_manager import DataManager
@@ -85,7 +85,7 @@ class HomeAssistantConfigurationGenerator:
         out += f"  {CONF_GERNERAL_SETTINGS}:\n"
         out += f"    {CONF_FAST_STATUS_CHANGE}: False\n"
         out += f"    {CONF_SHOW_DEV_ID_IN_DEV_NAME}: False\n"
-        out += f"\n"
+        out += "\n"
 
         global_gw_id = 0
         # add fam14 gateways

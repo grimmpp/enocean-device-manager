@@ -1,24 +1,14 @@
-import os
-from termcolor import colored
 
 from .const import *
 from homeassistant.const import (
-    CONF_ID,
-    CONF_DEVICE,
-    CONF_DEVICES,
     CONF_NAME,
-    CONF_PLATFORM,
     CONF_TYPE,
-    CONF_DEVICE_CLASS,
-    CONF_TEMPERATURE_UNIT,
-    UnitOfTemperature,
     Platform,
 )
 
-from eltakobus.device import BusObject, FAM14, SensorInfo, KeyFunction
+from eltakobus.device import BusObject, SensorInfo, KeyFunction
 from eltakobus.message import *
 from eltakobus.eep import *
-from eltakobus.device import SensorInfo, KeyFunction
 from eltakobus.util import b2s, AddressExpression
 
 SENDER_BASE_ID = 0x0000B000

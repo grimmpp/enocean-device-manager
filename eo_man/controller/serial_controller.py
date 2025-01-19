@@ -1,22 +1,15 @@
-from enum import Enum
-from serial import rs485
 from typing import Iterator
 from termcolor import colored
 import logging
 import threading
-import socket
 
-import serial.tools.list_ports
 
 from eltakobus import *
 from eltakobus.device import *
-from eltakobus.locking import buslocked, UNLOCKED
-from eltakobus.message import Regular4BSMessage
 
 from esp2_gateway_adapter.esp3_serial_com import ESP3SerialCommunicator
 from esp2_gateway_adapter.esp3_tcp_com import (
     TCP2SerialCommunicator,
-    detect_lan_gateways,
 )
 from esp2_gateway_adapter.esp2_tcp_com import ESP2TCP2SerialCommunicator
 
@@ -343,7 +336,7 @@ class SerialController:
                         {"msg": msg, "log-level": "ERROR", "color": "red"},
                     )
 
-        except Exception as e:
+        except Exception:
             self._serial_bus.stop()
             self.connected_gateway_type = None
             self.app_bus.fire_event(
@@ -384,7 +377,7 @@ class SerialController:
             if not self._serial_bus.is_active():
                 self.app_bus.fire_event(
                     AppBusEventType.LOG_MESSAGE,
-                    {"msg": f"Serial connection stopped.", "color": "green"},
+                    {"msg": "Serial connection stopped.", "color": "green"},
                 )
             self.current_base_id = None
             self.gateway_id = None
@@ -421,7 +414,7 @@ class SerialController:
                     yield bus_object
             except TimeoutError:
                 continue
-            except Exception as e:
+            except Exception:
                 msg = "Cannot detect device"
                 self.app_bus.fire_event(
                     AppBusEventType.LOG_MESSAGE,
