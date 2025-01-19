@@ -21,7 +21,31 @@ classifiers = [
     "Operating System :: OS Independent"
 ]
 dependencies = [
-    "aiocoap==0.4.7", "eltako14bus==0.0.64", "numpy==1.26.3", "pillow==10.2.0", "pyserial==3.5", "pyserial-asyncio==0.6", "PyYAML==6.0.1", "StrEnum==0.4.15", "termcolor==2.4.0", "tkinterhtml==0.7", "requests==2.31.0", "enocean==0.60.1", "esp2_gateway_adapter==0.2.18", "zeroconf==0.132.2", "tkScrolledFrame==1.0.4", "xmltodict", "tomli"
+    "aiocoap==0.4.7",
+    "eltako14bus==0.0.74",
+    "numpy==1.26.3",
+    "pillow==10.4.0",
+    "pyserial==3.5",
+    "pyserial-asyncio==0.6",
+    "PyYAML==6.0.1",
+    "StrEnum==0.4.15",
+    "termcolor==2.4.0",
+    "tkinterhtml==0.7",
+    "requests==2.31.0",
+    "enocean==0.60.1",
+    "esp2_gateway_adapter==0.2.18",
+    "zeroconf==0.132.2",
+    "tkScrolledFrame==1.0.4",
+    "xmltodict",
+    "tomli"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==7.0.0",
+    "ruff==0.9.2",
+    "build==1.0.0",
+    "pre-commit==3.5.0"
 ]
 
 [project.urls]
@@ -38,6 +62,31 @@ include-package-data = true  # Enables package data inclusion
 [tool.setuptools.package-data]
 "eo_man" = ["icons/*.png", "icons/*.bmp", "icons/*.ico", "icons/*.jpg"]
 
+[tool.ruff]
+# Target Python 3.7+
+target-version = "py37"
+
+# Default line length is 88 (same as Black)
+line-length = 88
+
+[tool.ruff.lint]
+# Ignore specific rules:
+# E402: Module level import not at top of file (e.g for easier tkinter usage)
+# F841: Local variable is assigned to but never used
+# F811: Redefinition of unused name
+# F405: Name may be undefined, or defined from star imports
+# F403: 'from module import *' used
+# E741: Ambiguous variable name
+# E722: Do not use bare 'except'
+ignore = [
+    "E402",
+    "F841",
+    "F811",
+    "F405",
+    "F403",
+    "E741",
+    "E722",
+]
 
 # [project.script]
 # eo_man_script = "eo_man.__main__:main"

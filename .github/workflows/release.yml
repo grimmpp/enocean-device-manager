@@ -26,7 +26,7 @@ jobs:
 
       - name: Run tests
         run: |
-          pip install -r requirements.txt
+          pip install -e .[dev]
           pytest tests
 
       - name: Build package
