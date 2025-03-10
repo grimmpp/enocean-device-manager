@@ -1,7 +1,7 @@
 ﻿aiocoap==0.4.7
 eltako14bus==0.0.74
 numpy==1.26.3
-pillow==10.2.0
+pillow
 pyserial==3.5
 pyserial-asyncio==0.6
 PyYAML==6.0.1
