@@ -14,6 +14,7 @@ installed_official_eo_man
 __pycache__/
 *.py[cod]
 *$py.class
+poetry.lock
 
 # C extensions
 *.so

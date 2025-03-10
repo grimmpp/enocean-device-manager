@@ -1,7 +1,7 @@
 ﻿aiocoap==0.4.7
 eltako14bus==0.0.74
-numpy==1.26.3
-pillow
+numpy
+pillow>11
 pyserial==3.5
 pyserial-asyncio==0.6
 PyYAML==6.0.1
@@ -10,8 +10,8 @@ termcolor==2.4.0
 tkinterhtml==0.7
 requests==2.31.0
 enocean==0.60.1
-esp2_gateway_adapter==0.2.18
-zeroconf==0.132.2
+esp2_gateway_adapter==0.2.20
+zeroconf
 tkScrolledFrame==1.0.4
 xmltodict
 tomli
