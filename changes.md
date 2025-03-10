@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.1.43 Fixed config generation for lan gateways
+
+## v0.1.42 Fixed dependencies
+
 ## v0.1.41 HA Config Generation Fix for USB300
 * device type of USB300 was wrong
 * Getting started docs improved.

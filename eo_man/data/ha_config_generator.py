@@ -89,7 +89,9 @@ class HomeAssistantConfigurationGenerator():
             out += f"    {CONF_BASE_ID}: {gw_d.base_id}\n"
             out += f"    # {CONF_COMMENT}: {gw_d.comment}\n"
             if gw_d.device_type == GatewayDeviceType.LAN:
-                out += f"    {CONF_GATEWAY_ADDRESS}: {gw_d.additional_fields['address']}\n"
+                out += f"    {CONF_GATEWAY_ADDRESS}: {gw_d.additional_fields['address'].split(':')[0]}\n"
+                if ':' in gw_d.additional_fields['address']:
+                    out += f"    {CONF_PORT}: {gw_d.additional_fields['address'].split(':')[1]}\n"
             out += f"    {CONF_DEVICES}:\n"
 
             for platform in ha_platforms:
