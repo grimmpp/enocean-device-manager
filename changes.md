@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.1.43 Fixed config generation for lan gateways
+## v0.1.44 Fixed config generation for lan gateways
 
 ## v0.1.42 Fixed dependencies
 
