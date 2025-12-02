@@ -64,7 +64,7 @@ Please open [issues](/issues) if you encounter bugs or if you have ideas for new
 You can use command line only to generate Home Assistant Configuration based on an existing application configuration. <br />
 Check out: `python -m eo_man -h`
 
-# [Chanagelog](https://github.com/grimmpp/enocean-device-manager/blob/main/changes.md)
+# [Changelog](https://github.com/grimmpp/enocean-device-manager/blob/main/changes.md)
 
 # Contribution and Support to this Project
 I'm really happy to provide a more and more growing Home Assistant Eltako Integration and tools like this which extend this automation corner even more. The size of this integration is getting much bigger than the use cases I've realized at home, the variety of supported devices is increasing and the stability of the integraiton is getting to a professional level. On the other side it is getting hard to keep this level of development speed and operational quality. I'm about to build up a professional development and testing environment so that the quality can even improved and futher features can still be delivered in a short time frame. 
