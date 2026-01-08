@@ -76,15 +76,16 @@ class HomeAssistantConfigurationGenerator():
         
         global_gw_id = 0
         # add fam14 gateways
+        out += f"  {CONF_GATEWAY}:\n"
         for gw_d in gateways:
             global_gw_id += 1
-            out += f"  {CONF_GATEWAY}:\n"
+            out += f"  # Gateway: "
             out += f"  - {CONF_ID}: {global_gw_id}\n"
 
             gw_fam14 = GatewayDeviceType.EltakoFAM14.value
             gw_fgw14usb = GatewayDeviceType.EltakoFGW14USB.value
             
-            # if gw_d.is_fam14(): out += f"   # you can simply change {gw_fam14} to {gw_fgw14usb}\n"
+            if gw_d.is_fam14(): out += f"   # you can simply change {gw_fam14} to {gw_fgw14usb}\n"
             out += f"    {CONF_DEVICE_TYPE}: {GatewayDeviceType.getValueByKeyOrValue(gw_d.device_type)}\n"
             out += f"    {CONF_BASE_ID}: {gw_d.base_id}\n"
             out += f"    # {CONF_COMMENT}: {gw_d.comment}\n"
@@ -95,7 +96,7 @@ class HomeAssistantConfigurationGenerator():
             out += f"    {CONF_DEVICES}:\n"
 
             for platform in ha_platforms:
-                if platform != '':
+                if platform != '' and platform != 'unknown':
                     out += f"      {platform}:\n"
                     for device in devices:
                         if device.ha_platform == platform:

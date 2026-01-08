@@ -32,6 +32,15 @@
             "justMyCode": false
         },
         {
+            "name": "Python: Console Logger",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/eo_man",
+            "args": ["-C", "enocean_logger", "-sp", "COM7", "-dt", "fam14", "--app_config", "${workspaceFolder}/tests/resources/20260108_logger_test.eodm", "--log_telegram_id_filter", "FE-D4-E9-47, FE-D4-E9-48, FE-D4-E9-49"],
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
             "name": "Python: CLI Help",
             "type": "debugpy",
             "request": "launch",
@@ -46,7 +55,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/eo_man",
             "console": "integratedTerminal",
-            "args": ["-v", "--app_config", "${workspaceFolder}/demo.eodm", "--ha_config", "${workspaceFolder}/ha_config.yaml"],
+            "args": ["-C", "generate_ha_config", "-v", "--app_config", "${workspaceFolder}/demo.eodm", "--ha_config", "${workspaceFolder}/ha_config.yaml"],
             "justMyCode": true
         },
         {
