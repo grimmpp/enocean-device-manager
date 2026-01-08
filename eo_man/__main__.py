@@ -135,6 +135,8 @@ def main():
         enocean_logger = EnOceanLogger(app_bus, data_manager)
         if opts.log_telegram_id_filter is not None:
             enocean_logger.set_id_filter( str(opts.log_telegram_id_filter).replace(' ', '').upper().split(',') )
+            e = {'msg': f"EnOcean Telegram Id filter was set to: {str.join(", ",enocean_logger.id_filter)}"}
+            app_bus.fire_event(AppBusEventType.LOG_MESSAGE, e)
 
         app_bus.add_event_handler(AppBusEventType.SERIAL_CALLBACK, enocean_logger.serial_callback)
         
