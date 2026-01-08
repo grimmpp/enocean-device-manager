@@ -53,6 +53,8 @@ class SerialController():
 
 
     def is_connected_gateway_device_bus(self):
+        if self.connected_gateway_type is None: return None
+
         return self.connected_gateway_type.startswith('FAM14') or self.connected_gateway_type.startswith('FGW14-USB')
 
     
