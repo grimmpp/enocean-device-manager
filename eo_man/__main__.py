@@ -23,7 +23,6 @@ from .data.app_info import ApplicationInfo
 from .data.data_manager import DataManager
 from .data.pct14_data_manager import PCT14DataManager
 from .data.ha_config_generator import HomeAssistantConfigurationGenerator
-from .view.main_panel import MainPanel
 from .controller.app_bus import AppBus, AppBusEventType
 from .controller.enocean_logger import EnOceanLogger
 from .controller.serial_controller import SerialController
@@ -112,7 +111,9 @@ def main():
     
     # generate home assistant config instead of starting GUI
     if opts.command is None or opts.command.lower() not in cli_commands:
+        from .view.main_panel import MainPanel
         MainPanel(app_bus, data_manager)
+
     elif opts.command.lower() == "generate_ha_config":
         # generate_ha_config
         if opts.app_config is None: 

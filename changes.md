@@ -1,5 +1,7 @@
 # Change Log
 
+## v0.1.46 Prepared EnOcean Logger for Linux
+
 ## v0.1.45 Commandline EnOcean Logger with filter for specific EnOcean Telegram Ids
 
 ## v0.1.44 Fixed config generation for lan gateways
