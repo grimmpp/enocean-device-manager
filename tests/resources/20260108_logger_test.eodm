@@ -1,0 +1,27 @@
+!!python/object:eo_man.data.application_data.ApplicationData
+application_version: 0.1.43
+data_filters: {}
+devices:
+  FE-D4-E9-48: !!python/object:eo_man.data.device.Device
+    additional_fields: {}
+    address: FE-D4-E9-48
+    base_id: 00-00-00-00
+    bus_device: false
+    channel: 1
+    comment: window and door contacts
+    dev_size: 1
+    device_type: FFTE
+    eep: F6-10-00
+    external_id: FE-D4-E9-48
+    ha_platform: binary_sensor
+    key_function: NO_FUNCTION
+    memory_entries: []
+    name: unknown
+    static_info: {}
+    use_in_ha: true
+    version: unknown
+
+
+recoreded_messages: []
+selected_data_filter_name: null
+send_message_template_list: null
