@@ -9,7 +9,7 @@ name = "eo_man"
 version = "0.1.47"
 description = "Tool to managed EnOcean Devices and to generate Home Assistant Configuration."
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.12"
 license = {text = "MIT" }
 keywords = ["enocean", "device manager", "eltako"]
 authors = [

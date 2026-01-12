@@ -84,10 +84,10 @@ class Device():
         return self.is_wired_gateway() or self.is_wireless_transceiver()
     
     def is_wired_gateway(self) -> bool:
-        return self.is_fam14() or self.is_fgw14_usb() or self.is_mgw()
+        return self.is_fam14() or self.is_fgw14_usb() 
 
     def is_wireless_transceiver(self) -> bool:
-        return self.is_usb300() or self.is_fam_usb() or self.is_lan_gw() or (self.device_type is not None and 'Wireless Transceiver' in self.device_type) or self.is_EUL_Wifi_gw()
+        return self.is_usb300() or self.is_fam_usb() or self.is_mgw() or self.is_lan_gw() or (self.device_type is not None and 'Wireless Transceiver' in self.device_type) or self.is_EUL_Wifi_gw()
     
     def is_bus_device(self) -> bool:
         return self.bus_device

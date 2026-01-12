@@ -1,8 +1,9 @@
 from functools import reduce
+import threading, time
 
 from tkinter import *
 import tkinter as tk
-from tkinter import Tk, ttk
+from tkinter import Tk, ttk, messagebox
 
 from eltakobus.message import *
 from eltakobus.eep import A5_08_01
@@ -38,6 +39,7 @@ class SendMessageWindow():
 
         self.entered_keys = ''
         self.current_telegram = None
+        self.send_repeatedly = 0
 
     def show_window(self):
         if self.popup:
@@ -51,7 +53,7 @@ class SendMessageWindow():
         for idx, w in enumerate(self.col_widths):
             self.popup.columnconfigure(idx, minsize=w)
         
-        for idx in range(0,8):
+        for idx in range(0,10):
             self.popup.rowconfigure(idx, weight=0)
         
 
@@ -135,11 +137,37 @@ class SendMessageWindow():
         cb.grid(row=row, sticky=W, column=1, pady=_pady, padx=_padx)
 
 
+        # send repeatedly
+        row += 1
+        self.send_repeatedly_boolvar = BooleanVar()
+        self.send_repeatedly_boolvar.set(False)
+        cb = ttk.Checkbutton(self.popup, text="Send Telegrams Repeatedly", variable=self.send_repeatedly_boolvar)
+        cb.grid(row=row, sticky=W, column=1, pady=_pady, padx=_padx)
+        
+        # delay in ms
+        row += 1
+        l = ttk.Label(self.popup, text="Delay (ms): ", foreground=self.STATUS_COLOR)
+        l.grid(row=row, column=0, sticky=W, pady=_pady, padx=_padx)
+
+        self.e_delay = ttk.Entry(self.popup)
+        self.e_delay.grid(row=row, column=1, sticky=EW, pady=_pady, padx=_padx)
+        self.e_delay.insert(0, "10")
+
+        # amount of msg
+        row += 1
+        l = ttk.Label(self.popup, text="Messages Count: ", foreground=self.STATUS_COLOR)
+        l.grid(row=row, column=0, sticky=W, pady=_pady, padx=_padx)
+
+        self.e_msg_count = ttk.Entry(self.popup)
+        self.e_msg_count.grid(row=row, column=1, sticky=EW, pady=_pady, padx=_padx)
+        self.e_msg_count.insert(0, "-1")
+
         row += 1
         l = ttk.Label(self.popup, text="")
         l.grid(row=row, column=0, sticky=W, columnspan=2, pady=_pady, padx=_padx)
 
 
+        # telegram
         row += 1
         l = ttk.Label(self.popup, text="Telegram:")
         l.grid(row=row, column=0, sticky=W, columnspan=2, pady=_pady, padx=_padx)
@@ -150,7 +178,7 @@ class SendMessageWindow():
         self.f_telegram = ttk.Frame(self.popup)
         self.f_telegram.grid(row=row, column=0, sticky=NSEW, columnspan=2, pady=_pady, padx=_padx)
 
-
+        # space
         row += 1
         l = ttk.Label(self.popup, text="")
         l.grid(row=row, column=0, sticky=W, columnspan=2, pady=_pady, padx=_padx)
@@ -170,16 +198,17 @@ class SendMessageWindow():
         self.b_send.grid(row=row, column=1, sticky=EW, padx=(0,8))
 
 
+        
         ttk.Separator(self.popup, orient=VERTICAL).grid(column=2, row=0, rowspan=10, sticky=NSEW)
 
         # favourites
 
+        rowspan = row - 2
         row = 0
         l = ttk.Label(self.popup, text="Favourites")
         l.grid(row=row, column=3, sticky=W)
 
         row += 1
-        rowspan = 7
         f = ttk.Frame(self.popup, width=self.col_widths[3])
         f.grid(row=row, rowspan=rowspan, column=3, sticky=NSEW)
         s = ttk.Style()
@@ -371,16 +400,17 @@ class SendMessageWindow():
 
     def close(self):
         if self.popup:
+            self.send_repeatedly = 0
             self.popup.destroy()
             self.popup = None
     
     
     def set_sender_ids(self):
         # not wired gateway
-        if not self.serial_controller.is_connected_gateway_device_bus():
-            base_id = self.serial_controller.current_base_id
-        else:
+        if self.serial_controller.is_connected_gateway_device_bus():
             base_id = '00-00-B0-00'
+        else:
+            base_id = self.serial_controller.current_base_id
         
         if self.serial_controller.current_base_id and not self.serial_controller.is_connected_gateway_device_bus():
             base_id = self.serial_controller.current_base_id
@@ -421,6 +451,10 @@ class SendMessageWindow():
 
 
     def show_message(self, event=None, send:bool=False):
+        if self.b_send.cget("text") == "Stop":
+            self.send_repeatedly = 0
+            return
+
         msg_type = self.cb_msg_type.get()
         try:
             self.address[0] = self.cb_sender_id_0.get()
@@ -449,9 +483,33 @@ class SendMessageWindow():
             if '4BS' not in msg_type: msg_text = msg_text[0:15] + msg_text[24:]
             self.show_telegram_text(msg_text, msg_type)
 
+            try:
+                delay = float(self.e_delay.get()) / 1000
+            except:
+                messagebox.showerror("Invalid Input", "No valid delay number (float)!")
+                return
+            
+            try:
+                msg_count = int(self.e_msg_count.get())
+            except:
+                messagebox.showerror("Invalid Input", "No valid Message Count number (int)!")
+                return
+
             if send and self.serial_controller.is_serial_connection_active():
-                self.serial_controller.send_message(msg)
-                self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Send Message: {str(msg)}", 'color':'green', 'log-level':'INFO'})
+                if self.send_repeatedly_boolvar:
+                    self.b_send.config(text="Stop")
+                    self.send_repeatedly = msg_count
+
+                def run_send_execution():
+                    while (self.send_repeatedly != 0):
+                        self.send_repeatedly -= 1
+                        self.serial_controller.send_message(msg)
+                        self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Send Message: {str(msg)}", 'color':'green', 'log-level':'INFO'})
+                        time.sleep(delay)
+                    self.b_send.config(text="Send")
+
+                threading.Thread(target=run_send_execution, daemon=True).start()
+
         except Exception as e:
             self.show_telegram_text('Invalid telegram!')
             self.current_telegram = None

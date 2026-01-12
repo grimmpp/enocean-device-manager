@@ -108,7 +108,6 @@ def main():
         devices = asyncio.run( PCT14DataManager.get_devices_from_pct14(opts.pct14_export) )
         data_manager.load_devices(devices)
 
-
     # generate home assistant config instead of starting GUI
     if opts.command is None or opts.command.lower() not in cli_commands:
         from .view.main_panel import MainPanel
@@ -147,7 +146,6 @@ def main():
             serial_controller.stop_serial_connection()
 
         threading.Thread(target=wait_for_enter, daemon=True).start()
-
 
 if __name__ == "__main__":
     main()

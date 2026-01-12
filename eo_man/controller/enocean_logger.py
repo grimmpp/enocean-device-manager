@@ -74,10 +74,10 @@ class EnOceanLogger():
             device:Device = None
             if current_base_id is None: 
                 device = self.data_manager.get_device_by_id(adr)
-            else:
+            elif '-' in adr:
                 device = self.data_manager.find_device_by_local_address(adr, current_base_id)
 
-            if device:
+            if device and not (device.name == 'unknown' and device.device_type == 'unknown'):
                 values_txt += f" \n=> {device.name} ({device.device_type})"
 
                 eep, values = self.data_manager.get_values_from_message_to_string(telegram, current_base_id)

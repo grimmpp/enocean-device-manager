@@ -316,10 +316,13 @@ class DataManager():
         local_adr = int.from_bytes(AddressExpression.parse(address)[0], "big")
         base_adr = int.from_bytes(AddressExpression.parse(base_id)[0], "big")
 
-        if (local_adr + base_adr) > 0xFFFFFFFF:
-            return None
+        ext_id = address
+        if address.startswith('00-00-00-'):
+            ext_id = data_helper.a2s(local_adr + base_adr)    
 
-        ext_id = data_helper.a2s(local_adr + base_adr)
+            if (local_adr + base_adr) > 0xFFFFFFFF:
+                return None
+        
         if ext_id in self.devices:
             return self.devices[ext_id]
         
