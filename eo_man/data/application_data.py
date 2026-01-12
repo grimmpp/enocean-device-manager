@@ -15,7 +15,7 @@ class ApplicationData():
                  version:str='unknown', 
                  selected_data_filter:str=None, data_filters:dict[str:DataFilter]={},
                  devices:dict[str:Device]={},
-                 recoreded_messages:list[RecordedMessage]=[]):
+                 recorded_messages:list[RecordedMessage]=[]):
         
         self.application_version:str = version
 
@@ -24,7 +24,7 @@ class ApplicationData():
 
         self.devices:dict[str:Device] = devices
 
-        self.recoreded_messages:list[RecordedMessage] = recoreded_messages
+        self.recorded_messages:list[RecordedMessage] = recorded_messages
 
         self.send_message_template_list: list[str] = []
 
@@ -67,8 +67,8 @@ class ApplicationData():
     @classmethod
     def _migrate(cls, obj):
         """required to make different versions compatibel"""
-        if not hasattr(obj, 'recoreded_messages'):
-            setattr(obj, 'recoreded_messages', [])
+        if not hasattr(obj, 'recorded_messages'):
+            setattr(obj, 'recorded_messages', [])
 
         if not hasattr(obj, 'send_message_template_list'):
             setattr(obj, 'send_message_template_list', [])

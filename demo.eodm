@@ -752,7 +752,7 @@ devices:
     name: unknown
     use_in_ha: true
     version: unknown
-recoreded_messages: []
+recorded_messages: []
 selected_data_filter_name: null
 send_message_template_list:
 - !!python/object:eo_man.data.message_history.MessageHistoryEntry

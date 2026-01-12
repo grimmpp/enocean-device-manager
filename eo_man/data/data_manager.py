@@ -33,7 +33,7 @@ class DataManager():
         self.selected_data_filter_name:DataFilter = None
 
         # recorded messages
-        self.recoreded_messages:list[RecordedMessage] = []
+        self.recorded_messages:list[RecordedMessage] = []
 
         # message history
         self.send_message_template_list:list[MessageHistoryEntry] = None
@@ -104,7 +104,7 @@ class DataManager():
 
         self.send_message_template_list = app_data.send_message_template_list
 
-        self.recoreded_messages = app_data.recoreded_messages
+        self.recorded_messages = app_data.recorded_messages
         self.load_devices(app_data.devices)
         return app_data
 
@@ -115,7 +115,7 @@ class DataManager():
         app_data.data_filters = self.data_fitlers
         app_data.devices = self.devices
         app_data.selected_data_filter_name = self.selected_data_filter_name
-        app_data.recoreded_messages = self.recoreded_messages
+        app_data.recorded_messages = self.recorded_messages
         app_data.send_message_template_list = self.send_message_template_list
 
         ApplicationData.write_to_yaml_file(filename, app_data)
@@ -131,7 +131,7 @@ class DataManager():
             if int.from_bytes(message.address, "big") > 0X0000FFFF:
                 dev_address = b2s(message.address)
                 # add message to list
-                self.recoreded_messages.append(RecordedMessage(message, dev_address, gateway_id))
+                self.recorded_messages.append(RecordedMessage(message, dev_address, gateway_id))
                 # if device unknown add device to list
                 if dev_address not in self.devices:
                     decentralized_device = Device.get_decentralized_device_by_telegram(message)
@@ -150,7 +150,7 @@ class DataManager():
             elif current_base_id:
                 external_id = data_helper.a2s( int.from_bytes(AddressExpression.parse(current_base_id)[0], 'big') +  int.from_bytes(message.address, 'big') )
                 # add message to list
-                self.recoreded_messages.append(RecordedMessage(message, external_id, gateway_id))
+                self.recorded_messages.append(RecordedMessage(message, external_id, gateway_id))
                 # if device unknown add device to list
                 if external_id not in self.devices:
                     centralized_device = Device.get_centralized_device_by_telegram(message, current_base_id, external_id)

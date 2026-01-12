@@ -22,6 +22,6 @@ devices:
     version: unknown
 
 
-recoreded_messages: []
+recorded_messages: []
 selected_data_filter_name: null
 send_message_template_list: null
