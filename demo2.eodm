@@ -216,7 +216,7 @@ devices:
     static_info: {}
     use_in_ha: true
     version: ''
-recoreded_messages:
+recorded_messages:
 - !!python/object:eo_man.data.recorded_message.RecordedMessage
   external_device_id: FE-D4-E9-48
   message: null

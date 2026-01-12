@@ -108,7 +108,6 @@ def main():
         devices = asyncio.run( PCT14DataManager.get_devices_from_pct14(opts.pct14_export) )
         data_manager.load_devices(devices)
 
-    
     # generate home assistant config instead of starting GUI
     if opts.command is None or opts.command.lower() not in cli_commands:
         from .view.main_panel import MainPanel
@@ -134,6 +133,7 @@ def main():
             serial_controller.establish_serial_connection(opts.serial_port, opts.device_type)
 
         enocean_logger = EnOceanLogger(app_bus, data_manager)
+        enocean_logger.set_show_telegram_values(True)
         if opts.log_telegram_id_filter is not None:
             enocean_logger.set_id_filter( str(opts.log_telegram_id_filter).replace(' ', '').upper().split(',') )
             e = {'msg': f"EnOcean Telegram Id filter was set to: {str.join(", ",enocean_logger.id_filter)}"}
@@ -146,7 +146,6 @@ def main():
             serial_controller.stop_serial_connection()
 
         threading.Thread(target=wait_for_enter, daemon=True).start()
-        
 
 if __name__ == "__main__":
     main()

@@ -8,6 +8,7 @@ from eo_man import LOGGER
 from .app_bus import AppBus
 from ..data.data_manager import DataManager
 from ..data.data_helper import b2s, a2s
+from ..data.device import Device
 
 class EnOceanLogger():
 
@@ -69,21 +70,28 @@ class EnOceanLogger():
                 if adr.upper() not in self.id_filter:
                     return
 
-            values = ''
-            eep, values = self.data_manager.get_values_from_message_to_string(telegram, current_base_id)
-            if eep is not None: 
-                if values is not None:
-                    values = f" => values for EEP {eep.__name__}: ({values})"
-                else:
-                    values = f" => No matching value for EEP {eep.__name__}"
-            else:
-                values = ''
+            values_txt = ''
+            device:Device = None
+            if current_base_id is None: 
+                device = self.data_manager.get_device_by_id(adr)
+            elif '-' in adr:
+                device = self.data_manager.find_device_by_local_address(adr, current_base_id)
 
-            display_values:str = values if self.show_telegram_values else ''
+            if device and not (device.name == 'unknown' and device.device_type == 'unknown'):
+                values_txt += f" \n=> {device.name} ({device.device_type})"
+
+                eep, values = self.data_manager.get_values_from_message_to_string(telegram, current_base_id)
+                if eep is not None: 
+                    if values is not None:
+                        values_txt += f" values for EEP {eep.__name__}: ({values})"
+                    else:
+                        values_txt += f" No matching value for EEP {eep.__name__}"
+
+            display_values:str = values_txt if self.show_telegram_values else ''
             display_esp2:str = f", ESP2: {telegram.serialize().hex()}" if self.show_esp2_binary else ''
             display_esp3:str = f", ESP3: { ''.join(f'{num:02x}' for num in ESP3SerialCommunicator.convert_esp2_to_esp3_message(telegram).build())}" if self.show_esp3_binary else ''
 
-            log_msg     = f"Received Telegram: {tt} from {adr}{payload}{values}"
+            log_msg     = f"Received Telegram: {tt} from {adr}{payload}{display_values}"
             LOGGER.info(log_msg)
 
             display_msg = f"Received Telegram: {tt} from {adr}{payload}{display_values}{display_esp2}{display_esp3}"

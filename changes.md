@@ -1,5 +1,8 @@
 # Change Log
 
+## v0.1.47 Added Log exceptions for broken EnOcean Telegrams
+* Little improvements for Linux added.
+
 ## v0.1.46 Prepared EnOcean Logger for Linux
 
 ## v0.1.45 Commandline EnOcean Logger with filter for specific EnOcean Telegram Ids

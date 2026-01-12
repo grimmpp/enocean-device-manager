@@ -51,10 +51,13 @@ class SerialConnectionBar():
         l = ttk.Label(f, text="Serial Port: ")
         l.pack(side=tk.LEFT, padx=(0, 5), pady=5)
 
+        self.b_connect = ttk.Button(f, text="Connect", state=NORMAL, command=self.toggle_serial_connection_command)
+        self.b_connect.bind('<Return>', lambda e: self.b_connect.invoke())
+
         self.cb_serial_ports = ttk.Combobox(f, state=NORMAL, width="14") 
+        self.cb_serial_ports.bind('<Return>', lambda e: self.b_connect.invoke())
         self.cb_serial_ports.pack(side=tk.LEFT, padx=(0, 5), pady=5)
 
-        self.b_connect = ttk.Button(f, text="Connect", state=NORMAL, command=self.toggle_serial_connection_command)
         self.b_connect.pack(side=tk.LEFT, padx=(0, 5), pady=5)
 
         s = ttk.Separator(f, orient=VERTICAL )
@@ -221,9 +224,9 @@ class SerialConnectionBar():
         self.cb_device_type.config(state="readonly")
         try:
             self.cb_serial_ports['values'] = self.endpoint_list[get_gateway_type_by_name(self.cb_device_type.get())]
+            self.b_connect.config(state=NORMAL)
             if len(self.cb_serial_ports['values']) > 0:
                 self.cb_serial_ports.set(self.cb_serial_ports['values'][0])
-                self.b_connect.config(state=NORMAL)
                 self.cb_serial_ports.config(state=NORMAL)
             else:
                 # self.b_connect.config(state=DISABLED)
