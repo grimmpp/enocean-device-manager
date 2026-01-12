@@ -4,6 +4,8 @@ import argparse
 import asyncio
 from typing import Final
 from logging.handlers import RotatingFileHandler
+import time
+import threading
 
 PACKAGE_NAME: Final = 'eo_man'
 
@@ -21,11 +23,14 @@ from .data.app_info import ApplicationInfo
 from .data.data_manager import DataManager
 from .data.pct14_data_manager import PCT14DataManager
 from .data.ha_config_generator import HomeAssistantConfigurationGenerator
-from .view.main_panel import MainPanel
 from .controller.app_bus import AppBus, AppBusEventType
+from .controller.enocean_logger import EnOceanLogger
+from .controller.serial_controller import SerialController
+from .controller.gateway_registry import GatewayRegistry
 
 import logging
 
+cli_commands = ["generate_ha_config", "enocean_logger"]
 
 def cli_argument():
     p = argparse.ArgumentParser(
@@ -36,6 +41,10 @@ Home Assistant Configurations for the Home Assistant Eltako Integration (https:/
     p.add_argument('-c', "--app_config", help="Filename of stored application configuration. Filename must end with '.eodm'.", default=None)
     p.add_argument('-ha', "--ha_config", help="Filename for Home Assistant Configuration for Eltako Integration. By passing the filename it will disable the GUI and only generate the Home Assistant Configuration file.")
     p.add_argument('-pct14', '--pct14_export', help="Load PCT14 exported file. Filename must end with .xml")
+    p.add_argument('-sp', '--serial_port', help="Serial port")
+    p.add_argument('-dt', '--device_type', help="Device Type for serial port")
+    p.add_argument('-idf', '--log_telegram_id_filter', help="List of telegram ids which will be shown for log command. E.g. 'FE-D4-E9-47, FE-D4-E9-48, FE-D4-E9-49'")
+    p.add_argument('-C', '--command', help=f"Action to perform. If nothing specified GUI will appear. Commands are {str.join(", ", cli_commands)}")
     return p.parse_args()
 
 
@@ -99,11 +108,46 @@ def main():
         devices = asyncio.run( PCT14DataManager.get_devices_from_pct14(opts.pct14_export) )
         data_manager.load_devices(devices)
 
+
     # generate home assistant config instead of starting GUI
-    if opts.app_config and opts.app_config.endswith('.eodm') and opts.ha_config:
-        HomeAssistantConfigurationGenerator(app_bus, data_manager).save_as_yaml_to_file(opts.ha_config)
-    else:
+    if opts.command is None or opts.command.lower() not in cli_commands:
+        from .view.main_panel import MainPanel
         MainPanel(app_bus, data_manager)
+
+    elif opts.command.lower() == "generate_ha_config":
+        # generate_ha_config
+        if opts.app_config is None: 
+            return
+        if not opts.app_config.endswith('.eodm'):
+            return
+        if not opts.ha_config:
+            e = {'msg': f"Target configuration filename for home assistant configuration must be specified.", 'color': 'darkred'}
+            app_bus.fire_event(AppBusEventType.LOG_MESSAGE, e)
+            return
+
+        HomeAssistantConfigurationGenerator(app_bus, data_manager).save_as_yaml_to_file(opts.ha_config)
+
+    # start enocean logger for commandline
+    elif opts.command.lower() == "enocean_logger":
+        if opts.serial_port is not None and opts.device_type is not None:
+            serial_controller = SerialController(app_bus, GatewayRegistry(app_bus))
+            serial_controller.establish_serial_connection(opts.serial_port, opts.device_type)
+
+        enocean_logger = EnOceanLogger(app_bus, data_manager)
+        enocean_logger.set_show_telegram_values(True)
+        if opts.log_telegram_id_filter is not None:
+            enocean_logger.set_id_filter( str(opts.log_telegram_id_filter).replace(' ', '').upper().split(',') )
+            e = {'msg': f"EnOcean Telegram Id filter was set to: {str.join(", ",enocean_logger.id_filter)}"}
+            app_bus.fire_event(AppBusEventType.LOG_MESSAGE, e)
+
+        app_bus.add_event_handler(AppBusEventType.SERIAL_CALLBACK, enocean_logger.serial_callback)
+        
+        def wait_for_enter():
+            input("Press Enter to stop...\n")
+            serial_controller.stop_serial_connection()
+
+        threading.Thread(target=wait_for_enter, daemon=True).start()
+
 
 if __name__ == "__main__":
     main()

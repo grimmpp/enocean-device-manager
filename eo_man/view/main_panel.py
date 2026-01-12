@@ -89,8 +89,15 @@ class MainPanel():
 
         #style
         style = ttk.Style()
-        style.configure("TButton", relief="sunken", background='green')
-        style_theme = 'xpnative' # 'clam'
+        
+        theme_names = style.theme_names()
+        if 'xpnative' in theme_names:
+            style_theme = 'xpnative'
+        elif 'alt' in theme_names:
+            style_theme = 'alt'
+        else: 
+            style_theme = 'default'
+
         self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Available style themes: {ttk.Style().theme_names()}", 'log-level': 'DEBUG'})
         try:
             style.theme_use(style_theme)
@@ -101,7 +108,6 @@ class MainPanel():
         # self.main.attributes('-fullscreen', True)
         # self.main.state('zoomed') # opens window maximized
 
-        self.main.config(bg="lightgrey")
         self.main.protocol("WM_DELETE_WINDOW", self.on_closing)
 
         # icon next to title in window frame

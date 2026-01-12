@@ -1,5 +1,16 @@
 # Change Log
 
+## v0.1.47 Added Log exceptions for broken EnOcean Telegrams
+* Little improvements for Linux added.
+
+## v0.1.46 Prepared EnOcean Logger for Linux
+
+## v0.1.45 Commandline EnOcean Logger with filter for specific EnOcean Telegram Ids
+
+## v0.1.44 Fixed config generation for lan gateways
+
+## v0.1.42 Fixed dependencies
+
 ## v0.1.41 HA Config Generation Fix for USB300
 * device type of USB300 was wrong
 * Getting started docs improved.
