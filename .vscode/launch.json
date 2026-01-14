@@ -41,6 +41,15 @@
             "justMyCode": false
         },
         {
+            "name": "Python: Console Burst Test",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/eo_man",
+            "args": ["-C", "burst_test", "-sp", "COM7", "-dt", "fam14", "-sp2", "COM11", "-dt2", "fgw14usb"],
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
             "name": "Python: CLI Help",
             "type": "debugpy",
             "request": "launch",

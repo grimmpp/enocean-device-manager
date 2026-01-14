@@ -96,7 +96,7 @@ class SerialController():
                 'type': self.current_device_type, 
                 'mdns_service': self.connected_mdns_service,
                 'base_id': self.current_base_id, 
-                'gateway_id': self.current_base_id,
+                'gateway_id': self.gateway_id,
                 'tcm_version': '', 
                 'api_version': ''
             }
@@ -115,7 +115,7 @@ class SerialController():
                 'type': self.current_device_type, 
                 'mdns_service': self.connected_mdns_service,
                 'base_id': self.current_base_id, 
-                'gateway_id': self.current_base_id,
+                'gateway_id': self.gateway_id,
                 'tcm_version': tcm_sw_v, 
                 'api_version': api_v
             }
@@ -229,7 +229,7 @@ class SerialController():
                     if device_type in [GDN[GDT.LAN], GDN[GDT.LAN_ESP2] ]:
                         msg = f"TCP to Serial connection established. Server: {serial_port}"
                     else:
-                        msg = f"Serial connection established. serial port: {serial_port}, baudrate: {baudrate}"
+                        msg = f"Serial connection established. serial port: {serial_port}, baudrate: {baudrate}, device type: {device_type}"
                     self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'color':'green'})
                     
                     if device_type == GDN[GDT.EltakoFAM14]:

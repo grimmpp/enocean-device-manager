@@ -27,10 +27,11 @@ from .controller.app_bus import AppBus, AppBusEventType
 from .controller.enocean_logger import EnOceanLogger
 from .controller.serial_controller import SerialController
 from .controller.gateway_registry import GatewayRegistry
+from .controller.bus_burst_tester import BusBurstTester
 
 import logging
 
-cli_commands = ["generate_ha_config", "enocean_logger"]
+cli_commands = ["generate_ha_config", "enocean_logger", "burst_test"]
 
 def cli_argument():
     p = argparse.ArgumentParser(
@@ -43,6 +44,8 @@ Home Assistant Configurations for the Home Assistant Eltako Integration (https:/
     p.add_argument('-pct14', '--pct14_export', help="Load PCT14 exported file. Filename must end with .xml")
     p.add_argument('-sp', '--serial_port', help="Serial port")
     p.add_argument('-dt', '--device_type', help="Device Type for serial port")
+    p.add_argument('-sp2', '--serial_port2', help="Serial port")
+    p.add_argument('-dt2', '--device_type2', help="Device Type for serial port")
     p.add_argument('-idf', '--log_telegram_id_filter', help="List of telegram ids which will be shown for log command. E.g. 'FE-D4-E9-47, FE-D4-E9-48, FE-D4-E9-49'")
     p.add_argument('-C', '--command', help=f"Action to perform. If nothing specified GUI will appear. Commands are {str.join(", ", cli_commands)}")
     return p.parse_args()
@@ -146,6 +149,11 @@ def main():
             serial_controller.stop_serial_connection()
 
         threading.Thread(target=wait_for_enter, daemon=True).start()
+
+    elif opts.command.lower() == "burst_test":
+
+        bt = BusBurstTester(app_bus, opts.serial_port, opts.device_type, opts.serial_port2, opts.device_type2)
+        bt.start_test(2)
 
 if __name__ == "__main__":
     main()
