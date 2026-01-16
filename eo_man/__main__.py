@@ -53,7 +53,7 @@ Home Assistant Configurations for the Home Assistant Eltako Integration (https:/
     p.add_argument('-sp2', '--serial_port2', help="Serial port")
     p.add_argument('-dt2', '--device_type2', help="Device Type for serial port")
     p.add_argument('-idf', '--log_telegram_id_filter', help="List of telegram ids which will be shown for log command. E.g. 'FE-D4-E9-47, FE-D4-E9-48, FE-D4-E9-49'")
-    p.add_argument('-C', '--command', help=f"Action to perform. If nothing specified GUI will appear. Commands are {str.join(", ", cli_commands)}")
+    p.add_argument('-C', '--command', help=f"Action to perform. If nothing specified GUI will appear. Commands are {str.join(', ', cli_commands)}")
     return p.parse_args()
 
 
