@@ -11,6 +11,9 @@
             "program": "${workspaceFolder}/eo_man",
             "console": "integratedTerminal",
             "args": ["-v", "--app_config", "${workspaceFolder}/demo2.eodm"],
+            "env": {
+               "PYTHONWARNINGS": "ignore:__package__ != __spec__.parent:DeprecationWarning"
+            },
             "justMyCode": false
         },
         {
@@ -20,6 +23,9 @@
             "program": "${workspaceFolder}/eo_man",
             "console": "integratedTerminal",
             "args": ["-v", "--pct14_export", "${workspaceFolder}/tests/resources/20240925_PCT14_export_test.xml"],
+            "env": {
+               "PYTHONWARNINGS": "ignore:__package__ != __spec__.parent:DeprecationWarning"
+            },
             "justMyCode": false
         },
         {
@@ -29,6 +35,9 @@
             "program": "${workspaceFolder}/eo_man",
             "args": ["-v"],
             "console": "integratedTerminal",
+            "env": {
+               "PYTHONWARNINGS": "ignore:__package__ != __spec__.parent:DeprecationWarning"
+            },
             "justMyCode": false
         },
         {
@@ -38,15 +47,45 @@
             "program": "${workspaceFolder}/eo_man",
             "args": ["-C", "enocean_logger", "-sp", "COM7", "-dt", "fam14", "--app_config", "${workspaceFolder}/tests/resources/20260108_logger_test.eodm", "--log_telegram_id_filter", "FE-D4-E9-47, FE-D4-E9-48, FE-D4-E9-49"],
             "console": "integratedTerminal",
+            "env": {
+               "PYTHONWARNINGS": "ignore:__package__ != __spec__.parent:DeprecationWarning"
+            },
             "justMyCode": false
         },
         {
-            "name": "Python: Console Burst Test",
+            "name": "Python: Console Burst Test (FGW14 write ==RS232==> FAM14 read)",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/eo_man",
-            "args": ["-C", "burst_test", "-sp", "COM7", "-dt", "fam14", "-sp2", "COM11", "-dt2", "fgw14usb"],
+            "args": ["-C", "burst_test", "-sp2", "COM7", "-dt2", "fam14", "-sp", "COM12", "-dt", "fgw14", "-trc", "10", "-md", "0.02"],
             "console": "integratedTerminal",
+            "env": {
+               "PYTHONWARNINGS": "ignore:__package__ != __spec__.parent:DeprecationWarning"
+            },
+            "justMyCode": false
+        },
+        {
+            "name": "Python: Console Burst Test (FGW14-USB write ==USB==> FAM14 read)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/eo_man",
+            "args": ["-C", "burst_test", "-sp2", "COM7", "-dt2", "fam14", "-sp", "COM11", "-dt", "fgw14usb"],
+            "console": "integratedTerminal",
+            "env": {
+               "PYTHONWARNINGS": "ignore:__package__ != __spec__.parent:DeprecationWarning"
+            },
+            "justMyCode": false
+        },
+        {
+            "name": "Python: Console Burst Test (FAM14 write ==USB==> FGW14-USB read)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/eo_man",
+            "args": ["-C", "burst_test", "-sp2", "COM11", "-dt2", "fam14", "-sp", "COM7", "-dt", "fgw14usb"],
+            "console": "integratedTerminal",
+            "env": {
+               "PYTHONWARNINGS": "ignore:__package__ != __spec__.parent:DeprecationWarning"
+            },
             "justMyCode": false
         },
         {
@@ -56,6 +95,9 @@
             "program": "${workspaceFolder}/eo_man",
             "console": "integratedTerminal",
             "args": ["-h"],
+            "env": {
+               "PYTHONWARNINGS": "ignore:__package__ != __spec__.parent:DeprecationWarning"
+            },
             "justMyCode": false
         },
         {
@@ -65,6 +107,9 @@
             "program": "${workspaceFolder}/eo_man",
             "console": "integratedTerminal",
             "args": ["-C", "generate_ha_config", "-v", "--app_config", "${workspaceFolder}/demo.eodm", "--ha_config", "${workspaceFolder}/ha_config.yaml"],
+            "env": {
+               "PYTHONWARNINGS": "ignore:__package__ != __spec__.parent:DeprecationWarning"
+            },
             "justMyCode": true
         },
         {

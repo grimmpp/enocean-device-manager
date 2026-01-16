@@ -287,7 +287,7 @@ class SerialController():
     def stop_serial_connection(self) -> None:
         if self.is_serial_connection_active():
             self._serial_bus.stop()
-            self._serial_bus._stop_flag.wait()
+            self._serial_bus._stop_flag.wait(1)
 
             time.sleep(0.5)
 

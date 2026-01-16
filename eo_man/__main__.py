@@ -7,6 +7,10 @@ from logging.handlers import RotatingFileHandler
 import time
 import threading
 
+import warnings
+from bs4 import XMLParsedAsHTMLWarning
+warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
+
 PACKAGE_NAME: Final = 'eo_man'
 
 # load same path like calling the app via 'python -m eo-man'
@@ -39,6 +43,8 @@ def cli_argument():
 """EnOcean Device Manager (https://github.com/grimmpp/enocean-device-manager) allows you to managed your EnOcean devices and to generate 
 Home Assistant Configurations for the Home Assistant Eltako Integration (https://github.com/grimmpp/home-assistant-eltako).""")
     p.add_argument('-v', '--verbose', help="Logs all messages.", action='count', default=0)
+    p.add_argument('-md', '--message_delay', help="Delay to send messages.", type=float, default=0.05)
+    p.add_argument('-trc', '--test_run_count', help="Amount of test runs to be executed.", type=float, default=1)
     p.add_argument('-c', "--app_config", help="Filename of stored application configuration. Filename must end with '.eodm'.", default=None)
     p.add_argument('-ha', "--ha_config", help="Filename for Home Assistant Configuration for Eltako Integration. By passing the filename it will disable the GUI and only generate the Home Assistant Configuration file.")
     p.add_argument('-pct14', '--pct14_export', help="Load PCT14 exported file. Filename must end with .xml")
@@ -152,8 +158,10 @@ def main():
 
     elif opts.command.lower() == "burst_test":
 
-        bt = BusBurstTester(app_bus, opts.serial_port, opts.device_type, opts.serial_port2, opts.device_type2)
-        bt.start_test(2)
+        bt = BusBurstTester(app_bus, opts.serial_port, opts.device_type, opts.serial_port2, opts.device_type2, message_delay=opts.message_delay, quiet=opts.verbose==0)
+        bt.start_test(opts.test_run_count)
+
+    sys.exit(0)
 
 if __name__ == "__main__":
     main()
