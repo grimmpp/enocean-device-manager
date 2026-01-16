@@ -6,11 +6,11 @@ This is a small command-line tool that allows you to test the performance of the
 
 `python.exe -m eo_man --command burst_test --serial_port SERIAL_PORT_WRITE --device_type fgw14 --serial_port2 SERIAL_PORT_READ -device_type2 fam14 --test_run_count 10 --message_delay 0.05`
 
-Device specified with `serial_port` and `device_type` will write the telegrams to the bus.
-Device specified with `serial_port2` and `device_type2` will read the telegrams to the bus. 
-Valid values for `serial_port` and `serial_port2`: e.g. /dev/ttyUSB0 or COM7
-Valid values for `device_type` and `device_type2`: fgw14, fgw14-usb, fam14
-`test_run_count`: Amount of test runs which will be executed in a row. 
+Device specified with `serial_port` and `device_type` will write the telegrams to the bus. <br/>
+Device specified with `serial_port2` and `device_type2` will read the telegrams to the bus.  <br/>
+Valid values for `serial_port` and `serial_port2`: e.g. /dev/ttyUSB0 or COM7 <br/>
+Valid values for `device_type` and `device_type2`: fgw14, fgw14-usb, fam14 <br/>
+`test_run_count`: Amount of test runs which will be executed in a row.  <br/>
 `message_delay`: Delay between to telegrams in seconds (float). Default value is 0.05 => 50ms. If delay is too small buffer overflow in gateway will happen. 
 
 ## Example Output
