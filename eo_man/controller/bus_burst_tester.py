@@ -15,7 +15,7 @@ class BusBurstTester:
     TEST_MESSAGES: [EltakoMessage] = []
     TEST_ADDRESSES = [] 
 
-    def __init__(self, app_bus:AppBus, serial_port1: str, device_type1: str, serial_port2: str, device_type2: str, message_delay:float=.01, quiet: bool=True) -> None:
+    def __init__(self, app_bus:AppBus, serial_port1: str, device_type1: str, serial_port2: str, device_type2: str, message_delay:float=.01, quiet: bool=True, message_count: int=44) -> None:
         self._stop_flag = threading.Event()
         self._receive_queue = queue.Queue(len(BusBurstTester.TEST_MESSAGES))
 
@@ -29,7 +29,6 @@ class BusBurstTester:
         self._received_other_messages_count = 0
         
         # generate messages
-        message_count = 44
         for n in range(1, message_count+1):
             adr = (int("0xFF000000", 16) + n).to_bytes(4, byteorder='big')
             BusBurstTester.TEST_MESSAGES.append( Regular4BSMessage(adr, 0x20, b'\00\x00\x00\x00', True) )
