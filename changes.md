@@ -1,5 +1,7 @@
 # Change Log
 
+## v0.1.48 Added Burst Tests for checking if all telegrams appear on the bus
+
 ## v0.1.47 Added Log exceptions for broken EnOcean Telegrams
 * Little improvements for Linux added.
 

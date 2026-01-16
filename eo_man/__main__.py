@@ -7,6 +7,10 @@ from logging.handlers import RotatingFileHandler
 import time
 import threading
 
+import warnings
+from bs4 import XMLParsedAsHTMLWarning
+warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
+
 PACKAGE_NAME: Final = 'eo_man'
 
 # load same path like calling the app via 'python -m eo-man'
@@ -27,10 +31,11 @@ from .controller.app_bus import AppBus, AppBusEventType
 from .controller.enocean_logger import EnOceanLogger
 from .controller.serial_controller import SerialController
 from .controller.gateway_registry import GatewayRegistry
+from .controller.bus_burst_tester import BusBurstTester
 
 import logging
 
-cli_commands = ["generate_ha_config", "enocean_logger"]
+cli_commands = ["generate_ha_config", "enocean_logger", "burst_test"]
 
 def cli_argument():
     p = argparse.ArgumentParser(
@@ -38,11 +43,15 @@ def cli_argument():
 """EnOcean Device Manager (https://github.com/grimmpp/enocean-device-manager) allows you to managed your EnOcean devices and to generate 
 Home Assistant Configurations for the Home Assistant Eltako Integration (https://github.com/grimmpp/home-assistant-eltako).""")
     p.add_argument('-v', '--verbose', help="Logs all messages.", action='count', default=0)
+    p.add_argument('-md', '--message_delay', help="Delay to send messages.", type=float, default=0.05)
+    p.add_argument('-trc', '--test_run_count', help="Amount of test runs to be executed.", type=float, default=1)
     p.add_argument('-c', "--app_config", help="Filename of stored application configuration. Filename must end with '.eodm'.", default=None)
     p.add_argument('-ha', "--ha_config", help="Filename for Home Assistant Configuration for Eltako Integration. By passing the filename it will disable the GUI and only generate the Home Assistant Configuration file.")
     p.add_argument('-pct14', '--pct14_export', help="Load PCT14 exported file. Filename must end with .xml")
     p.add_argument('-sp', '--serial_port', help="Serial port")
     p.add_argument('-dt', '--device_type', help="Device Type for serial port")
+    p.add_argument('-sp2', '--serial_port2', help="Serial port")
+    p.add_argument('-dt2', '--device_type2', help="Device Type for serial port")
     p.add_argument('-idf', '--log_telegram_id_filter', help="List of telegram ids which will be shown for log command. E.g. 'FE-D4-E9-47, FE-D4-E9-48, FE-D4-E9-49'")
     p.add_argument('-C', '--command', help=f"Action to perform. If nothing specified GUI will appear. Commands are {str.join(", ", cli_commands)}")
     return p.parse_args()
@@ -146,6 +155,13 @@ def main():
             serial_controller.stop_serial_connection()
 
         threading.Thread(target=wait_for_enter, daemon=True).start()
+
+    elif opts.command.lower() == "burst_test":
+
+        bt = BusBurstTester(app_bus, opts.serial_port, opts.device_type, opts.serial_port2, opts.device_type2, message_delay=opts.message_delay, quiet=opts.verbose==0)
+        bt.start_test(opts.test_run_count)
+
+    sys.exit(0)
 
 if __name__ == "__main__":
     main()
