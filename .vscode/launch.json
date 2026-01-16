@@ -57,7 +57,7 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/eo_man",
-            "args": ["-C", "burst_test", "-sp2", "COM7", "-dt2", "fam14", "-sp", "COM12", "-dt", "fgw14", "-trc", "10", "-md", "0.02"],
+            "args": ["-C", "burst_test", "-sp2", "COM7", "-dt2", "fam14", "-sp", "COM12", "-dt", "fgw14", "-trc", "10", "-md", "0.025"],
             "console": "integratedTerminal",
             "env": {
                "PYTHONWARNINGS": "ignore:__package__ != __spec__.parent:DeprecationWarning"
