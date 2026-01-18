@@ -62,16 +62,14 @@ class SerialPortDetector:
         fgw14usb = GDT.EltakoFGW14USB.value
         result = { fam14: [], esp3_gw: [], famusb: [], fgw14usb: [], 'all': [] }
 
-        if sys.platform.startswith('win'):
+        if sys.platform.startswith('win') or sys.platform.startswith('linux'):
             # ports = ['COM%s' % (i + 1) for i in range(256)]
             ports = [d.device for d in serial.tools.list_ports.comports()]
-        elif sys.platform == 'linux':
-            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Serial port detection not available under Linux.", 'color':'darkred'})
-            return result
         else:
-            raise NotImplementedError("Detection of devices under other systems than windows is not yet supported!")
+            raise NotImplementedError(f"Detection of devices under {sys.platform} is not yet supported!")
         
         # ports = [p.device for p in _ports if p.vid == self.USB_VENDOR_ID]
+        self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Check ports {ports} for gateways", 'color':'grey'})
 
         count = 0
         for baud_rate in [9600, 57600]:
@@ -84,7 +82,8 @@ class SerialPortDetector:
                 try:
                     # is faster to precheck with serial
                     s = serial.Serial(port, baudrate=baud_rate, timeout=0.2)
-                    s.rs485_mode = serial.rs485.RS485Settings()
+                    # not working under linux
+                    # s.rs485_mode = serial.rs485.RS485Settings()
                     s.close()
 
                     # test esp3 devices
