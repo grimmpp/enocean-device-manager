@@ -27,6 +27,7 @@ from .data.app_info import ApplicationInfo
 from .data.data_manager import DataManager
 from .data.pct14_data_manager import PCT14DataManager
 from .data.ha_config_generator import HomeAssistantConfigurationGenerator
+from .data.const import GatewayDeviceType
 from .controller.app_bus import AppBus, AppBusEventType
 from .controller.enocean_logger import EnOceanLogger
 from .controller.serial_controller import SerialController
@@ -37,24 +38,52 @@ import logging
 
 cli_commands = ["generate_ha_config", "enocean_logger", "burst_test"]
 
+ASCII_ART_HEADLINE = (
+    " _____     _____                    ____          _            _____                         \n"
+    "|   __|___|     |___ ___ ___ ___   |    \\ ___ _ _|_|___ ___   |     |___ ___ ___ ___ ___ ___ \n"
+    "|   __|   |  |  |  _| -_| .'|   |  |  |  | -_| | | |  _| -_|  | | | | .'|   | .'| . | -_|  _|\n"
+    "|_____|_|_|_____|___|___|__,|_|_|  |____/|___|\\_/|_|___|___|  |_|_|_|__,|_|_|__,|_  |___|_|\n"
+    "                                                                                |___|        \n")
+
 def cli_argument():
-    p = argparse.ArgumentParser(
-        description=
-"""EnOcean Device Manager (https://github.com/grimmpp/enocean-device-manager) allows you to managed your EnOcean devices and to generate 
-Home Assistant Configurations for the Home Assistant Eltako Integration (https://github.com/grimmpp/home-assistant-eltako).""")
-    p.add_argument('-v', '--verbose', help="Logs all messages.", action='count', default=0)
-    p.add_argument('-md', '--message_delay', help="Delay to send messages.", type=float, default=0.05)
-    p.add_argument('-trc', '--test_run_count', help="Amount of test runs to be executed.", type=float, default=1)
-    p.add_argument('-c', "--app_config", help="Filename of stored application configuration. Filename must end with '.eodm'.", default=None)
-    p.add_argument('-ha', "--ha_config", help="Filename for Home Assistant Configuration for Eltako Integration. By passing the filename it will disable the GUI and only generate the Home Assistant Configuration file.")
-    p.add_argument('-pct14', '--pct14_export', help="Load PCT14 exported file. Filename must end with .xml")
-    p.add_argument('-sp', '--serial_port', help="Serial port")
-    p.add_argument('-dt', '--device_type', help="Device Type for serial port")
-    p.add_argument('-sp2', '--serial_port2', help="Serial port")
-    p.add_argument('-dt2', '--device_type2', help="Device Type for serial port")
-    p.add_argument('-idf', '--log_telegram_id_filter', help="List of telegram ids which will be shown for log command. E.g. 'FE-D4-E9-47, FE-D4-E9-48, FE-D4-E9-49'")
-    p.add_argument('-C', '--command', help=f"Action to perform. If nothing specified GUI will appear. Commands are {str.join(', ', cli_commands)}")
-    return p.parse_args()
+    description = (
+        ASCII_ART_HEADLINE + "\n\n"
+        "EnOcean Device Manager (https://github.com/grimmpp/enocean-device-manager) "
+        "manages your EnOcean devices and generate Home Assistant configurations for the "
+        "Home Assistant Eltako Integration (https://github.com/grimmpp/home-assistant-eltako)."
+    )
+    parser = argparse.ArgumentParser(
+        description=description,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+
+    parser.add_argument('-v', '--verbose', action='count', default=0, required=False,
+                        help='Increase verbosity (repeat for more verbose).')
+    parser.add_argument('-C', '--command', required=False,
+                        help=f"Action to perform (disables GUI when specified). Choices: {', '.join(cli_commands)}",
+                        type=str.lower, default=None, choices=[c.lower() for c in cli_commands])
+    parser.add_argument('-sp', '--serial_port', required=False, help='Serial port for gateway', metavar='PORT')
+    device_type_choices = [str(d.value).lower() for d in GatewayDeviceType]
+    parser.add_argument('-dt', '--device_type', required=False, type=str.lower, default="fgw14-usb", choices=device_type_choices,
+                        help=f"Device type for serial port. Choices: {', '.join(device_type_choices)}", metavar='TYPE')
+    parser.add_argument('-sp2', '--serial_port2', required=False, help='Second serial port (optional)', metavar='PORT')
+    parser.add_argument('-dt2', '--device_type2', required=False, type=str.lower, default="fgw14-usb", choices=device_type_choices,
+                        help=f"Device type for second serial port. Choices: {', '.join(device_type_choices)}", metavar='TYPE')
+    parser.add_argument('-c', '--app_config', required=False, default=None, metavar='FILE',
+                        help="Stored application configuration filename (must end with '.eodm').")
+    parser.add_argument('-ha', '--ha_config', required=False, metavar='FILE',
+                        help='Output filename for generated Home Assistant configuration (disables GUI) for command `generate_ha_config`.')
+    parser.add_argument('-pct14', '--pct14_export', required=False, metavar='FILE',
+                        help="PCT14 exported file (must end with '.xml').")
+    parser.add_argument('-md', '--message_delay', type=float, default=0.05, metavar='SEC', required=False, 
+                        help='Delay between outgoing messages in seconds.')
+    parser.add_argument('-trc', '--test_run_count', type=int, default=1, metavar='N', required=False, 
+                        help='Number of test runs to execute.')
+    parser.add_argument('-idf', '--log_telegram_id_filter', required=False, 
+                        help="Filter for command `enocean_logger`. Comma-separated list of telegram IDs to show (e.g. 'FE-D4-E9-47,FE-D4-E9-48').",
+                        type=lambda s: [x.strip().upper() for x in s.split(',') if x.strip()])
+
+    return parser.parse_args()
 
 
 def init_logger(app_bus:AppBus, log_level:int=logging.INFO, verbose_level:int=0):
@@ -79,8 +108,7 @@ def init_logger(app_bus:AppBus, log_level:int=logging.INFO, verbose_level:int=0)
     elif verbose_level > 1:
         logging.getLogger('eltakobus.serial').setLevel(logging.DEBUG)
 
-    LOGGER.info("Start Application eo_man")
-    LOGGER.info(ApplicationInfo.get_app_info_as_str())
+    LOGGER.info("Start Application eo_man\n" + ASCII_ART_HEADLINE + ApplicationInfo.get_app_info_as_str())
     # add print log messages for log message view on command line as debug
     def print_log_event(e:dict):
         log_level = e.get('log-level', 'INFO')

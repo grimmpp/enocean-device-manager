@@ -179,11 +179,11 @@ class SerialConnectionBar():
                 self.serial_cntr.stop_serial_connection()
         except:
             # reset buttons
-            self.is_connected_handler(data={'connected': self.serial_cntr.is_serial_connection_active()})
+            self.is_connected_handler(data={'connected': self.serial_cntr.is_serial_connection_active()}, skip_serial_port_detection=True)
             LOGGER.exception("Was not able to detect serial ports.")
 
 
-    def is_connected_handler(self, data:dict, skipp_serial_port_detection:bool=False):
+    def is_connected_handler(self, data:dict, skip_serial_port_detection:bool=True):
         status = data.get('connected')
         
         self.main.config(cursor="")
@@ -211,7 +211,7 @@ class SerialConnectionBar():
             self.cb_device_type.config(state="readonly")
             self.b_scan.config(state=DISABLED)
             self.b_sync_ha_sender.config(state=DISABLED)
-            if not skipp_serial_port_detection: self.detect_serial_ports_command()
+            if not skip_serial_port_detection: self.detect_serial_ports_command()
 
     def update_service_endpoints(self, data:Dict[str, List[str]]=None):
 
