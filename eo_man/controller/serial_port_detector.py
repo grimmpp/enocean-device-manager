@@ -3,6 +3,7 @@ from serial import rs485
 import serial.tools.list_ports
 import logging
 import sys
+import time
 
 from esp2_gateway_adapter.esp3_serial_com import ESP3SerialCommunicator
 from esp2_gateway_adapter.esp3_tcp_com import TCP2SerialCommunicator, detect_lan_gateways
@@ -79,6 +80,9 @@ class SerialPortDetector:
                 progress = min(round((count/(2*256.0))*10)*10 + 10, 100)
                 self.app_bus.fire_event(AppBusEventType.DEVICE_ITERATION_PROGRESS, progress) 
 
+                if port in result['all']:
+                    continue
+
                 try:
                     # is faster to precheck with serial
                     s = serial.Serial(port, baudrate=baud_rate, timeout=0.2)
@@ -91,7 +95,7 @@ class SerialPortDetector:
                         s = ESP3SerialCommunicator(port, auto_reconnect=False)
                         s.start()
                         if not s.is_serial_connected.wait(1):
-                            break
+                            continue
 
                         base_id = await s.async_base_id
                         if base_id and isinstance(base_id, list) and port not in result['all']:
@@ -99,22 +103,25 @@ class SerialPortDetector:
                             result['all'].append(port)
                             self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"USB300 detected on serial port {port},(baudrate: {baud_rate})", 'color':'lightgreen'})
                             s.stop()
+                            s.join(.5)
                             continue
 
                         s.stop()
+                        s.join(.5)
                     
                     # test fam14, fgw14-usb and fam-usb
                     s = RS485SerialInterfaceV2(port, baud_rate=baud_rate, delay_message=0.2, auto_reconnect=False)
                     s.start()
                     if not s.is_serial_connected.wait(1):
-                        break
-
+                        continue
+                    
                     # test fam14
                     if s.suppress_echo and port not in result['all']:
                         result[fam14].append(port)
                         result['all'].append(port)
                         self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"FAM14 detected on serial port {port},(baudrate: {baud_rate})", 'color':'lightgreen'})
                         s.stop()
+                        s.join(.5)
                         continue
 
                     # test fam-usb
@@ -127,6 +134,7 @@ class SerialPortDetector:
                             result['all'].append(port)
                             self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"FAM-USB detected on serial port {port},(baudrate: {baud_rate})", 'color':'lightgreen'})
                             s.stop()
+                            s.join(.5)
                             continue
 
                     # fgw14-usb
@@ -134,14 +142,20 @@ class SerialPortDetector:
                         if not s.suppress_echo and port not in result['all']:
                             result[fgw14usb].append(port)
                             result['all'].append(port)
-                            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"FGW14-USB could be on serial port {port},(baudrate: {baud_rate})", 'color':'lightgreen'})
+                            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"FGW14(-USB) could be on serial port {port},(baudrate: {baud_rate})", 'color':'lightgreen'})
                             s.stop()
+                            s.join(.5)
                             continue
                 
                     s.stop()
+                    s.join(.5)
 
                 except Exception as e:
                     pass
+                finally:
+                    if s and s.is_serial_connected.is_set():
+                        s.stop()
+                        s.join(.5)
 
         self.app_bus.fire_event(AppBusEventType.DEVICE_ITERATION_PROGRESS, 0)
         return result
