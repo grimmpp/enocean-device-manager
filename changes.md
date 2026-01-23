@@ -1,5 +1,7 @@
 # Change Log
 
+## v0.1.53 Added new lib eltako14bus version for additional FSB14 type
+
 ## v0.1.52 Device Detection Improved
 
 ## v0.1.51 Improved Linux compatibility
