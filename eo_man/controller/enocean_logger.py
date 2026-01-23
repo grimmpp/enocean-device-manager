@@ -74,7 +74,7 @@ class EnOceanLogger():
             device:Device = None
             if current_base_id is None: 
                 device = self.data_manager.get_device_by_id(adr)
-            elif '-' in adr:
+            elif isinstance(adr, str) and '-' in adr:
                 device = self.data_manager.find_device_by_local_address(adr, current_base_id)
 
             if device and not (device.name == 'unknown' and device.device_type == 'unknown'):
