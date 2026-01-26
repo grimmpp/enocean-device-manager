@@ -83,11 +83,13 @@ PLATFORMS: Final = [
 class GatewayDeviceType(str, Enum):
     GatewayEltakoFAM14 = 'fam14'
     GatewayEltakoFGW14USB = 'fgw14usb'
+    GatewayEltakoFGW14 = 'fgw14'
     GatewayEltakoFAMUSB = 'fam-usb'     # ESP2 transceiver: https://www.eltako.com/en/product/professional-standard-en/three-phase-energy-meters-and-one-phase-energy-meters/fam-usb/
     EltakoFTD14 = 'ftd14'
     EnOceanUSB300 = 'enocean-usb300'
     EltakoFAM14 = 'fam14'
     EltakoFGW14USB = 'fgw14usb'
+    EltakoFGW14 = 'fgw14'
     EltakoFAMUSB = 'fam-usb'
     USB300 = 'enocean-usb300'
     ESP3 = 'esp3-gateway'
@@ -144,6 +146,7 @@ class GatewayDeviceType(str, Enum):
 BAUD_RATE_DEVICE_TYPE_MAPPING: dict = {
     GatewayDeviceType.EltakoFAM14: 57600,
     GatewayDeviceType.EltakoFGW14USB: 57600,
+    GatewayDeviceType.EltakoFGW14: 57600,
     GatewayDeviceType.EltakoFAMUSB: 9600,
     GatewayDeviceType.USB300: 57600,
     GatewayDeviceType.ESP3: 57600,
@@ -151,7 +154,8 @@ BAUD_RATE_DEVICE_TYPE_MAPPING: dict = {
 
 GATEWAY_DISPLAY_NAMES = {
     GatewayDeviceType.EltakoFAM14: "FAM14 (ESP2)",
-    GatewayDeviceType.EltakoFGW14USB: 'FGW14-USB (ESP2)',
+    GatewayDeviceType.EltakoFGW14USB: 'FGW14(-USB) (ESP2)',
+    # GatewayDeviceType.EltakoFGW14: 'FGW14 (ESP2)',
     GatewayDeviceType.EltakoFAMUSB: 'FAM-USB (ESP2)',
     # GatewayDeviceType.USB300: 'ESP3 Gateway',
     GatewayDeviceType.ESP3: 'ESP3 Gateway',

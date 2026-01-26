@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "eo_man"
-version = "0.1.53"
+version = "0.1.54"
 description = "Tool to managed EnOcean Devices and to generate Home Assistant Configuration."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -21,7 +21,7 @@ classifiers = [
     "Operating System :: OS Independent"
 ]
 dependencies = [
-    "aiocoap==0.4.7", "eltako14bus==0.0.78", "numpy", "pillow>=11", "pyserial==3.5", "pyserial-asyncio==0.6", "PyYAML==6.0.1", "StrEnum==0.4.15", "termcolor==2.4.0", "tkinterhtml==0.7", "requests==2.31.0", "enocean==0.60.1", "esp2_gateway_adapter==0.2.20", "zeroconf", "tkScrolledFrame==1.0.4", "xmltodict", "tomli"
+    "aiocoap==0.4.7", "eltako14bus==0.0.79", "numpy", "pillow>=11", "pyserial==3.5", "pyserial-asyncio==0.6", "PyYAML==6.0.1", "StrEnum==0.4.15", "termcolor==2.4.0", "tkinterhtml==0.7", "requests==2.31.0", "enocean==0.60.1", "esp2_gateway_adapter==0.2.20", "zeroconf", "tkScrolledFrame==1.0.4", "xmltodict", "tomli"
 ]
 
 [project.urls]
