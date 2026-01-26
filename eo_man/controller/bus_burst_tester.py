@@ -124,7 +124,7 @@ class BusBurstTester:
         missing_addresses = []
         received_addresses = []
         while not self._receive_queue.empty():
-            received_addresses.append(prettify(self._receive_queue.get()).body[6:10])
+            received_addresses.append( self._receive_queue.get().body[-5:-1] )
 
         for a in [m.address for m in BusBurstTester.TEST_MESSAGES]: 
             if a not in received_addresses:

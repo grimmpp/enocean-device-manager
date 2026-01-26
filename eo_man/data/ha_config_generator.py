@@ -79,7 +79,7 @@ class HomeAssistantConfigurationGenerator():
         out += f"  {CONF_GATEWAY}:\n"
         for gw_d in gateways:
             global_gw_id += 1
-            out += f"  # Gateway: "
+            out += f"  # Gateway: \n"
             out += f"  - {CONF_ID}: {global_gw_id}\n"
 
             gw_fam14 = GatewayDeviceType.EltakoFAM14.value
