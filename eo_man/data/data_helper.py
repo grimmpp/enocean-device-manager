@@ -71,6 +71,8 @@ EEP_MAPPING = [
     {'hw-type': 'FBH65TF', 'brand': 'Eltako', CONF_EEP: 'A5-08-01', CONF_TYPE: Platform.SENSOR, 'description': 'Light-, Temperature-, Occupancy Sensor', 'address_count': 1},
 
     # air quality
+    {'hw-type': 'FCO2TF65', 'brand': 'Eltako', CONF_EEP: 'A5-09-04', CONF_TYPE: Platform.SENSOR, 'description': 'CO2, Temperature and Humidity Sensor', 'address_count': 1},
+    {'hw-type': 'FCO2TS', 'brand': 'Eltako', CONF_EEP: 'A5-09-04', CONF_TYPE: Platform.SENSOR, 'description': 'CO2, Temperature and Humidity Sensor', 'address_count': 1},
     {'hw-type': 'FLGTF', 'brand': 'Eltako', CONF_EEP: 'A5-09-0C', CONF_TYPE: Platform.SENSOR, 'description': 'Air Quality, Temperature and Humidity Sensor', 'address_count': 1},
 
     # Temp Controller
