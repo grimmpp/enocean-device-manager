@@ -175,7 +175,7 @@ class SerialController():
         self.app_bus.fire_event(AppBusEventType.CONNECTION_STATUS_CHANGE, {'connected': connected})
 
 
-    def establish_serial_connection(self, serial_port:str, device_type:str) -> None:
+    def establish_serial_connection(self, serial_port:str, device_type:str, delay_msg:float = None) -> None:
         baudrate:int=57600
         delay_message:float=.1
         self.current_device_type = get_gateway_type_by_name(device_type)
@@ -184,6 +184,9 @@ class SerialController():
             baudrate = 9600
         elif device_type == GDN[GDT.EltakoFAM14]:
             delay_message = 0.001
+
+        if delay_msg is not None:
+            delay_message = delay_msg
 
         try:
             if not self.is_serial_connection_active():
