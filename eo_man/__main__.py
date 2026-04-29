@@ -79,6 +79,8 @@ def cli_argument():
                         help='Delay between outgoing messages in seconds.')
     parser.add_argument('-trc', '--test_run_count', type=int, default=1, metavar='N', required=False, 
                         help='Number of test runs to execute.')
+    parser.add_argument('-tmc', '--test_message_count', type=int, default=44, metavar='N', required=False, 
+                        help='Number of messages in one test execution.')
     parser.add_argument('-idf', '--log_telegram_id_filter', required=False, 
                         help="Filter for command `enocean_logger`. Comma-separated list of telegram IDs to show (e.g. 'FE-D4-E9-47,FE-D4-E9-48').",
                         type=lambda s: [x.strip().upper() for x in s.split(',') if x.strip()])
@@ -186,7 +188,7 @@ def main():
 
     elif opts.command.lower() == "burst_test":
 
-        bt = BusBurstTester(app_bus, opts.serial_port, opts.device_type, opts.serial_port2, opts.device_type2, message_delay=opts.message_delay, quiet=opts.verbose==0)
+        bt = BusBurstTester(app_bus, opts.serial_port, opts.device_type, opts.serial_port2, opts.device_type2, message_delay=opts.message_delay, quiet=opts.verbose==0, message_count=opts.test_message_count)
         bt.start_test(opts.test_run_count)
 
     sys.exit(0)
