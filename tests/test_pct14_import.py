@@ -22,3 +22,8 @@ class TestPCT14Import(unittest.IsolatedAsyncioTestCase):
             target_filename='./tests/resources/20240925_PCT14_export_test_GENERATED.xml',
             devices=devices,
             base_id='00-00-B0-00')
+        
+    async def test_import2(self):
+        devices = await PCT14DataManager.get_devices_from_pct14('./tests/resources/202604029Testwand.xml') 
+
+        self.assertEqual(len(devices), 123)

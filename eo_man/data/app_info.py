@@ -81,10 +81,13 @@ class ApplicationInfo():
 
         url = f"https://pypi.org/pypi/eo-man/{version}json"
 
-        response = requests.get(url)
-        if response.status_code == 200:
-            return response.json()
-            
+        try:
+            response = requests.get(url)
+            if response.status_code == 200:
+                return response.json()
+        except:
+            pass
+        
         return {}
 
 

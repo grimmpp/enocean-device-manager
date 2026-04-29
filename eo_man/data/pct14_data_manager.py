@@ -39,9 +39,9 @@ class PCT14DataManager:
                     s:Device = Device.get_decentralized_device_by_sensor_info(si)
                     devices[s.external_id] = s
 
-                    if device.is_ftd14():                    
-                        s2:Device = Device.get_decentralized_device_by_sensor_info(si, device.additional_fields['second base id'])
-                        devices[s2.external_id] = s2
+                    # if device.is_ftd14():                    
+                    #     s2:Device = Device.get_decentralized_device_by_sensor_info(si, device.additional_fields['second base id'])
+                    #     devices[s2.external_id] = s2
 
         return devices
 
@@ -160,14 +160,15 @@ class PCT14DataManager:
         bd.version = f"{hex_version[0]}.{hex_version[1]}"
         bd.key_function = ''
         bd.comment = import_obj['description'].get('#text', '')
-        if isinstance(import_obj['channels']['channel'], list):
-            for c in import_obj['channels']['channel']:
+        if 'channels' in import_obj and 'channel' in import_obj['channels']:
+            if isinstance(import_obj['channels']['channel'], list):
+                for c in import_obj['channels']['channel']:
+                    if int(c['@channelnumber']) == channel and len(c['@description']) > 0:
+                        bd.comment += f" - {c['@description']}"
+            else:
+                c = import_obj['channels']['channel']
                 if int(c['@channelnumber']) == channel and len(c['@description']) > 0:
-                    bd.comment += f" - {c['@description']}"
-        else:
-            c = import_obj['channels']['channel']
-            if int(c['@channelnumber']) == channel and len(c['@description']) > 0:
-                    bd.comment += f" - {c['@description']}"
+                        bd.comment += f" - {c['@description']}"
 
         bd.bus_device = True
         bd.external_id = cls._get_external_id(fam14, channel, import_obj)
@@ -217,7 +218,10 @@ class PCT14DataManager:
 
         bd.version = "" #TODO: '.'.join(map(str,device.version))
         bd.key_function = ''
-        bd.comment = import_obj['description']['#text']
+        if '#text' in import_obj['description']:
+            bd.comment = import_obj['description']['#text']
+        else:
+            bd.comment = ''
         bd.bus_device = True
         bd.external_id = bd.base_id
 
@@ -245,7 +249,12 @@ class PCT14DataManager:
 
     @classmethod
     def _get_sensors_from_xml(cls, device:Device, sensors) -> list[SensorInfo]:
-        return [cls._get_sensor_from_xml(device, s) for s in sensors]
+        # if sensors is not a list and a single entry
+        _sensors = sensors
+        if 'entry_id' in sensors:
+            _sensors = [sensors]
+
+        return [cls._get_sensor_from_xml(device, s) for s in _sensors]
 
     @classmethod
     def _get_sensor_from_xml(cls, device:Device, sensor) -> list[SensorInfo]:
@@ -260,10 +269,11 @@ class PCT14DataManager:
                 dev_type = hw_info,
                 sensor_id = cls._convert_sensor_id_to_bytes(sensor['entry_id']),
                 dev_adr = a2i(device.address).to_bytes(4, byteorder = 'big'),
-                key = int(sensor['entry_button']),
+                key = int(getattr(sensor, 'entry_button', 0)),
                 dev_id = device.address,
-                key_func = int(sensor['entry_function']),
-                channel = int(sensor['entry_channel']),
+                key_func = int(getattr(sensor, 'entry_function', 0)),
+                channel = int(getattr(sensor, 'entry_channel', 0)),
                 in_func_group=None,
-                memory_line = int(sensor['entry_number'])
+                memory_line = int(getattr(sensor, 'entry_number', 0))
                 )
+        

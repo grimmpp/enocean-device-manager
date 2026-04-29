@@ -225,18 +225,22 @@ def get_known_device_types() -> list:
     return sorted(list(set([t['hw-type'] for t in EEP_MAPPING])))
 
 def get_eep_from_key_function_name(kf: KeyFunction) -> str:
-    pos = KeyFunction(kf).name.find('EEP_')
-    if pos > -1:
-        substr = KeyFunction(kf).name[pos+4:pos+4+8].replace('_', '-')
-        return substr
-    return None
+    try:
+        pos = KeyFunction(kf).name.find('EEP_')
+        if pos > -1:
+            substr = KeyFunction(kf).name[pos+4:pos+4+8].replace('_', '-')
+            return substr
+    finally:
+        return None
 
 def get_name_from_key_function_name(kf: KeyFunction) -> str:
-    pos = KeyFunction(kf).name.find('_ACCORDING_')
-    if pos > -1:
-        substr = KeyFunction(kf).name[0:pos].replace('_', ' ').lower().title()
-        return substr
-    return ""
+    try:
+        pos = KeyFunction(kf).name.find('_ACCORDING_')
+        if pos > -1:
+            substr = KeyFunction(kf).name[0:pos].replace('_', ' ').lower().title()
+            return substr
+    finally:
+        return ""
 
 def a2i(address:str) -> int:
     return int.from_bytes(AddressExpression.parse(address)[0], 'big')

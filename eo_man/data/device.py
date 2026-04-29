@@ -287,7 +287,10 @@ class Device():
         bd = Device()
         bd.address = sensor_info.sensor_id_str
         bd.comment = ''
-        bd.key_function = KeyFunction(sensor_info.key_func).name
+        try:
+            bd.key_function = KeyFunction(sensor_info.key_func).name
+        except:
+            bd.key_function = 'unknown'
         bd.eep = get_eep_from_key_function_name(sensor_info.key_func)
         bd.name = f"{get_name_from_key_function_name(sensor_info.key_func)} {sensor_info.sensor_id_str}"
         # found sensor by EEP in KeyFunction
@@ -296,7 +299,7 @@ class Device():
             bd.device_type = 'Sensor'
             bd.ha_platform = Platform.SENSOR
         # buttons but ignore virtual buttons from HA
-        elif 'PUSH_BUTTON' in KeyFunction(sensor_info.key_func).name and not sensor_info.sensor_id_str.startswith('00-00-'):
+        elif 'PUSH_BUTTON' in bd.key_function and not sensor_info.sensor_id_str.startswith('00-00-'):
             bd.use_in_ha = True
             bd.device_type = 'Button'
             bd.ha_platform = Platform.BINARY_SENSOR
