@@ -5,8 +5,8 @@ on:
     types: [published]
 
 permissions:
-  contents: read
-  
+  contents: write
+
 jobs:
   pypi-publish:
     name: upload release to PyPI
@@ -22,7 +22,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest build setuptools wheel poetry 
+          pip install pytest build setuptools wheel poetry
           pip install -r requirements.txt
           poetry lock
 
@@ -36,4 +36,59 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           username: __token__
-          password: ${{ secrets.PYPI_TOKEN }} 
+          password: ${{ secrets.PYPI_TOKEN }}
+
+  windows-exe:
+    name: Build Windows .exe and attach to release
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+          pip install -e .
+
+      - name: Build .exe with PyInstaller
+        shell: pwsh
+        run: |
+          python -m PyInstaller `
+            --noconfirm `
+            --onefile `
+            --windowed `
+            --name eo-man `
+            --icon eo_man/icons/Faenza-system-search.ico `
+            --paths . `
+            --add-data "eo_man/icons;eo_man/icons" `
+            --add-data "eo_man/data/homeassistant;eo_man/data/homeassistant" `
+            --add-data "pyproject.toml;." `
+            --collect-submodules eo_man `
+            --collect-all enocean `
+            --collect-all eltakobus `
+            --collect-all esp2_gateway_adapter `
+            --collect-all tkinterhtml `
+            --collect-all tkScrolledFrame `
+            --collect-all aiocoap `
+            --collect-all zeroconf `
+            --hidden-import bs4 `
+            --hidden-import xmltodict `
+            eo_man/__main__.py
+
+      - name: Rename .exe with release version
+        shell: pwsh
+        run: |
+          $version = "${{ github.event.release.tag_name }}".TrimStart('v')
+          Rename-Item -Path "dist/eo-man.exe" -NewName "eo-man-$version-win-x64.exe"
+
+      - name: Upload .exe to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/eo-man-*.exe

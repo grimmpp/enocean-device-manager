@@ -1,5 +1,5 @@
 import os
-import tomli
+import tomllib
 import requests
 
 class ApplicationInfo():
@@ -23,7 +23,7 @@ class ApplicationInfo():
                 
             if pyproject_file:
                 with open(pyproject_file, "rb") as f:
-                    pyproject_data = tomli.load(f)
+                    pyproject_data = tomllib.load(f)
                 app_info['version'] = pyproject_data["project"]["version"]
                 app_info['name'] = pyproject_data["project"]["name"]
                 app_info['author'] = ', '.join([ f"{a.get('name')} {a.get('email', '')}".strip() for a in pyproject_data["project"]["authors"]])
