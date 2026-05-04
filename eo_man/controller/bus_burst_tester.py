@@ -40,8 +40,8 @@ class BusBurstTester:
         self.serial_controller2 = SerialController(app_bus, self.gw_reg)
         app_bus.add_event_handler(AppBusEventType.SERIAL_CALLBACK, self._serial_callback)
 
-        self.serial_controller1.establish_serial_connection(self.serial_port1, self.device_type1, delay_msg = 0)
-        self.serial_controller2.establish_serial_connection(self.serial_port2, self.device_type2, delay_msg = 0)
+        self.serial_controller1.establish_serial_connection(self.serial_port1, self.device_type1, delay_msg = 0, disable_echo_test=True)
+        self.serial_controller2.establish_serial_connection(self.serial_port2, self.device_type2, delay_msg = 0, disable_echo_test=True)
         
 
     def start_test(self, run_count:int=1) -> None:

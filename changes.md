@@ -1,5 +1,7 @@
 # Change Log
 
+## v0.1.56 Made Echo Tests for FAM14 detection optional
+
 ## v0.1.55 PCT14Export improved
 
 ## v0.1.54 Broken message handling fixed
