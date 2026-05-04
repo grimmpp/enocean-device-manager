@@ -175,7 +175,7 @@ class SerialController():
         self.app_bus.fire_event(AppBusEventType.CONNECTION_STATUS_CHANGE, {'connected': connected})
 
 
-    def establish_serial_connection(self, serial_port:str, device_type:str, delay_msg:float = None) -> None:
+    def establish_serial_connection(self, serial_port:str, device_type:str, delay_msg:float = None, disable_echo_test = False) -> None:
         baudrate:int=57600
         delay_message:float=.1
         self.current_device_type = get_gateway_type_by_name(device_type)
@@ -219,7 +219,8 @@ class SerialController():
                                                               baud_rate=baudrate, 
                                                               callback=self._received_serial_event, 
                                                               delay_message=delay_message,
-                                                              auto_reconnect=False)
+                                                              auto_reconnect=False,
+                                                              disabled_echotest= disable_echo_test)
                 self._serial_bus.start()
                 self._serial_bus.is_serial_connected.wait(timeout=2)
                 self._serial_bus.set_status_changed_handler(self.connection_status_handler)
