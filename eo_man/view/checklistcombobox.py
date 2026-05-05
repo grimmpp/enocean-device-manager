@@ -702,9 +702,13 @@ class ChecklistCombobox(ttk.Combobox):
     def configure_popdown(self,event=None):
         # Set the dimensions of the widgets in the popdown list such that the default Listbox
         # is entirely covered up.
-        self.canvas.update()
-        self.canvas_frame.update()
-        self.checkbutton_frame.update()
+        # NOTE: use update_idletasks() rather than update() — the latter pumps the
+        # full OS event loop, which on macOS Aqua delivers events against the
+        # manually-renamed Toplevel (see _w rewrite in __init__) and destroys this
+        # widget's Tcl command mid-construction.
+        self.canvas.update_idletasks()
+        self.canvas_frame.update_idletasks()
+        self.checkbutton_frame.update_idletasks()
         borders = np.array([
             self.popdown.cget('highlightthickness'),
             self.checkbutton_frame.cget('highlightthickness'),
@@ -713,7 +717,7 @@ class ChecklistCombobox(ttk.Combobox):
         visible_height = 0
         total_height = 0
         for i,button in enumerate(self.checkbuttons):
-            button.update()
+            button.update_idletasks()
             bheight = button.winfo_height()
             if i < self.cget('height'): visible_height += bheight
             total_height += bheight
@@ -732,9 +736,9 @@ class ChecklistCombobox(ttk.Combobox):
             self.b1_motion_entered_popdown = False
         else:
             self.canvas_frame.grid_configure(padx=1)
-        self.checkbutton_frame.update()
-        self.popdown_frame.update()
-        self.popdown.update()
+        self.checkbutton_frame.update_idletasks()
+        self.popdown_frame.update_idletasks()
+        self.popdown.update_idletasks()
         #print(visible_height, total_height, self.popdown.winfo_height(), self.popdown_frame.winfo_height())
         
     def popdown_unmap(self,event):
