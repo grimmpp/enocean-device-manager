@@ -27,12 +27,13 @@ class BusBurstTester:
         self.quiet = quiet
         self.message_delay = message_delay
         self._received_other_messages_count = 0
+        self.message_count = message_count
         
-        # generate messages
-        for n in range(1, message_count+1):
-            adr = (int("0xFF000000", 16) + n).to_bytes(4, byteorder='big')
-            BusBurstTester.TEST_MESSAGES.append( Regular4BSMessage(adr, 0x20, b'\00\x00\x00\x00', True) )
-            BusBurstTester.TEST_ADDRESSES.append( b2s(adr) )
+        # generate alternating messages
+        adr = b'\x00\x00\xa0\x04'  # Address 00-00-A0-04
+        BusBurstTester.TEST_MESSAGES.append( Regular4BSMessage(adr, 0x20, b'\x01\x00\x00\x09', 0x00) )  # data: 01-00-00-09, status: 00
+        BusBurstTester.TEST_MESSAGES.append( Regular4BSMessage(adr, 0x20, b'\x01\x00\x00\x08', 0x00) )  # data: 01-00-00-08, status: 00
+        BusBurstTester.TEST_ADDRESSES.append( b2s(adr) )
 
         self.app_bus = app_bus
         self.gw_reg = GatewayRegistry(app_bus)
@@ -60,14 +61,19 @@ class BusBurstTester:
             count += 1
             self._received_other_messages_count = 0
             self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': "", 'log-level': 'INFO', 'color': 'grey'})
-            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Start BURST TEST RUN No. {count} - {len(BusBurstTester.TEST_MESSAGES)} Messages, delayed by {self.message_delay}s", 'log-level': 'INFO', 'color': 'grey'})
+            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Start BURST TEST RUN No. {count} - {self.message_count} Alternating Messages, delayed by {self.message_delay}s", 'log-level': 'INFO', 'color': 'grey'})
             # prepare queues
             self._receive_queue.empty()
 
-            for m in BusBurstTester.TEST_MESSAGES: 
+            # Send alternating messages
+            for i in range(self.message_count): 
+                # Alternate between the two messages
+                message_index = i % 2
+                current_message = BusBurstTester.TEST_MESSAGES[message_index]
+                
                 if not self.quiet:
-                    self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Send Test Telegram {str(m)} from {self.device_type1}", 'log-level': 'INFO', 'color': 'grey'})
-                self.serial_controller1.send_message(m)
+                    self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Send Test Telegram {str(current_message)} from {self.device_type1}", 'log-level': 'INFO', 'color': 'grey'})
+                self.serial_controller1.send_message(current_message)
                 time.sleep(self.message_delay)
 
             if not self.quiet:
@@ -83,7 +89,7 @@ class BusBurstTester:
 
             results.append({
                 'run': count,
-                'msg count': len(BusBurstTester.TEST_MESSAGES),
+                'msg count': self.message_count,
                 'not received': failed_msg_count,
                 'rvd other msg count': self._received_other_messages_count,
             })
@@ -92,7 +98,7 @@ class BusBurstTester:
                 self._stop_flag.set()
 
         self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"===================================================================================", 'log-level': 'INFO', 'color': 'grey'})
-        self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"     =>      {successful_runs} of {count} RUNS WERE SUCESSFULL. {len(BusBurstTester.TEST_MESSAGES)} Message per run delayed by {self.message_delay}s.", 'log-level': 'INFO', 'color': 'green'})
+        self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"     =>      {successful_runs} of {count} RUNS WERE SUCESSFULL. {self.message_count} Message per run delayed by {self.message_delay}s.", 'log-level': 'INFO', 'color': 'green'})
         self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"===================================================================================", 'log-level': 'INFO', 'color': 'grey'})
         for r in results:
             self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"     run: {r['run']}, msg sent: {r['msg count']}, msg not received: {r['not received']}, received other msgs: {r['rvd other msg count']}", 'log-level': 'INFO', 'color': 'green'})
@@ -121,16 +127,18 @@ class BusBurstTester:
 
 
     def _check_test(self) -> int:
-        missing_addresses = []
-        received_addresses = []
+        received_message_count = 0
+        target_address = b'\x00\x00\xa0\x04'  # Our target address 00-00-A0-04
+        
         while not self._receive_queue.empty():
-            received_addresses.append( self._receive_queue.get().body[-5:-1] )
+            received_msg = self._receive_queue.get()
+            # Check if the received message has our target address
+            if received_msg.body[-5:-1] == target_address:
+                received_message_count += 1
 
-        for a in [m.address for m in BusBurstTester.TEST_MESSAGES]: 
-            if a not in received_addresses:
-                missing_addresses.append(a)
+        missing_messages = self.message_count - received_message_count
 
-        if len(missing_addresses) > 0:
-            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Did not receive {len(missing_addresses)} messages for addresses: {str.join(', ', [b2s(a) for a in missing_addresses])}", 'log-level': 'INFO', 'color': 'red'})
+        if missing_messages > 0:
+            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Did not receive {missing_messages} messages for address: {b2s(target_address)} (received {received_message_count} of {self.message_count})", 'log-level': 'INFO', 'color': 'red'})
 
-        return len(missing_addresses)
+        return missing_messages
