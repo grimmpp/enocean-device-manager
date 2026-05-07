@@ -13,7 +13,7 @@ class DonationButton(ttk.Button):
         else:
             image = ImageGallery.get_paypal_me_icon()
         
-        super().__init__(master, image=image, cursor="hand2", command=self.open_payapl_me) # , relief=kw.get('relief', FLAT))
+        super().__init__(master, image=image, cursor="hand2", command=self.open_payapl_me, style='Tight.TButton') # , relief=kw.get('relief', FLAT))
         self.image = image
 
         Hovertip(self,"Donate to support this project!",300)

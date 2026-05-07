@@ -39,7 +39,7 @@ class ToolBar():
         b = self._create_img_button(f, "Send Message", ImageGallery.get_forward_mail(), menu_presenter.show_send_message_window)
 
         # placed at the right end
-        b = DonationButton(f, relief=GROOVE, small_icon=True).pack(side=RIGHT, padx=(0,2), pady=2)
+        # b = DonationButton(f, relief=GROOVE, small_icon=True).pack(side=RIGHT, padx=(0,2), pady=2)
         b = self._create_img_button(f, "GitHub: EnOcean Device Manager Repository", ImageGallery.get_github_icon(), menu_presenter.open_eo_man_repo)
         b.pack(side=RIGHT, padx=(0,2), pady=2)
         b = self._create_img_button(f, "GitHub: EnOcean Device Manager Documentation", ImageGallery.get_help_icon(), menu_presenter.open_eo_man_documentation)
@@ -55,7 +55,7 @@ class ToolBar():
 
 
     def _create_img_button(self, f:Frame, tooltip:str, image:ImageTk.PhotoImage, command) -> Button:
-        b = ttk.Button(f, image=image, cursor="hand2", command=command) #, relief=GROOVE)
+        b = ttk.Button(f, image=image, cursor="hand2", command=command, style='Tight.TButton')
         Hovertip(b,tooltip,300)
         b.image = image
         b.pack(side=LEFT, padx=(2,0), pady=2)

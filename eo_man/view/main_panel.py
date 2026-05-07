@@ -1,5 +1,7 @@
 import logging
+import sys
 
+from os import system
 from tkinter import *
 from tkinter import ttk
 
@@ -93,16 +95,29 @@ class MainPanel():
         theme_names = style.theme_names()
         if 'xpnative' in theme_names:
             style_theme = 'xpnative'
+        elif 'classic' in theme_names:
+            style_theme = 'classic'
         elif 'alt' in theme_names:
             style_theme = 'alt'
         else: 
             style_theme = 'default'
+
 
         self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Available style themes: {ttk.Style().theme_names()}", 'log-level': 'DEBUG'})
         try:
             style.theme_use(style_theme)
         except:
             self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Cannot load style theme {style_theme}!", 'log-level': 'WARNING'})
+
+        # Tight toolbar button: keep the normal border + background, but
+        # collapse the outer Button.highlight ring to zero pixels.
+        if sys.platform == "darwin":
+            # on macOS the buttons have no border and background color, so we need to set the padding to 0 to avoid extra space around the icons
+            style.configure('Tight.TButton',
+                            padding=0,
+                            highlightthickness=0,
+                            background='#f0f0f0'
+                            )
 
         self.main.geometry("1400x600")  # set starting size of window
         # self.main.attributes('-fullscreen', True)

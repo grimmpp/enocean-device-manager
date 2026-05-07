@@ -32,14 +32,14 @@ class FilterBar():
         self.cb_filtername.bind('<Return>', lambda e: [self.load_filter(), self.add_filter(False), self.apply_filter(e, True)] )
 
         col += 1
-        self.btn_save_filter = ttk.Button(f, text="Load", command=self.load_filter)
+        self.btn_save_filter = ttk.Button(f, text="Load", command=self.load_filter, style='Tight.TButton')
         self.btn_save_filter.grid(row=1, column=col, padx=(0,3))
 
         col += 1
-        self.btn_save_filter = ttk.Button(f, text="Remove", command=self.remove_filter)
+        self.btn_save_filter = ttk.Button(f, text="Remove", command=self.remove_filter, style='Tight.TButton')
         self.btn_save_filter.grid(row=0, column=col, padx=(0,3) )
 
-        self.btn_save_filter = ttk.Button(f, text="Add", command=self.add_filter)
+        self.btn_save_filter = ttk.Button(f, text="Add", command=self.add_filter, style='Tight.TButton')
         self.btn_save_filter.grid(row=1, column=col, padx=(0,3), sticky=W+E )
 
         # global filter
@@ -106,11 +106,11 @@ class FilterBar():
 
         # button reset
         col += 1
-        self.btn_clear_filter = ttk.Button(f, text="Reset", command=self.reset_filter)
+        self.btn_clear_filter = ttk.Button(f, text="Reset", command=self.reset_filter, style='Tight.TButton')
         self.btn_clear_filter.grid(row=1, column=col, padx=(0,3) )
 
         col += 1
-        self.btn_apply_filter = ttk.Button(f, text="Apply", command=self.apply_filter)
+        self.btn_apply_filter = ttk.Button(f, text="Apply", command=self.apply_filter, style='Tight.TButton')
         self.btn_apply_filter.grid(row=1, column=col, padx=(0,3) )
 
         self.app_bus.add_event_handler(AppBusEventType.SET_DATA_TABLE_FILTER, self.on_set_filter_handler)

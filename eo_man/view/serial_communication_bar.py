@@ -34,7 +34,7 @@ class SerialConnectionBar():
         f = LabelFrame(main, text="Serial Connection", bd=1)#, relief=SUNKEN)
         f.grid(row=row, column=0, columnspan=1, sticky=W+E+N+S, pady=(0,2), padx=2)
 
-        self.b_detect = ttk.Button(f, text="Detect Serial Ports")
+        self.b_detect = ttk.Button(f, text="Detect Serial Ports", style='Tight.TButton')
         self.b_detect.pack(side=tk.LEFT, padx=(5, 5), pady=5)
         self.b_detect.config(command=lambda : self.detect_serial_ports_command(force_reload=True) )
         Hovertip(self.b_detect,"Serial port detection is sometime unstable. Please try again if device was not detected.",300)
@@ -51,7 +51,7 @@ class SerialConnectionBar():
         l = ttk.Label(f, text="Serial Port: ")
         l.pack(side=tk.LEFT, padx=(0, 5), pady=5)
 
-        self.b_connect = ttk.Button(f, text="Connect", state=NORMAL, command=self.toggle_serial_connection_command)
+        self.b_connect = ttk.Button(f, text="Connect", state=NORMAL, command=self.toggle_serial_connection_command, style='Tight.TButton')
         self.b_connect.bind('<Return>', lambda e: self.b_connect.invoke())
 
         self.cb_serial_ports = ttk.Combobox(f, state=NORMAL, width="14") 
@@ -63,7 +63,7 @@ class SerialConnectionBar():
         s = ttk.Separator(f, orient=VERTICAL )
         s.pack(side=tk.LEFT, padx=(0,5), pady=0, fill="y")
 
-        self.b_scan = ttk.Button(f, text="Scan for devices", state=DISABLED, command=self.scan_for_devices)
+        self.b_scan = ttk.Button(f, text="Scan for devices", state=DISABLED, command=self.scan_for_devices, style='Tight.TButton')
         self.b_scan.pack(side=tk.LEFT, padx=(0, 5), pady=5)
 
         self.overwrite = tk.BooleanVar()
