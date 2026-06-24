@@ -219,8 +219,7 @@ class SerialController():
                                                               baud_rate=baudrate, 
                                                               callback=self._received_serial_event, 
                                                               delay_message=delay_message,
-                                                              auto_reconnect=False,
-                                                              disabled_echotest= disable_echo_test)
+                                                              auto_reconnect=False)
                 self._serial_bus.start()
                 self._serial_bus.is_serial_connected.wait(timeout=2)
                 self._serial_bus.set_status_changed_handler(self.connection_status_handler)
