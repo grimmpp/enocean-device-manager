@@ -13,6 +13,37 @@ from eltakobus.util import b2s, AddressExpression
 
 SENDER_BASE_ID = 0x0000B000
 
+
+def rssi_quality(dbm) -> str:
+    """Map an EnOcean RSSI value (in dBm, always negative) to a quality label.
+    Thresholds follow the common EnOcean rule of thumb (receiver sensitivity ~ -95 dBm)."""
+    if dbm is None:
+        return ''
+    if dbm >= -60:
+        return 'very good'
+    if dbm >= -75:
+        return 'good'
+    if dbm >= -90:
+        return 'fair'
+    return 'weak'
+
+
+def rssi_bar(dbm) -> str:
+    """Return a 4-segment block-character bar (▮/▯) matching the quality level."""
+    if dbm is None:
+        return ''
+    level = {'very good': 4, 'good': 3, 'fair': 2, 'weak': 1}.get(rssi_quality(dbm), 1)
+    return '▮' * level + '▯' * (4 - level)
+
+
+def format_rssi(dbm, with_bar: bool = True) -> str:
+    """Human readable signal strength, e.g. '-58 dBm ▮▮▮▯ (good)'.
+    Returns '' when no RSSI is available (e.g. wired ESP2 bus telegrams)."""
+    if dbm is None:
+        return ''
+    bar = f" {rssi_bar(dbm)}" if with_bar else ''
+    return f"{dbm} dBm{bar} ({rssi_quality(dbm)})"
+
 EEP_MAPPING = [
     # gateways and bus connectors
     {'hw-type': 'BusObject', 'brand': 'unknown', CONF_EEP: 'unknown', CONF_TYPE: 'unknown', 'description': 'unknown bus device'},

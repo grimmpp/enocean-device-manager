@@ -35,14 +35,15 @@ class DeviceTable():
         xscrollbar.pack(side=BOTTOM, fill=X)
 
         # Treeview
-        columns = ("Address", "External Address", "Device Type", "Key Function", "Comment", "Export to HA Config", "HA Platform", "Device EEP", "Sender Address", "Sender EEP")
+        columns = ("Address", "External Address", "Device Type", "Key Function", "Comment", "Export to HA Config", "HA Platform", "Device EEP", "Sender Address", "Sender EEP", "Signal (dBm)")
+        self.SIGNAL_COL = len(columns) - 1  # index of the "Signal (dBm)" column
         self.treeview = ttk.Treeview(
             self.pane,
-            show="tree headings", 
+            show="tree headings",
             selectmode="browse",
             yscrollcommand=yscrollbar.set,
             xscrollcommand=xscrollbar.set,
-            columns=(0,1,2,3,4,5,6,7,8,9),
+            columns=(0,1,2,3,4,5,6,7,8,9,10),
         )
         self.treeview.pack(expand=True, fill=BOTH)
         yscrollbar.config(command=self.treeview.yview)
@@ -69,6 +70,8 @@ class DeviceTable():
             i = columns.index(col)
             if col in ['Key Function']:
                 self.treeview.column(i, anchor="w", width=250, minwidth=250)#, stretch=NO)
+            elif col in ['Signal (dBm)']:
+                self.treeview.column(i, anchor="w", width=150, minwidth=150)#, stretch=NO)
             else:
                 self.treeview.column(i, anchor="w", width=80, minwidth=80)#, stretch=NO)
             self.treeview.heading(i, text=col, anchor="center", command=lambda c=col, d=False: sort_treeview(self.treeview, c, d))
@@ -268,15 +271,25 @@ class DeviceTable():
         if type(message) in [RPSMessage, Regular1BSMessage, Regular4BSMessage, EltakoWrappedRPS]:
             if isinstance(message.address, int):
                 adr = data_helper.a2s(message.address)
-            else: 
+            else:
                 adr = b2s(message.address)
 
+            # resolve the treeview row (iid) the telegram belongs to
+            ext_id = None
             if not adr.startswith('00-00-00-'):
-                self.trigger_blinking(adr)
+                ext_id = adr
             elif current_base_id is not None:
                 d:Device = self.data_manager.find_device_by_local_address(adr, current_base_id)
                 if d is not None:
-                    self.trigger_blinking(d.external_id)
+                    ext_id = d.external_id
+
+            if ext_id is not None:
+                self.trigger_blinking(ext_id)
+
+                # show the signal strength of the received telegram (ESP3 radio only)
+                rssi = data.get('rssi', None)
+                if rssi is not None and self.treeview.exists(ext_id):
+                    self.treeview.set(ext_id, self.SIGNAL_COL, data_helper.format_rssi(rssi))
 
 
     def trigger_blinking(self, external_id:str):

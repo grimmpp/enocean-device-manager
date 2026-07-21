@@ -7,7 +7,7 @@ from eo_man import LOGGER
 
 from .app_bus import AppBus
 from ..data.data_manager import DataManager
-from ..data.data_helper import b2s, a2s
+from ..data.data_helper import b2s, a2s, format_rssi
 from ..data.device import Device
 
 class EnOceanLogger():
@@ -42,6 +42,7 @@ class EnOceanLogger():
     def serial_callback(self, data:dict):
         telegram:EltakoMessage = data['msg']
         current_base_id:str = data['base_id']
+        rssi = data.get('rssi', None)
 
         # filter out poll messages
         filter = type(telegram) not in [EltakoPoll]
@@ -64,6 +65,11 @@ class EnOceanLogger():
             
             if hasattr(telegram, 'status'):
                 payload += ', status: '+ a2s(telegram.status, 1)
+
+            # signal strength (only available for ESP3 radio telegrams)
+            signal = ''
+            if rssi is not None:
+                signal = ', signal: ' + format_rssi(rssi)
 
             # show only selected ids
             if self.id_filter is not None and len(self.id_filter) > 0:
@@ -91,9 +97,9 @@ class EnOceanLogger():
             display_esp2:str = f", ESP2: {telegram.serialize().hex()}" if self.show_esp2_binary else ''
             display_esp3:str = f", ESP3: { ''.join(f'{num:02x}' for num in ESP3SerialCommunicator.convert_esp2_to_esp3_message(telegram).build())}" if self.show_esp3_binary else ''
 
-            log_msg     = f"Received Telegram: {tt} from {adr}{payload}{display_values}"
+            log_msg     = f"Received Telegram: {tt} from {adr}{payload}{signal}{display_values}"
             LOGGER.info(log_msg)
 
-            display_msg = f"Received Telegram: {tt} from {adr}{payload}{display_values}{display_esp2}{display_esp3}"
+            display_msg = f"Received Telegram: {tt} from {adr}{payload}{signal}{display_values}{display_esp2}{display_esp3}"
             if self.process_log_message is not None: 
                 self.process_log_message({'msg': display_msg, 'color': 'darkgrey'})

@@ -63,8 +63,9 @@ class SerialPortDetector:
         fgw14usb = GDT.EltakoFGW14USB.value
         result = { fam14: [], esp3_gw: [], famusb: [], fgw14usb: [], 'all': [] }
 
-        if sys.platform.startswith('win') or sys.platform.startswith('linux'):
+        if sys.platform.startswith('win') or sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
             # ports = ['COM%s' % (i + 1) for i in range(256)]
+            # pyserial's list_ports works on Windows, Linux and macOS (returns /dev/cu.* devices)
             ports = [d.device for d in serial.tools.list_ports.comports()]
         else:
             raise NotImplementedError(f"Detection of devices under {sys.platform} is not yet supported!")
@@ -83,6 +84,7 @@ class SerialPortDetector:
                 if port in result['all']:
                     continue
 
+                s = None
                 try:
                     # is faster to precheck with serial
                     s = serial.Serial(port, baudrate=baud_rate, timeout=0.2)

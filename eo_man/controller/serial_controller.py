@@ -66,16 +66,71 @@ class SerialController():
         return self.is_serial_connection_active() and self._serial_bus.suppress_echo
 
 
+    def _install_rssi_tap(self, communicator) -> None:
+        """Capture the RSSI (dBm) of ESP3 radio telegrams.
+
+        The esp2_gateway_adapter converts incoming ESP3 packets to ESP2 and drops
+        the optional data that holds the RSSI. Instead of disabling the ESP2
+        translation (which the rest of the app relies on) we tap the raw packet
+        stream of the underlying enocean Communicator: for every received packet we
+        remember its RSSI on the communicator, so that _received_serial_event -
+        invoked synchronously right afterwards with the converted ESP2 message -
+        can read it. Purely additive; the original callback still runs unchanged.
+        """
+        try:
+            from enocean.protocol.constants import PACKET
+        except Exception:
+            return
+
+        # ESP3SerialCommunicator (and its TCP subclass) override parse() and dispatch
+        # received packets through their private __callback_wrapper - NOT through the
+        # base enocean Communicator.__callback. So we must wrap the very method that
+        # the running parse() actually calls; fall back to the base callback for any
+        # other communicator type.
+        candidates = ['_ESP3SerialCommunicator__callback_wrapper', '_Communicator__callback']
+        cb_attr = next((a for a in candidates if callable(getattr(communicator, a, None))), None)
+        if cb_attr is None:
+            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE,
+                                    {'msg': "Signal strength (RSSI): no callback found to tap.", 'color': 'orange'})
+            return
+        original = getattr(communicator, cb_attr)
+
+        communicator._current_rssi = None
+
+        def raw_hook(packet):
+            try:
+                rssi = None
+                opt = getattr(packet, 'optional', None)
+                # Received ERP1 optional data: [SubTelNum, Dest0..3, dBm, SecurityLevel]
+                if getattr(packet, 'packet_type', None) == PACKET.RADIO and opt is not None and len(opt) >= 6:
+                    rssi = -int(opt[5])
+                communicator._current_rssi = rssi
+            except Exception:
+                communicator._current_rssi = None
+            # The original dispatch MUST always run so reception never breaks.
+            original(packet)
+
+        setattr(communicator, cb_attr, raw_hook)
+        self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE,
+                                {'msg': f"Signal strength capture (RSSI) enabled (tap: {cb_attr}).", 'color': 'lightgreen'})
+
     def _received_serial_event(self, message: ESP2Message) -> None:
         try:
             self.process_base_id_and_version_info(message)
 
             self.process_discovery_message(message)
 
+            # RSSI (dBm) is only available for radio telegrams received via ESP3
+            # gateways (USB300/USB500, TCP). It is captured by the raw-packet tap
+            # (see _install_rssi_tap) right before this callback runs. Wired ESP2
+            # bus telegrams (FAM14/FGW14/FAM-USB) carry no signal strength -> None.
+            rssi = getattr(self._serial_bus, '_current_rssi', None)
+
             # log received message
-            self.app_bus.fire_event(AppBusEventType.SERIAL_CALLBACK, {'msg': message, 
+            self.app_bus.fire_event(AppBusEventType.SERIAL_CALLBACK, {'msg': message,
                                                                     'base_id': self.current_base_id,
-                                                                    'gateway_id': self.gateway_id})
+                                                                    'gateway_id': self.gateway_id,
+                                                                    'rssi': rssi})
             
         except Exception as e:
             logging.exception(e)
@@ -199,13 +254,15 @@ class SerialController():
                                                               esp2_translation_enabled=True,
                                                               auto_reconnect=False
                                                               )
+                    self._install_rssi_tap(self._serial_bus)
 
                 elif device_type == GDN[GDT.ESP3]:
-                    self._serial_bus = ESP3SerialCommunicator(serial_port, 
+                    self._serial_bus = ESP3SerialCommunicator(serial_port,
                                                               callback=self._received_serial_event,
                                                               esp2_translation_enabled=True,
                                                               auto_reconnect=False
                                                               )
+                    self._install_rssi_tap(self._serial_bus)
                 elif device_type == GDN[GDT.LAN_ESP2]:
                     ip_address = serial_port[:serial_port.rfind(':')]
                     port = int(serial_port[serial_port.rfind(':')+1:])
