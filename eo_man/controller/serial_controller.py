@@ -108,7 +108,17 @@ class SerialController():
             except Exception:
                 communicator._current_rssi = None
             # The original dispatch MUST always run so reception never breaks.
-            original(packet)
+            # esp2_gateway_adapter.convert_esp3_to_esp2_message() raises
+            # AttributeError on RadioPacket.response for radio telegrams whose RORG
+            # is not RPS/1BS/4BS (e.g. VLD/UTE). Unhandled, that exception bubbles up
+            # into parse() and kills the reader thread -> no further telegrams are
+            # received. Such telegrams are simply not ESP2-convertible, so skip them
+            # (like the adapter does for other unconvertible messages) and keep the
+            # thread alive.
+            try:
+                original(packet)
+            except Exception as e:
+                logging.debug("Skipped telegram that could not be dispatched: %s", e)
 
         setattr(communicator, cb_attr, raw_hook)
         self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE,
