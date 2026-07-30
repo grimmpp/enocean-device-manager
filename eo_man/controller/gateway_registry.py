@@ -23,6 +23,11 @@ class GatewayRegistry:
 
         self.app_bus = app_bus
         self.app_bus.add_event_handler(AppBusEventType.REQUEST_SERVICE_ENDPOINT_DETECTION, self._process_update_service_endpoints)
+        self.app_bus.add_event_handler(AppBusEventType.WINDOW_CLOSED, self._on_window_closed)
+
+
+    def _on_window_closed(self, data) -> None:
+        self.lan_service_detector.stop()
 
 
     def find_mdns_service_by_ip_address(self, address:str):
@@ -37,22 +42,33 @@ class GatewayRegistry:
 
 
     async def async_update_service_endpoint_list(self, force_reload:bool=True) -> None:
-            
+
         if not force_reload and len(self.endpoint_list) > 0:
             await self.app_bus.async_fire_event(AppBusEventType.SERVICE_ENDPOINTS_UPDATES, self.endpoint_list)
-            
-        else:
-            self.endpoint_list:Dict[str, List[str]] = await self.serial_port_detector.async_get_gateway2serial_port_mapping()
-            self.endpoint_list[GDT.LAN.value] = self.lan_service_detector.get_lan_gateway_endpoints()
-            self.endpoint_list[GDT.LAN_ESP2.value] = self.lan_service_detector.get_virtual_network_gateway_service_endpoints()
-            
-            # put all service together in section all as well
-            self.endpoint_list['all'] = []
-            for k in self.endpoint_list:
-                if k != 'all':
-                    self.endpoint_list['all'].extend(self.endpoint_list[k])
 
-            await self.app_bus.async_fire_event(AppBusEventType.SERVICE_ENDPOINTS_UPDATES, self.endpoint_list)
+        else:
+            # probing every serial port of the system takes seconds. Publish every
+            # gateway as soon as it was detected so that it can be used before the
+            # detection has finished.
+            gateway2serial_port = await self.serial_port_detector.async_get_gateway2serial_port_mapping(
+                callback=self._publish_endpoint_list)
+
+            self._publish_endpoint_list(gateway2serial_port)
+
+
+    def _publish_endpoint_list(self, gateway2serial_port:Dict[str, List[str]]) -> None:
+        endpoint_list:Dict[str, List[str]] = {k: list(v) for k, v in gateway2serial_port.items()}
+        endpoint_list[GDT.LAN.value] = self.lan_service_detector.get_lan_gateway_endpoints()
+        endpoint_list[GDT.LAN_ESP2.value] = self.lan_service_detector.get_virtual_network_gateway_service_endpoints()
+
+        # put all service together in section all as well
+        endpoint_list['all'] = []
+        for k in endpoint_list:
+            if k != 'all':
+                endpoint_list['all'].extend(endpoint_list[k])
+
+        self.endpoint_list = endpoint_list
+        self.app_bus.fire_event(AppBusEventType.SERVICE_ENDPOINTS_UPDATES, self.endpoint_list)
 
 
     async def _process_update_service_endpoints(self, force_update:bool=False):

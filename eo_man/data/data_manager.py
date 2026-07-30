@@ -203,6 +203,17 @@ class DataManager():
                 self.devices[bd.external_id] = bd
                 self.app_bus.fire_event(AppBusEventType.UPDATE_DEVICE_REPRESENTATION, bd)
 
+            elif bd.memory_entries:
+                # The memory of the device was read out (device scan). The sensors
+                # which are taught into a device are read only information and no
+                # value the user can change, so they are taken over even when
+                # existing values must not be overwritten. Otherwise a device which
+                # is already known - detected by listening on the bus or loaded from
+                # a file - would keep an empty list of memory entries forever.
+                known_device:Device = self.devices[bd.external_id]
+                known_device.memory_entries = bd.memory_entries
+                self.app_bus.fire_event(AppBusEventType.UPDATE_DEVICE_REPRESENTATION, known_device)
+
             for si in bd.memory_entries:
                 _bd:Device = Device.get_decentralized_device_by_sensor_info(si, data['base_id'])
 

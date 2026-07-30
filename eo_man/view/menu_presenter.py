@@ -231,7 +231,7 @@ class MenuPresenter():
                 self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
                 logging.exception(msg, exc_info=True)
 
-        t = threading.Thread(target=load)
+        t = threading.Thread(target=load, daemon=True)
         t.start()
 
         return filename
@@ -341,7 +341,7 @@ class MenuPresenter():
                 self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
                 logging.exception(msg, exc_info=True)
 
-        t = threading.Thread(target=load)
+        t = threading.Thread(target=load, daemon=True)
         t.start()
 
         return filename
@@ -370,7 +370,7 @@ class MenuPresenter():
                 self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
                 logging.exception(msg, exc_info=True)
 
-        t = threading.Thread(target=load)
+        t = threading.Thread(target=load, daemon=True)
         t.start()
 
     def remove_all_device_from_table(self):

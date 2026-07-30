@@ -1,4 +1,6 @@
 import logging
+import os
+import threading
 
 from tkinter import *
 from tkinter import ttk
@@ -23,9 +25,13 @@ from ..view.tool_bar import ToolBar
 
 class MainPanel():
 
+    # time granted to background work to end itself when the window is closed
+    SHUTDOWN_TIMEOUT = 3.0
+
     def __init__(self, app_bus:AppBus, data_manager: DataManager):
         self.main = Tk()
         self.app_bus = app_bus
+        self._is_closed = threading.Event()
         ## init main window
         self._init_window()
 
@@ -65,8 +71,8 @@ class MainPanel():
         dd = DeviceDetails(self.main, data_split_area, app_bus, data_manager)
         lo = LogOutputPanel(main_split_area, app_bus, data_manager)
 
-        main_split_area.add(data_split_area, weight=5)
-        main_split_area.add(lo.root, weight=2)
+        main_split_area.add(data_split_area, weight=3)
+        main_split_area.add(lo.root, weight=1)
 
         data_split_area.add(dt.root, weight=5)
         data_split_area.add(dd.root, weight=0)
@@ -75,14 +81,33 @@ class MainPanel():
 
         StatusBar(self.main, app_bus, data_manager, row=row_status_bar)
 
+        # table gets 75% and command log 25% of the main area on startup
+        self.main.after(1, lambda: self._set_initial_sash_position(main_split_area, 0.75))
+
         self.main.after(1, lambda: self.main.focus_force())
 
         ## start main loop
         self.main.mainloop()
 
+        # the window is gone - the process has to end as well
+        self._shutdown()
+
         
         
 
+
+    def _set_initial_sash_position(self, paned_window: ttk.PanedWindow, upper_ratio: float) -> None:
+        """Place the sash so that the upper pane gets `upper_ratio` of the available height."""
+        paned_window.update_idletasks()
+        height = paned_window.winfo_height()
+        if height < 50:
+            # window not layouted yet - try again on the next idle cycle
+            self.main.after(50, lambda: self._set_initial_sash_position(paned_window, upper_ratio))
+            return
+        try:
+            paned_window.sashpos(0, int(height * upper_ratio))
+        except Exception as e:
+            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Cannot set initial sash position: {e}", 'log-level': 'DEBUG'})
 
     def _init_window(self):
         self.main.title(DEFAULT_WINDOW_TITLE)
@@ -121,7 +146,40 @@ class MainPanel():
         self.app_bus.fire_event(AppBusEventType.WINDOW_LOADED, {})
 
     def on_closing(self) -> None:
+        """Called when the window is closed with the x button of the title bar."""
+        self._close()
+        self.main.destroy()
+
+    def _close(self) -> None:
+        """Tells everybody to stop: serial connections, service discovery, running
+        background work. Runs only once - the window can also be closed in ways
+        which do not call on_closing (window manager, Cmd+Q, ...)."""
+        if self._is_closed.is_set():
+            return
+        self._is_closed.set()
+
         self.app_bus.fire_event(AppBusEventType.WINDOW_CLOSED, {})
         logging.info("Close Application eo-man")
         logging.info("========================\n")
-        self.main.destroy()
+
+    def _shutdown(self) -> None:
+        """Ends the process after the window was closed.
+
+        Background work (device scan, file import, serial communication) runs in
+        its own threads. Some of them - especially the serial interface of
+        eltakobus - are no daemon threads, so the interpreter would wait for them
+        and the application would stay alive without a window."""
+        self._close()
+
+        for thread in threading.enumerate():
+            if thread is threading.current_thread() or thread.daemon or not thread.is_alive():
+                continue
+            logging.debug("Waiting for thread %s to stop.", thread.name)
+            thread.join(self.SHUTDOWN_TIMEOUT)
+            if thread.is_alive():
+                logging.warning("Thread %s did not stop. The process is ended anyway.", thread.name)
+
+        # A thread which ignores its stop flag must not keep the application
+        # running, therefore the process is ended explicitly.
+        logging.shutdown()
+        os._exit(0)

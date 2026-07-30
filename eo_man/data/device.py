@@ -1,4 +1,5 @@
 import copy
+import logging
 from eltakobus.device import SensorInfo, KeyFunction
 from eltakobus.util import b2s, AddressExpression
 from eltakobus.device import BusObject, FAM14, FTD14
@@ -25,8 +26,8 @@ class Device():
                  comment:str=None, 
                  base_id:str=None, 
                  use_in_ha:bool=False,
-                 memory_entries:list[SensorInfo]=[]):
-        
+                 memory_entries:list[SensorInfo]=None):
+
         self.address:str = address
         self.bus_device:bool = bus_device
         self.channel:int = channel
@@ -38,7 +39,8 @@ class Device():
         self.comment:str = comment
         self.base_id:str = base_id
         self.use_in_ha:bool = use_in_ha
-        self.memory_entries:list[SensorInfo] = memory_entries
+        # every device needs its own list, a mutable default would be shared
+        self.memory_entries:list[SensorInfo] = memory_entries if memory_entries is not None else []
 
         self.ha_platform:Platform=None
         self.key_function:str=None
@@ -108,7 +110,10 @@ class Device():
         if d1.name == 'unknown': d1.name = d2.name
         if d1.comment is None or d1.comment == '': d1.comment = d2.comment
         d1.base_id = d2.base_id
-        d1.memory_entries = d2.memory_entries
+        # a device which was only detected by listening on the bus has no memory
+        # entries. They must not overwrite the entries of an already scanned device.
+        if d2.memory_entries:
+            d1.memory_entries = d2.memory_entries
         if not d1.bus_device: d1.bus_device = d2.bus_device
         if d1.key_function is None or d1.key_function == '': d1.key_function = d2.key_function
         d1.use_in_ha = d2.use_in_ha
@@ -143,7 +148,7 @@ class Device():
             bd.external_id = add_addresses(bd.address, base_id)
         else:
             bd.external_id = add_addresses(bd.address, base_id)
-        bd.memory_entries = [m for m in (await device.get_all_sensors()) if b2s(m.dev_adr) == bd.address]
+        bd.memory_entries = await cls._async_get_memory_entries(device, bd.address)
         # print(f"{bd.device_type} {bd.address}")
         # print_memory_entires( bd.memory_entries)
         # print("\n")
@@ -165,7 +170,22 @@ class Device():
             bd.name = f"unknown device  {bd.address}"
 
         return bd
-    
+
+    @classmethod
+    async def _async_get_memory_entries(cls, device: BusObject, address: str) -> list[SensorInfo]:
+        """Sensors which are taught into the memory of the device. They are only
+        available when the memory of the device was read out. Devices which are
+        just detected by listening on the bus do not provide it, in that case an
+        empty list is returned instead of letting the detection fail."""
+        try:
+            return [m for m in (await device.get_all_sensors()) if b2s(m.dev_adr) == address]
+        except Exception as e:
+            # the detection of the device must not fail because of this, but it has
+            # to be visible - otherwise the sensors are silently missing
+            logging.warning("Cannot read the taught in sensors of device %s: %s: %s",
+                            address, type(e).__name__, e)
+            return []
+
     @classmethod
     def get_feature_as_device(cls, device):
         feature = None

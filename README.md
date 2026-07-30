@@ -80,17 +80,39 @@ configuration.
 Drives all given covers with the same sequence of movement commands and pauses and reports how long each of
 them really moved. This is what you need to configure the runtime of an FSB actuator properly.
 
+Every cover is given as `ACTUATOR_ID` or, together with the wall switch which is taught into it, as
+`ACTUATOR_ID:SWITCH_ID`. Giving the switch lets the test assign a press during the run to the right cover
+instead of counting it as interference of all covers.
+
 ```shell
 # covers 5 and 7 on a FGW14-USB: drive up for 60s, pause, drive down for 60s, pause
-python -m eo_man -C cover_test -sp COM7 -dt fgw14usb -cid 00-00-00-05,00-00-00-07 -cseq up:60,pause:5,down:60,pause:5
+python -m eo_man -C cover_test -sp COM7 -dt fgw14usb \
+                 -cid 00-00-00-05,00-00-00-07 \
+                 -cseq up:60,pause:5,down:60,pause:5
+
+# the same test with the taught-in wall switches of the two covers
+python -m eo_man -C cover_test -sp COM7 -dt fgw14usb \
+                 -cid 00-00-00-05:FE-D4-E9-47,00-00-00-07:FE-D4-E9-48 \
+                 -cseq up:60,pause:5,down:60,pause:5
 
 # same test on Linux, repeated 3 times, with every telegram and saved to files
-python -m eo_man -C cover_test -sp /dev/ttyUSB0 -dt fgw14usb -cid 00-00-00-05,00-00-00-07 \
+python -m eo_man -C cover_test -sp /dev/ttyUSB0 -dt fgw14usb \
+                 -cid 00-00-00-05:FE-D4-E9-47,00-00-00-07:FE-D4-E9-48 \
                  -cseq up:60,pause:5,down:60,pause:5 -trc 3 -v -tr cover_test.txt -tcsv cover_test.csv
 
-# let all covers start at the same moment (no delay between the command telegrams, default is 100ms)
-python -m eo_man -C cover_test -sp COM7 -dt fgw14usb -cid 00-00-00-05,00-00-00-07 -cseq up:60,pause:5 -cmd 0
+# a cover with two taught-in switches and a custom sender id, without delay between the commands
+python -m eo_man -C cover_test -sp COM7 -dt fgw14usb \
+                 -cid FF-AA-BB-01:FE-D4-E9-47+FE-D4-E9-48:00-00-B0-07 -cseq up:60,pause:5 -cmd 0
+
+# with a marker switch (not taught into the actuator) to measure the real end position by hand
+python -m eo_man -C cover_test -sp COM7 -dt fgw14usb -cid 00-00-00-05:FE-D4-E9-47 \
+                 -cseq up:90,pause:5,down:90,pause:5 -cms FF-11-22-33
 ```
+
+An FSB actuator does not notice when the cover physically reaches its end position - it simply runs its
+configured runtime. Watch the cover and press the **marker switch** twice in a row at the moment it really
+stops: that time is reported as the travel time the cover needed and is used for the runtime recommendation.
+A single press just records a point in time, e.g. when the slats of a venetian blind are closed.
 
 The result is printed as tables on the command line:
 
@@ -106,10 +128,12 @@ run | step | cover       | command    |  react | measured | reported | dir  | en
  RESULT: all 6 movements behaved as requested.
 ```
 
-You can move the covers with a wall switch while the test runs: such interferences are logged and the travel
-time until the intervention is reported. A movement is then marked as `interrupted`, which means that a switch
-telegram arrived while that cover was still moving - the measured travel time up to that moment stays valid, but
-the movement is not used for the runtime recommendation. Details, all options and how to read the report:
+You can operate the covers with their wall switch while the test runs: such interferences are logged and the
+travel time until the intervention is reported. That movement is marked as `interrupted`, which means that a
+switch telegram arrived while the cover was still moving - the measured travel time up to that moment stays
+valid, but the movement is not used for the runtime recommendation. Because the switches are declared per cover,
+only the cover which that switch operates is marked; the other covers keep their clean measurement. Details, all
+options and how to read the report:
 [Cover Travel Time Test](https://github.com/grimmpp/enocean-device-manager/blob/main/docs/cover_travel_test).
 
 ### Example: live telegram monitor (`enocean_logger`)

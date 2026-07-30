@@ -51,8 +51,19 @@ COVER_END_POSITIONS = {
     0x50: 'BOTTOM END POSITION',
 }
 
+# The actuators announce the start of a movement with the same RPS telegram.
+# Verified with FSB14 on a FGW14-USB: those devices send no 4BS travel report
+# at all, so this is the only source for the direction they really moved.
+COVER_MOVEMENT_STARTED = {
+    0x01: COVER_COMMAND_UP,
+    0x02: COVER_COMMAND_DOWN,
+}
+
 # First action of a rocker switch telegram (EEP F6-02-01)
 ROCKER_BUTTONS = {0: 'AI', 1: 'A0', 2: 'BI', 3: 'B0'}
+
+# Two presses of a marker switch within this time are one double press.
+DEFAULT_MARKER_DOUBLE_PRESS_TIME = 1.5
 
 # width of the separator lines of the printed report
 REPORT_WIDTH = 130
@@ -231,6 +242,9 @@ class CoverTestStep:
         if name not in STEP_TYPE_ALIASES:
             raise ValueError(f"Unknown movement command '{parts[0]}'. "
                              f"Supported: {', '.join(sorted(set(t.value for t in CoverStepType)))}")
+        if len(parts) > 2:
+            raise ValueError(f"Invalid movement command '{text}'. Expected 'COMMAND:SECONDS'. "
+                             f"Separate the entries of the sequence by a comma, not by a colon.")
         step_type = STEP_TYPE_ALIASES[name]
 
         if len(parts) > 1 and parts[1] != '':
@@ -251,27 +265,58 @@ class CoverTestStep:
 
 @dataclass
 class Cover:
-    """A cover under test: the actuator sending status telegrams and the sender
-    id which is used to send commands to it (must be taught into the actuator)."""
+    """A cover under test:
+
+    * actuator_id: the address the status telegrams of the actuator come from,
+    * switch_ids:  the wall switches which are taught into that actuator. They
+      are optional and only needed so that a pressed switch can be assigned to
+      the cover it really operates instead of disturbing all covers of the test
+      run,
+    * sender_id:   the address the test sends its commands from. It has to be
+      taught into the actuator as well."""
     actuator_id: str
     sender_id: str
+    switch_ids: tuple = ()
+
+    COVER_ID_FORMAT = "ACTUATOR_ID[:SWITCH_ID[+SWITCH_ID...]][:SENDER_ID]"
 
     @classmethod
     def parse(cls, text: str) -> 'Cover':
-        """Parses 'ACTUATOR_ID' or 'ACTUATOR_ID:SENDER_ID',
-        e.g. '00-00-00-05' or 'FF-AA-BB-01:00-00-B0-05'."""
-        parts = [p.strip().upper() for p in str(text).split(':') if p.strip()]
-        if len(parts) == 0 or len(parts) > 2:
-            raise ValueError(f"Invalid cover id '{text}'. Use 'ACTUATOR_ID' or 'ACTUATOR_ID:SENDER_ID'.")
+        """Parses 'ACTUATOR_ID', 'ACTUATOR_ID:SWITCH_ID' or
+        'ACTUATOR_ID:SWITCH_ID:SENDER_ID', e.g. '00-00-00-05',
+        '00-00-00-05:FE-D4-E9-47' or 'FF-AA-BB-01:FE-D4-E9-47:00-00-B0-05'.
+        Several switches of one cover are separated by '+'. A cover without a
+        taught-in switch and with an explicit sender is given as
+        '00-00-00-05::00-00-B0-05'."""
+        parts = [p.strip().upper() for p in str(text).split(':')]
+        if not parts[0]:
+            raise ValueError(f"Invalid cover id '{text}'. No actuator id given. Use '{cls.COVER_ID_FORMAT}'.")
+        if len(parts) > 3:
+            raise ValueError(f"Invalid cover id '{text}'. Use '{cls.COVER_ID_FORMAT}'.")
 
         actuator_id = cls._normalize(parts[0])
-        sender_id = cls._normalize(parts[1]) if len(parts) == 2 else cls._default_sender_id(actuator_id)
-        return cls(actuator_id, sender_id)
+        sender_id = cls._normalize(parts[2]) if len(parts) == 3 and parts[2] \
+            else cls._default_sender_id(actuator_id)
+        switch_part = parts[1] if len(parts) > 1 else ''
+        switch_ids = tuple(cls._normalize(s) for s in switch_part.split('+') if s.strip())
+
+        # 'ACTUATOR_ID:SENDER_ID': the sender in the switch position describes a
+        # cover which is operated without a taught-in wall switch
+        if switch_ids == (sender_id,):
+            switch_ids = ()
+        elif sender_id in switch_ids:
+            raise ValueError(f"Invalid cover id '{text}'. '{sender_id}' is the sender id of this cover, it "
+                             f"cannot be a switch which is taught into the actuator. The second entry is the "
+                             f"switch: '{cls.COVER_ID_FORMAT}'.")
+        if actuator_id in switch_ids:
+            raise ValueError(f"Invalid cover id '{text}'. '{actuator_id}' is the actuator itself, it cannot be "
+                             f"its own switch. Use '{cls.COVER_ID_FORMAT}'.")
+        return cls(actuator_id, sender_id, switch_ids)
 
     @classmethod
     def _normalize(cls, id: str) -> str:
         try:
-            return b2s(AddressExpression.parse(id)[0])
+            return b2s(AddressExpression.parse(id.strip())[0])
         except Exception:
             raise ValueError(f"'{id}' is not a valid EnOcean address. Expected format: 'FF-AA-BB-01'.")
 
@@ -288,8 +333,12 @@ class Cover:
         return AddressExpression.parse(self.sender_id)[0]
 
     def __str__(self) -> str:
-        return self.actuator_id if self.actuator_id == self.sender_id \
-            else f"{self.actuator_id} (sender {self.sender_id})"
+        details = []
+        if self.switch_ids:
+            details.append(f"switch {'+'.join(self.switch_ids)}")
+        if self.actuator_id != self.sender_id:
+            details.append(f"sender {self.sender_id}")
+        return f"{self.actuator_id} ({', '.join(details)})" if details else self.actuator_id
 
 
 @dataclass
@@ -301,10 +350,16 @@ class TelegramEvent:
     telegram_type: str
     description: str = ''
     cover: Cover = None             # set when the telegram belongs to a cover under test
+    switch_of: tuple = ()           # covers whose taught-in switch sent this telegram
+    is_marker: bool = False         # press of a marker switch which is not taught into any actuator
+    is_manual_end_position: bool = False   # first press of a double press of the marker switch
+    is_marker_repetition: bool = False     # follow-up press which belongs to that double press
     rssi: int = None
     is_travel_report: bool = False  # actuator reported direction and travel time
     is_end_position: bool = False   # actuator reached its top/bottom end position
-    is_button_pressed: bool = False # foreign rocker switch was pressed
+    is_movement_start: bool = False # actuator announced that it starts to move
+    is_button_pressed: bool = False # a rocker switch was pressed
+    button: str = ''                # which button of the rocker switch (AI, A0, BI, B0)
     is_echo: bool = False           # telegram sent by this test and echoed by the gateway
     reported_direction: int = None
     reported_travel_time: float = None
@@ -315,10 +370,20 @@ class TelegramEvent:
         return 'SENT' if self.outgoing else 'RCVD'
 
     @property
+    def is_known_switch(self) -> bool:
+        """True when the telegram comes from a switch which was declared as
+        taught into one of the covers under test."""
+        return len(self.switch_of) > 0
+
+    @property
     def device_kind(self) -> str:
         if self.is_echo:
             return 'echo'
-        return 'cover' if self.cover is not None else 'foreign'
+        if self.is_marker:
+            return 'marker'
+        if self.is_known_switch:
+            return 'switch'
+        return 'cover' if self.cover is not None else 'unknown'
 
 
 @dataclass
@@ -338,8 +403,16 @@ class Movement:
         return self.step.type.command
 
     @property
+    def cover_events(self) -> list:
+        """Telegrams which were sent by the cover under test."""
+        return [e for e in self.events if e.cover is not None and not e.outgoing]
+
+    @property
     def first_reaction(self) -> TelegramEvent:
-        return self.events[0] if self.events else None
+        """First telegram of the cover under test after the command was sent.
+        Foreign telegrams are recorded in the same list (see interferences) but
+        must not be counted as a reaction of the cover."""
+        return next(iter(self.cover_events), None)
 
     @property
     def travel_report(self) -> TelegramEvent:
@@ -360,10 +433,34 @@ class Movement:
 
     @property
     def interferences(self) -> list:
-        """Foreign telegrams which were received while the cover was moving."""
+        """Telegrams of other devices which were received while the cover was
+        moving. Marker switches are not taught into any actuator, so they
+        cannot have influenced the movement and are not counted."""
         end = self.movement_end_time
         return [e for e in self.events
-                if e.cover is None and not e.outgoing and (end is None or e.time <= end)]
+                if e.cover is None and not e.outgoing and not e.is_marker
+                and (end is None or e.time <= end)]
+
+    @property
+    def markers(self) -> list:
+        """Presses of a marker switch which happened during this movement. Every
+        press is followed by a release telegram which is not a marker of its own."""
+        end = self.movement_end_time
+        return [e for e in self.events
+                if e.is_marker and e.is_button_pressed and (end is None or e.time <= end)]
+
+    @property
+    def manual_end_position(self) -> TelegramEvent:
+        """First double press of a marker switch: the moment somebody signalled
+        that the cover has reached its end position."""
+        return next((e for e in self.markers if e.is_manual_end_position), None)
+
+    @property
+    def manual_end_position_time(self) -> float:
+        """Travel time until the end position was signalled manually. This is the
+        time the cover really needed, even if the actuator kept on running."""
+        marker = self.manual_end_position
+        return None if marker is None else marker.time - self.start_time
 
     @property
     def first_interference(self) -> TelegramEvent:
@@ -396,9 +493,18 @@ class Movement:
         return None if interference is None else interference.time - self.start_time
 
     @property
+    def movement_start(self) -> TelegramEvent:
+        return next((e for e in self.events if e.is_movement_start), None)
+
+    @property
     def reported_direction(self) -> int:
+        """Direction the actuator really moved. Taken from the travel report if
+        the actuator sends one, otherwise from its movement start telegram."""
         report = self.travel_report
-        return None if report is None else report.reported_direction
+        if report is not None:
+            return report.reported_direction
+        start = self.movement_start
+        return None if start is None else start.reported_direction
 
     @property
     def reached_end_position(self) -> bool:
@@ -411,7 +517,9 @@ class Movement:
     @property
     def stopped_by(self) -> str:
         if self.was_interrupted:
-            return f"switch {self.first_interference.address}"
+            interference = self.first_interference
+            kind = 'switch' if interference.is_known_switch else 'unknown'
+            return f"{kind} {interference.address}"
         if self.first_reaction is None:
             return "no feedback"
         if self.stop_command_time is not None:
@@ -456,6 +564,8 @@ class CoverTravelTester:
     def __init__(self, app_bus: AppBus, serial_port: str, device_type: str,
                  cover_ids: list, sequence: list,
                  message_delay: float = .1, command_mode: str = 'stop',
+                 marker_switch_ids: list = None,
+                 marker_double_press_time: float = DEFAULT_MARKER_DOUBLE_PRESS_TIME,
                  verbose: int = 0, serial_controller: SerialController = None,
                  printer: ReportPrinter = None) -> None:
         self._stop_flag = threading.Event()
@@ -472,8 +582,10 @@ class CoverTravelTester:
         self.out = printer if printer is not None else ReportPrinter()
         # time the gateway needs to become ready before the first command is sent
         self.gateway_init_delay = 1.0
-        # time to wait at the end of the test for late telegrams
-        self.settle_time = 2.0
+        # time to wait at the end of the test for late telegrams. Bus actuators
+        # behind an FAM14/FGW14 need up to ~2.5s until their travel time report
+        # has passed the bus.
+        self.settle_time = 3.0
 
         self.covers: list[Cover] = [Cover.parse(c) for c in cover_ids]
         self.sequence: list[CoverTestStep] = [CoverTestStep.parse(s) for s in sequence]
@@ -488,6 +600,24 @@ class CoverTravelTester:
         # They must not be counted as interference.
         self._covers_by_sender_id = {c.sender_id: c for c in self.covers
                                      if c.sender_id not in self._covers_by_actuator_id}
+        # switches which are taught into the actuators. One switch can operate
+        # several covers, so every switch id maps to a list of covers.
+        self._covers_by_switch_id = {}
+        for cover in self.covers:
+            for switch_id in cover.switch_ids:
+                self._covers_by_switch_id.setdefault(switch_id, []).append(cover)
+
+        # switches which are NOT taught into an actuator. They do not move anything,
+        # they are only used to mark a point in time during the test.
+        self.marker_switch_ids = [Cover._normalize(s) for s in (marker_switch_ids or [])]
+        self.marker_double_press_time = marker_double_press_time
+        for marker_id in self.marker_switch_ids:
+            if marker_id in self._covers_by_switch_id:
+                raise ValueError(f"'{marker_id}' is given as marker switch and as taught-in switch of a cover. "
+                                 f"A marker switch must not be taught into one of the actuators.")
+            if marker_id in self._covers_by_actuator_id or marker_id in self._covers_by_sender_id:
+                raise ValueError(f"'{marker_id}' is given as marker switch but it is the address of a cover "
+                                 f"under test.")
         self._start_timestamp: float = None
         self._events: list[TelegramEvent] = []
         self._movements: list[Movement] = []
@@ -551,6 +681,7 @@ class CoverTravelTester:
         # give late telegrams (e.g. travel time reports) a chance to arrive
         self._stop_flag.wait(self.settle_time)
         self._close_open_movements()
+        self._classify_marker_presses()
         self._is_running = False
         self.app_bus.remove_event_handler_by_id(self._serial_callback_id)
 
@@ -664,6 +795,38 @@ class CoverTravelTester:
         if movement is not None and movement.end_time is None:
             movement.end_time = end_time
 
+    def _classify_marker_presses(self) -> None:
+        """Groups the presses of every marker switch. Presses which follow each
+        other within marker_double_press_time belong together: a single press is
+        a time marker, two (or more) presses signal that the cover has reached
+        its end position. The first press of such a group is the moment which
+        counts - that is when the observer reacted."""
+        # grouped per button: pressing 'up' and then 'down' are two actions,
+        # only the same button twice in a row is a double press
+        presses_by_button = {}
+        for event in self._events:
+            if event.is_marker and event.is_button_pressed:
+                presses_by_button.setdefault((event.address, event.button), []).append(event)
+
+        for presses in presses_by_button.values():
+            group = []
+            for press in presses:
+                if group and press.time - group[-1].time > self.marker_double_press_time:
+                    self._mark_press_group(group)
+                    group = []
+                group.append(press)
+            self._mark_press_group(group)
+
+    def _mark_press_group(self, group: list) -> None:
+        if len(group) < 2:
+            return
+        # the first press of the group is when the observer reacted
+        group[0].is_manual_end_position = True
+        group[0].description += f" - pressed {len(group)}x: END POSITION REACHED"
+        for press in group[1:]:
+            press.is_marker_repetition = True
+            press.description += " - repetition of the double press"
+
     def _close_open_movements(self) -> None:
         with self._lock:
             for cover in list(self.covers):
@@ -706,9 +869,12 @@ class CoverTravelTester:
         address = b2s(telegram.address)
         cover = self._covers_by_actuator_id.get(address, None)
         echoed_cover = self._covers_by_sender_id.get(address, None) if cover is None else None
+        is_other_device = cover is None and echoed_cover is None
+        switch_of = tuple(self._covers_by_switch_id.get(address, ())) if is_other_device else ()
+        is_marker = is_other_device and address in self.marker_switch_ids
         event = TelegramEvent(time=self._now(), outgoing=False, address=address,
                               telegram_type=type(telegram).__name__,
-                              cover=cover or echoed_cover, rssi=rssi,
+                              cover=cover or echoed_cover, switch_of=switch_of, is_marker=is_marker, rssi=rssi,
                               is_echo=echoed_cover is not None,
                               esp2=self._serialized(telegram))
 
@@ -717,7 +883,7 @@ class CoverTravelTester:
         elif cover is not None:
             self._describe_cover_telegram(telegram, event)
         else:
-            self._describe_foreign_telegram(telegram, event)
+            self._describe_switch_telegram(telegram, event)
 
         return event
 
@@ -737,30 +903,46 @@ class CoverTravelTester:
             event.description = (f"cover reports movement {self._direction_name(status.direction)} "
                                  f"for {event.reported_travel_time:.1f}s")
         else:
-            # RPS telegram: position / end position of the cover
+            # RPS telegram: start of a movement or end position of the cover
             event.reported_direction = status.state
             if status.state in COVER_END_POSITIONS:
                 event.is_end_position = True
                 event.description = f"cover reached {COVER_END_POSITIONS[status.state]}"
+            elif status.state in COVER_MOVEMENT_STARTED:
+                event.is_movement_start = True
+                event.reported_direction = COVER_MOVEMENT_STARTED[status.state]
+                event.description = (f"cover started to move "
+                                     f"{self._direction_name(event.reported_direction)}")
             else:
                 event.description = f"cover status 0x{status.state:02X}"
 
-    def _describe_foreign_telegram(self, telegram: ESP2Message, event: TelegramEvent) -> None:
-        """Interprets a telegram which does not belong to a cover under test.
+    def _describe_switch_telegram(self, telegram: ESP2Message, event: TelegramEvent) -> None:
+        """Interprets a telegram which does not come from a cover under test.
         Rocker switch telegrams are the typical interference of such a test."""
         if telegram.org == 0x05:
             try:
                 switch = F6_02_01.decode_message(telegram)
                 button = ROCKER_BUTTONS.get(switch.rocker_first_action, f"0x{switch.rocker_first_action:02X}")
                 event.is_button_pressed = switch.energy_bow == 1
-                event.description = (f"switch {'pressed' if event.is_button_pressed else 'released'}"
-                                     f"{f' (button {button})' if event.is_button_pressed else ''}")
+                if event.is_button_pressed:
+                    event.button = button
+                action = 'pressed' if event.is_button_pressed else 'released'
+                if event.is_marker:
+                    event.description = (f"marker switch {action}"
+                                         f"{f' (button {button})' if event.is_button_pressed else ''}")
+                elif event.is_known_switch:
+                    covers = ', '.join(c.actuator_id for c in event.switch_of)
+                    event.description = (f"switch of cover {covers} {action}"
+                                         f"{f' (button {button})' if event.is_button_pressed else ''}")
+                else:
+                    event.description = (f"unknown switch {action}"
+                                         f"{f' (button {button})' if event.is_button_pressed else ''}")
                 return
             except Exception:
                 pass
 
         data = telegram.data if hasattr(telegram, 'data') else b''
-        event.description = f"foreign telegram, data: {b2s(data)}"
+        event.description = f"telegram of an unknown device, data: {b2s(data)}"
 
     def _add_event(self, event: TelegramEvent) -> None:
         with self._lock:
@@ -772,7 +954,18 @@ class CoverTravelTester:
                 movement = self._open_movements.get(event.cover.actuator_id, None)
                 if movement is not None:
                     movement.events.append(event)
+            elif event.is_known_switch:
+                # a taught-in switch only disturbs the covers it operates
+                for cover in event.switch_of:
+                    movement = self._open_movements.get(cover.actuator_id, None)
+                    if movement is not None:
+                        movement.events.append(event)
+            elif event.is_marker:
+                # a marker refers to whatever is moving at that moment
+                for movement in self._open_movements.values():
+                    movement.events.append(event)
             else:
+                # the telegram cannot be assigned, so every running movement may be affected
                 for movement in self._open_movements.values():
                     movement.events.append(event)
 
@@ -813,11 +1006,14 @@ class CoverTravelTester:
         self.out.label("Command mode", f"{self.command_mode} - "
                        + ('travel time is part of the command telegram' if self.command_mode == 'timed'
                           else 'movement is terminated by a STOP command'))
+        if self.marker_switch_ids:
+            self.out.label("Marker switch", f"{', '.join(self.marker_switch_ids)} - press it twice within "
+                                            f"{self.marker_double_press_time}s to signal an end position")
         self.out.label("Message delay", f"{self.message_delay}s between two command telegrams"
                        + (' (no delay)' if self.message_delay == 0 else ''))
         self.out.label("Duration", f"about {self._estimated_duration(run_count):.0f}s")
         self.out.blank()
-        self.out.hint("You can move the covers with a wall switch during the test. Such interferences are "
+        self.out.hint("You can operate the covers with their wall switch during the test. Such interferences are "
                       "logged and the travel time until the intervention is reported.")
         if self.verbose == 0:
             self.out.hint("Use -v to see every telegram, -vv to additionally see the raw ESP2 data.")
@@ -852,6 +1048,7 @@ class CoverTravelTester:
         self.out.title("TEST RESULT")
 
         self._print_movement_table()
+        self._print_manual_end_positions()
         recommendations = self._print_travel_time_statistics()
         self._print_configuration_hints(recommendations)
         self._print_interference_report()
@@ -892,8 +1089,65 @@ class CoverTravelTester:
         self.out.blank()
         self.out.hint("react    = time between the sent command and the first telegram of the cover")
         self.out.hint("measured = time between the sent command and the telegram which ended the movement")
-        self.out.hint("reported = travel time which the actuator itself reported (most precise value)")
+        self.out.hint("reported = travel time the actuator reported itself - not every actuator sends it,\n            then 'measured' is the relevant value")
         self.out.hint("end      = TOP / BOT if the cover ran into its top or bottom end position")
+
+    def _print_manual_end_positions(self) -> None:
+        """Everything which was marked with the marker switch during the test."""
+        if not self.marker_switch_ids:
+            return
+
+        marked = [m for m in self._movements if m.markers]
+        table = Table(self.out, [
+            Column('run', 3, '>'), Column('step', 4, '>'), Column('cover', 11), Column('command', 9),
+            Column('no', 3, '>'), Column('marker', 11), Column('button', 6), Column('at', 8, '>'),
+            Column('travelled', 9, '>'), Column('travel', 7, '>'), Column('difference', 9, '>'),
+            Column('kind', 20),
+        ])
+        self.out.section("MARKER SWITCH - MANUALLY MARKED POINTS IN TIME", table.width)
+
+        if not marked:
+            self.out.line(f" The marker switch ({', '.join(self.marker_switch_ids)}) was not pressed while a "
+                          f"cover was moving.", 'hint')
+            return
+
+        table.print_header()
+        for movement in marked:
+            # not every actuator sends a travel report, then the measured time is used
+            total = movement.effective_travel_time
+            # the markers are numbered per movement so that they can be referred to
+            for number, marker in enumerate(movement.markers, start=1):
+                travelled = marker.time - movement.start_time
+                difference = None if total is None else total - travelled
+                table.print_row([
+                    movement.run,
+                    movement.step_index,
+                    movement.cover.actuator_id,
+                    f"{movement.step.type.value.upper()} {movement.step.duration:g}s",
+                    number,
+                    marker.address,
+                    marker.button or None,
+                    f"{marker.time:.2f}s",
+                    f"{travelled:.2f}s",
+                    f"{total:.1f}s" if total is not None else None,
+                    f"{difference:+.2f}s" if difference is not None else None,
+                    self._marker_kind(marker),
+                ], 'ok' if marker.is_manual_end_position else 'received')
+
+        self.out.blank()
+        self.out.hint("no         = number of the marker within its movement, counted from the movement command")
+        self.out.hint("button     = button of the rocker switch which was pressed (AI, A0, BI, B0). Two presses "
+                      "are only\n            a double press when it is the same button")
+        self.out.hint("travelled  = how long the cover had been moving when the marker switch was pressed")
+        self.out.hint("travel     = whole travel time of that movement (reported by the actuator, otherwise measured)")
+        self.out.hint("difference = how much longer the actuator kept on running after the marker")
+        self.out.hint("Press the marker switch twice in a row to signal that the cover has reached its end "
+                      "position. A single press only records the point in time.")
+
+    def _marker_kind(self, marker: TelegramEvent) -> str:
+        if marker.is_manual_end_position:
+            return 'END POSITION REACHED'
+        return 'repetition' if marker.is_marker_repetition else 'time marker'
 
     def _end_position_short(self, movement: Movement) -> str:
         if not movement.reached_end_position:
@@ -901,11 +1155,14 @@ class CoverTravelTester:
         return {0x70: 'TOP', 0x50: 'BOT'}.get(movement.end_position_state, 'yes')
 
     def _print_travel_time_statistics(self) -> dict:
-        table = Table(self.out, [
+        columns = [
             Column('cover', 11), Column('direction', 9), Column('moves', 5, '>'),
             Column('min', 8, '>'), Column('avg', 8, '>'), Column('max', 8, '>'),
             Column('complete travel', 15, '>'), Column('interrupted', 11, '>'),
-        ])
+        ]
+        if self.marker_switch_ids:
+            columns.append(Column('manual end', 10, '>'))
+        table = Table(self.out, columns)
         self.out.section("TRAVEL TIMES PER COVER AND DIRECTION", table.width)
         table.print_header()
 
@@ -921,12 +1178,18 @@ class CoverTravelTester:
                 complete = [m.effective_travel_time for m in movements
                             if m.reached_end_position and not m.was_interrupted
                             and m.effective_travel_time is not None]
+                manual = [m.manual_end_position_time for m in movements
+                          if m.manual_end_position_time is not None]
                 interrupted = len([m for m in movements if m.was_interrupted])
 
-                if complete:
-                    recommendations.setdefault(cover.actuator_id, {})[step_type] = max(complete)
+                if complete or manual:
+                    entry = recommendations.setdefault(cover.actuator_id, {}).setdefault(step_type, {})
+                    if complete:
+                        entry['reported'] = max(complete)
+                    if manual:
+                        entry['manual'] = max(manual)
 
-                table.print_row([
+                row = [
                     cover.actuator_id,
                     step_type.value.upper(),
                     len(movements),
@@ -935,29 +1198,49 @@ class CoverTravelTester:
                     f"{max(times):.2f}s" if times else None,
                     f"{max(complete):.1f}s" if complete else None,
                     interrupted if interrupted else '-',
-                ], 'warn' if interrupted else 'received')
+                ]
+                if self.marker_switch_ids:
+                    row.append(f"{max(manual):.2f}s" if manual else None)
+                table.print_row(row, 'warn' if interrupted else 'received')
 
         self.out.blank()
         self.out.hint("complete travel = longest travel time of a movement which reached an end position "
                       "without interference")
+        if self.marker_switch_ids:
+            self.out.hint("manual end      = longest travel time until the end position was signalled with the "
+                          "marker switch")
         return recommendations
 
     def _print_configuration_hints(self, recommendations: dict) -> None:
         self.out.section("HINTS FOR CONFIGURING THE RUNTIME OF THE ACTUATOR (FSB)")
 
         if not recommendations:
-            self.out.line(" No cover reached an end position without interference, so the complete travel time is "
-                          "unknown.", 'warn')
-            self.out.hint("Increase the duration of the movement steps and repeat the test.")
+            if self._movements and not any(m.first_reaction is not None for m in self._movements):
+                self._print_unknown_cover_hint()
+            else:
+                self.out.line(" No cover reached an end position without interference, so the complete travel time is "
+                              "unknown.", 'warn')
+                self.out.hint("Increase the duration of the movement steps and repeat the test.")
             return
 
         for actuator_id, values in recommendations.items():
-            up = values.get(CoverStepType.UP, None)
-            down = values.get(CoverStepType.DOWN, None)
+            # a manually signalled end position is the time the cover really needed
+            best = {step_type: entry.get('manual', entry.get('reported'))
+                    for step_type, entry in values.items()}
+            up = best.get(CoverStepType.UP, None)
+            down = best.get(CoverStepType.DOWN, None)
             known = [v for v in [up, down] if v is not None]
             self.out.line(f" Cover {actuator_id}: up {f'{up:.1f}s' if up else 'unknown'}, "
                           f"down {f'{down:.1f}s' if down else 'unknown'} "
                           f"{self.out.arrow} configure a runtime of at least {max(known):.1f}s", 'ok')
+
+            manual = {t: e['manual'] for t, e in values.items() if 'manual' in e}
+            if manual:
+                without_marker = ', '.join(f"{t.value} {e['reported']:.1f}s"
+                                           for t, e in values.items() if 'reported' in e)
+                self.out.hint(f"  based on the end position which was signalled with the marker switch "
+                              f"({', '.join(f'{t.value} {v:.1f}s' for t, v in manual.items())})"
+                              f"{f'. Without the marker the test would use: {without_marker}' if without_marker else ''}")
             if up is not None and down is not None:
                 difference = abs(up - down)
                 self.out.hint(f"  difference between up and down: {difference:.1f}s. The actuator only knows one "
@@ -967,41 +1250,66 @@ class CoverTravelTester:
         self.out.hint("For venetian blinds measure the turning of the slats separately with short movement steps "
                       "(e.g. 'down:2').")
 
+    def _print_unknown_cover_hint(self) -> None:
+        """No cover answered at all. Most of the time the given actuator ids do
+        not match the addresses of the telegrams which the actuators send."""
+        self.out.line(" No telegram of a cover under test was received, so no travel time could be measured.",
+                      'error')
+        self.out.hint("The actuator id is compared with the sender address of the received telegrams. Bus actuators "
+                      "behind an FAM14/FGW14 send with their local bus address (e.g. 00-00-00-1F) and not with "
+                      "their external id (base id of the gateway + bus address).")
+
+        addresses = sorted({e.address for e in self._events if e.cover is None and not e.outgoing})
+        if addresses:
+            self.out.hint(f"Addresses which sent telegrams during the test: {', '.join(addresses)}")
+        self.out.hint("Use 'ACTUATOR_ID:SENDER_ID' when the sender id which is taught into the actuator differs from "
+                      "the address of the actuator, e.g. '00-00-00-1F:EF-00-00-1F'.")
+
     def _print_interference_report(self) -> None:
-        foreign_events = [e for e in self._events if e.cover is None and not e.outgoing]
+        foreign_events = [e for e in self._events if e.cover is None and not e.outgoing and not e.is_marker]
         interfered = [m for m in self._movements if m.first_interference is not None]
 
-        self.out.section(f"INTERFERENCES - FOREIGN TELEGRAMS DURING THE TEST ({len(foreign_events)})")
+        self.out.section(f"INTERFERENCES - SWITCHES AND UNKNOWN TELEGRAMS ({len(foreign_events)})")
 
         if not foreign_events:
-            self.out.line(" No foreign telegrams were received. The test was not disturbed.", 'ok')
+            self.out.line(" Neither a switch nor an unknown telegram was received. The test was not disturbed.",
+                          'ok')
             return
 
         for event in foreign_events:
             during = ' (during a movement)' if any(event is m.first_interference for m in interfered) else ''
-            self.out.line(f" {event.time:8.2f}s  {event.address}  {event.telegram_type}: {event.description}"
-                          f"{self._signal_info(event)}{during}", 'foreign')
+            self.out.line(f" {event.time:8.2f}s  {event.address}  {event.device_kind:<8} {event.description}"
+                          f"{self._signal_info(event)}{during}", self._event_style(event))
 
         if not interfered:
             self.out.blank()
             self.out.line(" None of them happened while a cover under test was moving.", 'ok')
-            return
+        else:
+            self.out.blank()
+            self.out.line(" Movements which were disturbed:", 'warn')
+            for movement in interfered:
+                travel = movement.travel_time_until_interference
+                reported = movement.reported_travel_time
+                interference = movement.first_interference
+                source = 'switch' if interference.is_known_switch else 'unknown device'
+                self.out.line(f"   run {movement.run} step {movement.step_index} cover "
+                              f"{movement.cover.actuator_id} ({movement.step}): {source} "
+                              f"{interference.address} intervened after {travel:.2f}s {self.out.arrow} travel "
+                              f"time until the intervention: {travel:.2f}s"
+                              f"{f', actuator reported {reported:.1f}s' if reported is not None else ''}", 'warn')
 
-        self.out.blank()
-        self.out.line(" Movements which were disturbed:", 'warn')
-        for movement in interfered:
-            travel = movement.travel_time_until_interference
-            reported = movement.reported_travel_time
-            self.out.line(f"   run {movement.run} step {movement.step_index} cover {movement.cover.actuator_id} "
-                          f"({movement.step}): {movement.first_interference.address} intervened after "
-                          f"{travel:.2f}s {self.out.arrow} travel time until the intervention: {travel:.2f}s"
-                          f"{f', actuator reported {reported:.1f}s' if reported is not None else ''}", 'warn')
+            self.out.blank()
+            self.out.hint("'interrupted' means that a switch telegram arrived while the cover was still moving. "
+                          "The travel time up to that moment is valid, but such a movement is not used for the "
+                          "runtime recommendation.")
 
-        self.out.blank()
-        self.out.hint("'interrupted' means that a switch telegram arrived while the cover was still moving. "
-                      "The travel time up to that moment is valid, but such a movement is not used for the "
-                      "runtime recommendation. Note that status telegrams of covers which are not listed in the "
-                      "cover ids look like a switch press as well.")
+        unknown = [e for e in foreign_events if not e.is_known_switch and e.is_button_pressed]
+        if unknown:
+            self.out.hint(f"{len(unknown)} telegram(s) came from a device which is not part of the test "
+                          f"({', '.join(sorted({e.address for e in unknown}))}). They are treated as a possible "
+                          f"interference of every running movement. If it is a switch of one of the covers, add "
+                          f"it to its cover id. If it is another cover, add that cover to the cover ids - its "
+                          f"status telegrams look like a switch press as well.")
 
     def _print_telegram_log(self) -> None:
         self.out.section(f"TELEGRAM LOG ({len(self._events)} telegrams)")
@@ -1041,8 +1349,10 @@ class CoverTravelTester:
     def _event_style(self, event: TelegramEvent) -> str:
         if event.outgoing:
             return 'sent'
+        if event.is_marker:
+            return 'ok' if event.is_manual_end_position else 'received'
         if event.cover is None:
-            return 'foreign'
+            return 'warn' if event.is_known_switch else 'foreign'
         return 'received'
 
     # =========================================================================

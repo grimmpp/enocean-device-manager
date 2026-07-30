@@ -8,7 +8,7 @@ It answers the questions:
 * Did **all** covers react on **every** command and did they move into the requested direction?
 * **How long** did every cover really move? The measured time and the travel time which the actuator itself
   reports are shown next to each other.
-* Which **foreign telegrams** (e.g. a wall switch someone pressed) disturbed the test, and how much travel
+* Which **switch telegrams** (e.g. a wall switch someone pressed) disturbed the test, and how much travel
   time was accumulated **until** the interference happened?
 
 The measured travel times are the base for configuring the runtime of an FSB actuator. The actuator only knows
@@ -19,8 +19,9 @@ usually take a different amount of time. With this test you get all those times 
 
 ```shell
 python.exe -m eo_man --command cover_test --serial_port COM7 --device_type fgw14usb \
-                     --cover_ids 00-00-00-05,00-00-00-07 \
+                     --cover_ids 00-00-00-05:FE-D4-E9-47,00-00-00-07:FE-D4-E9-48 \
                      --cover_sequence up:60,pause:5,down:60,pause:5 \
+                     --cover_marker_switch FF-11-22-33 \
                      --test_run_count 2 \
                      --test_report cover_test.txt
 ```
@@ -29,10 +30,12 @@ python.exe -m eo_man --command cover_test --serial_port COM7 --device_type fgw14
 |---|---|---|
 | `--serial_port` | `-sp` | Serial port of the gateway, e.g. `COM7` or `/dev/ttyUSB0`. For a LAN gateway: `IP:PORT`. |
 | `--device_type` | `-dt` | Gateway type, e.g. `fgw14usb`, `fam14`, `fam-usb`, `esp3-gateway`, `lan`. |
-| `--cover_ids` | `-cid` | Comma-separated list of the covers to be tested. **All covers get exactly the same commands.** |
+| `--cover_ids` | `-cid` | Comma-separated list of the covers to be tested, each with the switch which is taught into it. **All covers get exactly the same commands.** See below. |
 | `--cover_sequence` | `-cseq` | Comma-separated list of movement commands and pauses which are executed one after the other. |
 | `--cover_command_mode` | `-cm` | `stop` (default) or `timed`, see below. |
 | `--test_run_count` | `-trc` | How often the whole sequence is repeated. Default: `1`. |
+| `--cover_marker_switch` | `-cms` | Optional switch which is **not** taught into any actuator. Used to mark points in time and to signal an end position by hand. See below. |
+| `--cover_marker_double_press_time` | `-cmt` | Two presses of the marker switch within this time are one double press. Default: `1.5` seconds. |
 | `--cover_message_delay` | `-cmd` | Delay between two command telegrams in seconds. Default: `0.1` (100ms). See below. |
 | `--verbose` | `-v` | `-v` additionally logs every relevant telegram while the test runs and appends the complete telegram log to the report. `-vv` also shows the raw ESP2 data of every telegram and enables the debug log of the serial communication. |
 | `--test_report` | `-tr` | Optional file the whole printed report is written to as plain text. |
@@ -44,17 +47,39 @@ happened on the bus.
 
 ### Cover ids
 
-Every entry of `--cover_ids` addresses one cover and consists of the id of the **actuator** and optionally the
-**sender id** which is taught into that actuator:
+Every entry of `--cover_ids` describes one cover:
+
+```text
+ACTUATOR_ID[:SWITCH_ID[+SWITCH_ID...]][:SENDER_ID]
+```
+
+| Part | Required | Meaning |
+|---|---|---|
+| `ACTUATOR_ID` | yes | Address of the actuator, i.e. the address its status telegrams come from (e.g. `00-00-00-05`). |
+| `SWITCH_ID` | no | The wall switch which is taught into that actuator (e.g. `FE-D4-E9-47`). Several switches of one cover are separated by `+`. Leave it out if no switch is taught in or if you do not want to operate the cover by hand during the test. |
+| `SENDER_ID` | no | Address the test sends its commands from. Defaults to `00-00-B0-XX` for bus actuators (`00-00-00-XX`), which is the sender id this application also uses for Home Assistant. |
+
+Examples:
 
 | Entry | Meaning |
 |---|---|
-| `00-00-00-05` | Bus actuator with address 5. Commands are sent from `00-00-B0-05` (the sender id this application also uses for Home Assistant). |
-| `FF-AA-BB-01:00-00-B0-07` | Actuator `FF-AA-BB-01`, commands are sent from `00-00-B0-07`. |
+| `00-00-00-05` | Bus actuator with address 5, no switch declared. Commands are sent from `00-00-B0-05`. |
+| `00-00-00-05:FE-D4-E9-47` | The same cover, operated by switch `FE-D4-E9-47`. |
+| `00-00-00-05:FE-D4-E9-47+FE-D4-E9-48` | The same cover, but two switches are taught into it. |
+| `00-00-00-05::00-00-B0-05` | No switch, but an explicitly given sender id (the empty middle entry keeps the sender in the third position). |
+| `FF-AA-BB-01:FE-D4-E9-47:00-00-B0-07` | Actuator `FF-AA-BB-01`, switch `FE-D4-E9-47`, commands are sent from `00-00-B0-07`. |
 
-The **actuator id** is the address the status telegrams come from, the **sender id** is the address the commands
-are sent from. The sender id has to be taught into the actuator beforehand - otherwise the cover will not move.
-Use *Write HA senders to devices* of the GUI or PCT14 to do so.
+Naming the sender id in the switch position (`00-00-00-05:00-00-B0-05`) is accepted as well and means the same
+as `00-00-00-05`: the address the test sends from is not a switch, so it is not treated as one.
+
+The **sender id** has to be taught into the actuator beforehand - otherwise the cover will not move. Use
+*Write HA senders to devices* of the GUI or PCT14 to do so.
+
+**Why should the switch be given?** Every telegram which does not come from a declared device has to be treated
+as a possible interference of *every* running movement, because the test cannot know which cover it belongs to.
+As soon as the switches are declared, a press is assigned to exactly the cover(s) that switch operates - the
+other covers of the test run keep their clean measurement. It also keeps the report readable: declared switches
+show up as `switch`, everything else as `unknown`.
 
 ### Movement sequence
 
@@ -90,6 +115,66 @@ test waits **between** two of those telegrams:
 The delay is never applied before the first telegram of a step, so it does not shift the measured travel times.
 It also applies to the `STOP` telegrams which terminate a movement.
 
+### Marker switch: measuring the real end position by hand
+
+An FSB actuator does not know when the cover physically reaches its end position - it simply runs for its
+configured runtime. So the travel time it reports can be **longer** than the cover really needed. With
+`--cover_marker_switch` you can measure the real value: take any EnOcean switch which is **not** taught into the
+actuators, watch the cover and press it at the right moment.
+
+```shell
+python -m eo_man -C cover_test -sp COM3 -dt fgw14usb -cid 00-00-00-05:FE-D4-E9-47 \
+                 -cseq up:90,pause:5,down:90,pause:5 -cms FF-11-22-33
+```
+
+| Action | Meaning |
+|---|---|
+| **press once** | Records the point in time. The report shows how long the cover had been moving at that moment. Use it to mark anything you want to measure, e.g. when the slats of a venetian blind are closed. |
+| **press twice in a row** | *Manual end position detection*: the cover has physically reached its end position now. The report treats this time as the travel time the cover really needed. |
+
+Two presses count as a double press when they follow each other within `--cover_marker_double_press_time`
+(default 1.5 seconds) **and the same button was used**. Pressing `AI` and then `B0` are two separate actions, so
+each of them stays a single time marker. The **first** press of a pair is the moment which counts - that is when
+you reacted. Further presses of that button within the window are shown as `repetition`.
+
+The report names the button of every marker, so you can use the four buttons of one rocker switch for different
+things during a test, e.g. the upper one for the end position and the lower one for the closed slats.
+
+Only the press is a marker. A rocker switch also sends a release telegram right afterwards - it appears in the
+telegram log (`-v`) but does not become a marker of its own.
+
+The marker switch is not taught into any actuator, so it cannot move anything: its telegrams are **never**
+counted as an interference, and a movement which was marked is not flagged as `interrupted`. The test refuses to
+start if the marker switch is also given as a taught-in switch of a cover.
+
+The result is a separate section of the report:
+
+```text
+run | step | cover       | command   |  no | marker      | button |       at | travelled |  travel | difference | kind
+  1 |    1 | 00-00-00-05 | UP 90s    |   1 | FF-11-22-33 | AI     |   12.80s |    12.80s |   21.5s |     +8.70s | time marker
+  1 |    1 | 00-00-00-05 | UP 90s    |   2 | FF-11-22-33 | AI     |   19.42s |    19.42s |   21.5s |     +2.08s | END POSITION REACHED
+  1 |    1 | 00-00-00-05 | UP 90s    |   3 | FF-11-22-33 | AI     |   19.68s |    19.68s |   21.5s |     +1.82s | repetition
+  1 |    3 | 00-00-00-05 | DOWN 90s  |   1 | FF-11-22-33 | A0     |   45.10s |    21.30s |   23.0s |     +1.70s | END POSITION REACHED
+
+ no         = number of the marker within its movement, counted from the movement command
+ button     = button of the rocker switch which was pressed (AI, A0, BI, B0)
+ travelled  = how long the cover had been moving when the marker switch was pressed
+ travel     = whole travel time of that movement (reported by the actuator, otherwise measured)
+ difference = how much longer the actuator kept on running after the marker
+```
+
+The markers are numbered **per movement**, so the numbering starts again with `1` for every movement command.
+That makes it easy to refer to a specific marker, e.g. "marker 1 of the UP movement was the closed slats".
+
+The manually measured times are shown as `manual end` in the travel time statistics and - because they are the
+times the cover really needed - they are used for the runtime recommendation:
+
+```text
+ Cover 00-00-00-05: up 19.4s, down 21.3s -> configure a runtime of at least 21.3s
+   based on the end position which was signalled with the marker switch (up 19.4s, down 21.3s).
+   The actuator itself reported: up 21.5s, down 23.0s
+```
+
 ### Command mode
 
 | Mode | Description |
@@ -111,39 +196,44 @@ It also applies to the `STOP` telegrams which terminate a movement.
 
 Wall switches are not ignored - they are part of the result:
 
-* Every telegram of a device which is not under test is logged with its timestamp and shown in the
-  *INTERFERENCES* section.
-* If such a telegram arrives **while a cover is moving**, the movement is marked as `interrupted` and the travel
-  time **until the intervention** is reported. So you can also use a switch to stop the cover on purpose (e.g.
-  exactly when the cover is closed) and read the travel time up to that moment.
+* Every telegram which does not come from an actuator under test is logged with its timestamp and shown in the
+  *INTERFERENCES* section. Telegrams of the switches declared in `--cover_ids` are marked as `switch`, all
+  others as `unknown`.
+* If such a telegram arrives **while a cover is moving**, that movement is marked as `interrupted` and the
+  travel time **until the intervention** is reported. So you can also use a switch to stop the cover on purpose
+  (e.g. exactly when the cover is closed) and read the travel time up to that moment.
 * Telegrams which arrive when no cover is moving (e.g. during a pause) are logged but do not count as
   interference.
 
 ### What does `interrupted` mean?
 
-A movement is marked as `interrupted` when **all** of the following applies to a received telegram:
+A movement is marked as `interrupted` when a received telegram
 
-1. it comes from an address which is neither an actuator id nor a sender id given in `--cover_ids`
-   (the report calls those telegrams `foreign`),
-2. it is an RPS telegram which decodes as a **pressed** rocker switch (EEP F6-02-01, energy bow set) - the
-   release telegram of a switch is logged but does not count,
-3. it arrived **after** the movement command was sent and **before or at** the moment the movement ended
-   (the actuator reported its travel time / an end position, or the test sent `STOP`).
+1. is an RPS telegram which decodes as a **pressed** rocker switch (EEP F6-02-01, energy bow set) - the release
+   telegram of a switch is logged but does not count,
+2. arrived **after** the movement command was sent and **before or at** the moment the movement ended (the
+   actuator reported its travel time / an end position, or the test sent `STOP`),
+3. and belongs to this cover:
+
+| Sender of the telegram | Which movements are marked | Shown as |
+|---|---|---|
+| A switch declared for this cover in `--cover_ids` | only the movements of the cover(s) that switch operates | `switch FE-D4-E9-47` |
+| Any other address | **every** movement which was running at that moment, because it cannot be assigned | `unknown 00-00-00-42` |
 
 The report then shows:
 
 ```text
 run | step | cover       | command    |  react | measured | reported | dir  | end | stopped by           | result
-  1 |    5 | 00-00-00-05 | DOWN 60s   | 10.77s |   10.77s |    10.8s | DOWN | -   | switch 00-00-00-42   | interrupted
+  1 |    5 | 00-00-00-05 | DOWN 60s   | 10.77s |   10.77s |    10.8s | DOWN | -   | switch FE-D4-E9-47   | interrupted
 
  Movements which were disturbed:
-   run 1 step 5 cover 00-00-00-05 (DOWN 60.0s): 00-00-00-42 intervened after 10.77s -> travel time until the
-   intervention: 10.77s, actuator reported 10.8s
+   run 1 step 5 cover 00-00-00-05 (DOWN 60.0s): switch FE-D4-E9-47 intervened after 10.77s -> travel time
+   until the intervention: 10.77s, actuator reported 10.8s
 ```
 
-**It means: someone or something else sent a switch telegram while this cover was still moving.** That is a
-correlation in time - the test cannot know whether that switch is really taught into the actuator and therefore
-whether it really stopped the cover. `stopped by: switch 00-00-00-42` is the most likely explanation, not a proof.
+**It means: a switch telegram arrived while this cover was still moving.** Even for a declared switch this is a
+correlation in time - the report says which switch it was and when, it does not prove that the cover stopped
+because of it.
 
 How to read such a row:
 
@@ -157,36 +247,42 @@ How to read such a row:
 
 Two situations lead to `interrupted`:
 
-* **Intended**: you press a wall switch yourself to stop the cover and read the travel time up to that point.
-  This is what the flag is made for.
+* **Intended**: you press the wall switch of a cover yourself to stop it and read the travel time up to that
+  point. This is what the flag is made for.
 * **Unintended**: somebody else operated a switch, or an automation did. Repeat the affected movement.
 
-> **Pitfall - covers which are not under test look like a switch.** The status telegrams of an Eltako cover are
-> RPS telegrams as well, and their end position values decode exactly like a pressed rocker switch
-> (`0x70` -> button `B0`, `0x50` -> button `BI`). If a cover of your installation is moved but is **not** listed
-> in `--cover_ids`, its end position telegrams therefore show up as `switch pressed` and can mark a movement as
-> `interrupted`. Put all covers which move during the test into `--cover_ids` - then their telegrams are
-> recognized as `cover` instead of `foreign`. The complete telegram log (`-v`) shows which address sent what, so
-> such a case is easy to identify.
+### `unknown` telegrams
+
+Everything which is neither an actuator nor a declared switch is reported as `unknown` and - to be on the safe
+side - counts as a possible interference of every movement which was running at that moment. The report lists
+those addresses at the end of the *INTERFERENCES* section. Two typical causes:
+
+* **A switch you did not declare.** Add it to the cover it operates: `00-00-00-05:FE-D4-E9-47+FE-D4-E9-48`.
+* **Another cover which moves but is not part of the test.** The status telegrams of an Eltako cover are RPS
+  telegrams as well, and their end position values decode exactly like a pressed rocker switch (`0x70` ->
+  button `B0`, `0x50` -> button `BI`). Add that cover to `--cover_ids` - then its telegrams are recognized as
+  `cover` instead of `unknown`.
+
+The complete telegram log (`-v`) shows which address sent what, so such a case is easy to identify.
 
 ## Example Output
 
-Default output (without `-v`) of a test with two covers where a wall switch interfered with the
-third movement:
+Default output (without `-v`) of a test with two covers. During the third movement the wall switch of
+cover `00-00-00-05` was pressed - only that cover is marked, the other one keeps its clean measurement:
 
 ```text
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  COVER TRAVEL TIME TEST
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  Gateway:       FGW14(-USB) (ESP2) on COM7
- Covers:        00-00-00-05 (sender 00-00-B0-05), 00-00-00-07 (sender 00-00-B0-07)
+ Covers:        00-00-00-05 (switch FE-D4-E9-47, sender 00-00-B0-05), 00-00-00-07 (switch FE-D4-E9-48, sender 00-00-B0-07)
  Sequence:      UP 30.0s → PAUSE 3.0s → DOWN 30.0s → PAUSE 3.0s → DOWN 30.0s → PAUSE 3.0s
  Runs:          1
  Command mode:  stop - movement is terminated by a STOP command
  Message delay: 0.1s between two command telegrams
  Duration:      about 103s
 
- You can move the covers with a wall switch during the test. Such interferences are logged and the travel time until the intervention is reported.
+ You can operate the covers with their wall switch during the test. Such interferences are logged and the travel time until the intervention is reported.
  Use -v to see every telegram, -vv to additionally see the raw ESP2 data.
 
  RUN 1 of 1
@@ -197,15 +293,15 @@ third movement:
 
  [  30.11s] Step 2/6: PAUSE 3.0s
 
- [  33.12s] Step 3/6: DOWN 30.0s
+ [  33.11s] Step 3/6: DOWN 30.0s
            → 2/2 covers reacted, travel time: 21.2s, 21.2s
 
- [  63.23s] Step 4/6: PAUSE 3.0s
+ [  63.22s] Step 4/6: PAUSE 3.0s
 
- [  66.23s] Step 5/6: DOWN 30.0s
-           → 2/2 covers reacted, travel time: 10.8s, 10.7s - interrupted
+ [  66.22s] Step 5/6: DOWN 30.0s
+           → 2/2 covers reacted, travel time: 9.8s, 21.2s - interrupted
 
- [  96.34s] Step 6/6: PAUSE 3.0s
+ [  96.33s] Step 6/6: PAUSE 3.0s
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  TEST RESULT
@@ -219,8 +315,8 @@ run │ step │ cover       │ command    │  react │ measured │ reported
   1 │    1 │ 00-00-00-07 │ UP 30s     │ 19.40s │   19.40s │    19.4s │ UP   │ TOP │ top end position     │ OK
   1 │    3 │ 00-00-00-05 │ DOWN 30s   │ 21.21s │   21.21s │    21.2s │ DOWN │ BOT │ bottom end position  │ OK
   1 │    3 │ 00-00-00-07 │ DOWN 30s   │ 21.21s │   21.21s │    21.2s │ DOWN │ BOT │ bottom end position  │ OK
-  1 │    5 │ 00-00-00-05 │ DOWN 30s   │ 10.77s │   10.77s │    10.8s │ DOWN │ -   │ switch 00-00-00-42   │ interrupted
-  1 │    5 │ 00-00-00-07 │ DOWN 30s   │ 10.72s │   10.72s │    10.7s │ DOWN │ -   │ switch 00-00-00-42   │ interrupted
+  1 │    5 │ 00-00-00-05 │ DOWN 30s   │  9.78s │    9.78s │     9.8s │ DOWN │ -   │ switch FE-D4-E9-47   │ interrupted
+  1 │    5 │ 00-00-00-07 │ DOWN 30s   │ 21.20s │   21.20s │    21.2s │ DOWN │ BOT │ bottom end position  │ OK
 
  react    = time between the sent command and the first telegram of the cover
  measured = time between the sent command and the telegram which ended the movement
@@ -232,9 +328,9 @@ run │ step │ cover       │ command    │  react │ measured │ reported
 cover       │ direction │ moves │      min │      avg │      max │ complete travel │ interrupted
 ────────────────────────────────────────────────────────────────────────────────────────────────
 00-00-00-05 │ UP        │     1 │   19.40s │   19.40s │   19.40s │           19.4s │           -
-00-00-00-05 │ DOWN      │     2 │   10.80s │   16.00s │   21.20s │           21.2s │           1
+00-00-00-05 │ DOWN      │     2 │    9.80s │   15.50s │   21.20s │           21.2s │           1
 00-00-00-07 │ UP        │     1 │   19.40s │   19.40s │   19.40s │           19.4s │           -
-00-00-00-07 │ DOWN      │     2 │   10.70s │   15.95s │   21.20s │           21.2s │           1
+00-00-00-07 │ DOWN      │     2 │   21.20s │   21.20s │   21.20s │           21.2s │           -
 
  complete travel = longest travel time of a movement which reached an end position without interference
 
@@ -246,16 +342,17 @@ cover       │ direction │ moves │      min │      avg │      max │ c
    difference between up and down: 1.8s. The actuator only knows one runtime, so the faster direction stands still for 1.8s before the configured runtime has elapsed.
  For venetian blinds measure the turning of the slats separately with short movement steps (e.g. 'down:2').
 
- INTERFERENCES - FOREIGN TELEGRAMS DURING THE TEST (1)
+ INTERFERENCES - SWITCHES AND UNKNOWN TELEGRAMS (1)
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    77.00s  00-00-00-42  RPSMessage: switch pressed (button BI) (during a movement)
+    76.00s  FE-D4-E9-47  switch   switch of cover 00-00-00-05 pressed (button BI) (during a movement)
 
  Movements which were disturbed:
-   run 1 step 5 cover 00-00-00-05 (DOWN 30.0s): 00-00-00-42 intervened after 10.77s → travel time until the intervention: 10.77s, actuator reported 10.8s
-   run 1 step 5 cover 00-00-00-07 (DOWN 30.0s): 00-00-00-42 intervened after 10.72s → travel time until the intervention: 10.72s, actuator reported 10.7s
+   run 1 step 5 cover 00-00-00-05 (DOWN 30.0s): switch FE-D4-E9-47 intervened after 9.78s → travel time until the intervention: 9.78s, actuator reported 9.8s
+
+ 'interrupted' means that a switch telegram arrived while the cover was still moving. The travel time up to that moment is valid, but such a movement is not used for the runtime recommendation.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- RESULT: 4 of 6 movements behaved as requested (2x interrupted).
+ RESULT: 5 of 6 movements behaved as requested (1x interrupted).
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -281,5 +378,13 @@ With `-vv` every line additionally carries the raw telegram, e.g.
 
 * Commands are sent as **EEP H5-3F-7F** (Eltako cover command, 4BS): `DB2` = travel time in 100ms steps
   (`0` = configured runtime of the actuator), `DB1` = `0x01` up / `0x02` down / `0x00` stop.
-* Status telegrams of the actuator are decoded as **EEP G5-3F-7F**: the 4BS variant reports the direction and
-  the travel time in 100ms steps, the RPS variant reports the end positions (`0x70` top, `0x50` bottom).
+* Status telegrams of the actuator are decoded as **EEP G5-3F-7F**:
+  * RPS, `0x01` / `0x02`: the actuator starts to move up / down. This is where the `dir` column comes from.
+  * RPS, `0x70` / `0x50`: the top / bottom end position was reached. This ends the movement and is what the
+    `measured` travel time is based on.
+  * 4BS: the actuator reports the direction and the travel time in 100ms steps -> the `reported` column.
+
+> **Not every actuator sends the 4BS travel report.** Verified with FSB14 behind a FGW14-USB: those devices
+> only send the RPS telegrams listed above, so the `reported` column stays empty and `measured` is the value to
+> look at. `measured` is the time between the sent command and the end position telegram, which includes the
+> reaction time of the actuator (typically 0.2 - 0.8s, visible in the `react` column).

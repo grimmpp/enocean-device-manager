@@ -223,10 +223,14 @@ class SerialConnectionBar():
         self.b_detect.config(state=NORMAL)
         self.cb_device_type.config(state="readonly")
         try:
-            self.cb_serial_ports['values'] = self.endpoint_list[get_gateway_type_by_name(self.cb_device_type.get())]
+            selected = self.cb_serial_ports.get()
+            ports = self.endpoint_list[get_gateway_type_by_name(self.cb_device_type.get())]
+            self.cb_serial_ports['values'] = ports
             self.b_connect.config(state=NORMAL)
-            if len(self.cb_serial_ports['values']) > 0:
-                self.cb_serial_ports.set(self.cb_serial_ports['values'][0])
+            if len(ports) > 0:
+                # the port list is updated while the detection is still running,
+                # so keep the port which is already selected
+                self.cb_serial_ports.set(selected if selected in ports else ports[0])
                 self.cb_serial_ports.config(state=NORMAL)
             else:
                 # self.b_connect.config(state=DISABLED)

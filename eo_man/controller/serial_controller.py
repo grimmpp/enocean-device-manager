@@ -41,8 +41,14 @@ class SerialController():
         self.gw_registry:GatewayRegistry = gw_registry
         
         self.received_bus_device_discovery:Dict[str,List[EltakoDiscoveryReply]] = {}
-        self.current_discovery_reply = None
-        self.received_bus_device_memory:Dict[str,List[EltakoMemoryResponse]] = {}
+        self.current_discovery_reply:EltakoDiscoveryReply = None
+        # discovery replies of the bus devices by their bus address
+        self.discovery_reply_by_address:Dict[int,EltakoDiscoveryReply] = {}
+        # memory rows which were read out on the bus, per bus address and row
+        self.received_bus_device_memory:Dict[int,Dict[int,bytes]] = {}
+        # address of the last memory request seen on the bus. A memory response
+        # does not contain the address of the device it belongs to.
+        self.current_memory_address:int = None
 
         self.app_bus.add_event_handler(AppBusEventType.WINDOW_CLOSED, self.on_window_closed)
     
@@ -130,6 +136,8 @@ class SerialController():
 
             self.process_discovery_message(message)
 
+            self.process_memory_message(message)
+
             # RSSI (dBm) is only available for radio telegrams received via ESP3
             # gateways (USB300/USB500, TCP). It is captured by the raw-packet tap
             # (see _install_rssi_tap) right before this callback runs. Wired ESP2
@@ -190,22 +198,32 @@ class SerialController():
 
             self.app_bus.fire_event(AppBusEventType.ASYNC_TRANSCEIVER_DETECTED, data)
         
+    def _create_bus_object(self, discovery_reply: EltakoDiscoveryReply) -> BusObject:
+        """Instantiates the most specific known device class for a discovery reply."""
+        for o in sorted_known_objects:
+            if discovery_reply.model[0:2] in o.discovery_names \
+                    and (o.size is None or o.size == discovery_reply.reported_size):
+                return o(discovery_reply)
+        return BusObject(discovery_reply)
+
     def process_discovery_message(self, message: EltakoDiscoveryReply):
-        
+
         if isinstance(message, EltakoDiscoveryReply):
             self.current_discovery_reply = message
+            self.discovery_reply_by_address[message.reported_address] = message
             if self.current_base_id not in self.received_bus_device_discovery:
                 self.received_bus_device_discovery[self.current_base_id] = []
             self.received_bus_device_discovery[self.current_base_id].append( message )
-            
-            dev = None
-            for o in sorted_known_objects:
-                if message.model[0:2] in o.discovery_names and (o.size is None or o.size == message.reported_size):
-                    dev = o(message)
-                    break
-            if dev is None:
-                dev = BusObject(message)
-            
+
+            dev = self._create_bus_object(message)
+
+            # A discovery reply only reports model, address and memory size. The
+            # sensors which are taught into the device are stored in its memory
+            # which can only be read with a locked bus (see _scan_for_devices_on_bus).
+            # Without the memory get_all_sensors() would run into the missing bus
+            # connection, so it is switched off here. The taught in sensors are
+            # picked up by process_memory_message() as soon as the memory of the
+            # device is read out on the bus.
             async def get_all_sensors(): return []
             dev.get_all_sensors = get_all_sensors
 
@@ -214,26 +232,49 @@ class SerialController():
             self.app_bus.fire_event(AppBusEventType.ASYNC_DEVICE_DETECTED, {'device': dev, 'base_id': self.current_base_id, 'force_overwrite': False})
 
 
-    def process_memory_response(self, message: EltakoMemoryResponse):
-        if self.current_discovery_reply and isinstance(message, EltakoMemoryResponse):
-            if self.current_discovery_reply not in self.received_bus_device_memory:
-                self.received_bus_device_memory[self.current_discovery_reply] = []
-            self.received_bus_device_memory[self.current_discovery_reply].append( message )
-            
-            if message.row == self.current_discovery_reply.memory_size-1:
-                
-                dev = None
-                for o in sorted_known_objects:
-                    if self.current_discovery_reply.model[0:2] in o.discovery_names and (o.size is None or o.size == self.current_discovery_reply.reported_size):
-                        dev = o(self.current_discovery_reply)
-                        break
-                if dev is None:
-                    dev = BusObject(self.current_discovery_reply)
-                dev.memory = [r.value for r in self.received_bus_device_memory[self.current_discovery_reply]]
-                
-                self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Found device: {dev}", 'color':'grey'})
-                self.app_bus.fire_event(AppBusEventType.DEVICE_SCAN_STATUS, 'DEVICE_DETECTED')
-                asyncio.run( self.app_bus.fire_event(AppBusEventType.ASYNC_DEVICE_DETECTED, {'device': dev, 'base_id': self.current_base_id, 'force_overwrite': True}) )
+    def process_memory_message(self, message: ESP2Message):
+        """Collects the memory rows of a bus device which are read out on the bus,
+        e.g. by PCT14 or by another instance of this application. As soon as the
+        memory of a device is complete the device is reported again - now including
+        the sensors which are taught into it (see Device.memory_entries).
+
+        A memory response does not contain the address of the device it belongs to,
+        therefore the address of the preceding memory request is used."""
+        if isinstance(message, EltakoMemoryRequest):
+            self.current_memory_address = message.address
+            return
+
+        if not isinstance(message, EltakoMemoryResponse):
+            return
+
+        address = self.current_memory_address
+        if address is None and self.current_discovery_reply is not None:
+            # gateways which do not forward the requests: assume that the device
+            # which announced itself last is the one which is read out
+            address = self.current_discovery_reply.reported_address
+
+        discovery_reply = self.discovery_reply_by_address.get(address, None)
+        if discovery_reply is None:
+            # the device did not announce itself yet, so its model is unknown
+            return
+
+        rows = self.received_bus_device_memory.setdefault(address, {})
+        rows[message.row] = message.value
+
+        # the taught in sensors can only be determined from a complete memory
+        if any(row not in rows for row in range(discovery_reply.memory_size)):
+            return
+        del self.received_bus_device_memory[address]
+
+        dev = self._create_bus_object(discovery_reply)
+        # index by row number, the rows can be read in any order
+        dev.memory = [rows.get(row, None) for row in range(max(rows) + 1)]
+
+        self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': f"Read memory of device: {dev}", 'color':'grey'})
+        self.app_bus.fire_event(AppBusEventType.DEVICE_SCAN_STATUS, 'DEVICE_DETECTED')
+        # fire_event runs async handlers itself, it must not be wrapped into asyncio.run
+        self.app_bus.fire_event(AppBusEventType.ASYNC_DEVICE_DETECTED,
+                                {'device': dev, 'base_id': self.current_base_id, 'force_overwrite': True})
 
 
     def connection_status_handler(self, connected: bool):
@@ -288,6 +329,11 @@ class SerialController():
                                                               delay_message=delay_message,
                                                               auto_reconnect=False,
                                                               disabled_echotest= disable_echo_test)
+
+                # RS485SerialInterfaceV2 is no daemon thread. Without this the
+                # interpreter waits for the reader thread when the window is
+                # closed and the application stays alive without a window.
+                self._serial_bus.daemon = True
                 self._serial_bus.start()
                 self._serial_bus.is_serial_connected.wait(timeout=2)
                 self._serial_bus.set_status_changed_handler(self.connection_status_handler)
@@ -311,7 +357,8 @@ class SerialController():
                                 AppBusEventType.CONNECTION_STATUS_CHANGE, 
                                 {'serial_port':  serial_port, 'baudrate': baudrate, 'connected': self._serial_bus.is_active()})
                             
-                        t = threading.Thread(target=run)
+                        # daemon: the application must be able to end while this runs
+                        t = threading.Thread(target=run, name="Thread-get_fam14_device_on_bus", daemon=True)
                         t.start()
                     else:
                         if device_type in [ GDN[GDT.EltakoFAMUSB], GDN[GDT.ESP3], GDN[GDT.LAN] ]:
@@ -380,7 +427,8 @@ class SerialController():
         # if connected to FAM14
         if self.is_fam14_connection_active():
             
-            t = threading.Thread(target=lambda: asyncio.run( self._scan_for_devices_on_bus(force_overwrite) )  )
+            t = threading.Thread(target=lambda: asyncio.run( self._scan_for_devices_on_bus(force_overwrite) ),
+                                 name="Thread-scan_for_devices_on_bus", daemon=True)
             t.start()
 
 
@@ -474,7 +522,8 @@ class SerialController():
             self._serial_bus.set_callback( self._received_serial_event )
 
     def write_sender_id_to_devices(self, sender_id_list:dict={}):
-        t = threading.Thread(target=lambda: asyncio.run( self.async_write_sender_id_to_devices(sender_id_list) )  )
+        t = threading.Thread(target=lambda: asyncio.run( self.async_write_sender_id_to_devices(sender_id_list) ),
+                             name="Thread-write_sender_id_to_devices", daemon=True)
         t.start()
 
 
