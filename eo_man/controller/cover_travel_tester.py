@@ -997,6 +997,12 @@ class CoverTravelTester:
                           f"{travel:.2f}s {self.out.arrow} travel time until the intervention: {travel:.2f}s"
                           f"{f', actuator reported {reported:.1f}s' if reported is not None else ''}", 'warn')
 
+        self.out.blank()
+        self.out.hint("'interrupted' means that a switch telegram arrived while the cover was still moving. "
+                      "The travel time up to that moment is valid, but such a movement is not used for the "
+                      "runtime recommendation. Note that status telegrams of covers which are not listed in the "
+                      "cover ids look like a switch press as well.")
+
     def _print_telegram_log(self) -> None:
         self.out.section(f"TELEGRAM LOG ({len(self._events)} telegrams)")
         self.out.line(f" {'time':>9}  {'':<4} {'telegram':<18} {'address':<12} {'device':<8} description", 'header')

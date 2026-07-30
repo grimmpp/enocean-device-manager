@@ -119,6 +119,56 @@ Wall switches are not ignored - they are part of the result:
 * Telegrams which arrive when no cover is moving (e.g. during a pause) are logged but do not count as
   interference.
 
+### What does `interrupted` mean?
+
+A movement is marked as `interrupted` when **all** of the following applies to a received telegram:
+
+1. it comes from an address which is neither an actuator id nor a sender id given in `--cover_ids`
+   (the report calls those telegrams `foreign`),
+2. it is an RPS telegram which decodes as a **pressed** rocker switch (EEP F6-02-01, energy bow set) - the
+   release telegram of a switch is logged but does not count,
+3. it arrived **after** the movement command was sent and **before or at** the moment the movement ended
+   (the actuator reported its travel time / an end position, or the test sent `STOP`).
+
+The report then shows:
+
+```text
+run | step | cover       | command    |  react | measured | reported | dir  | end | stopped by           | result
+  1 |    5 | 00-00-00-05 | DOWN 60s   | 10.77s |   10.77s |    10.8s | DOWN | -   | switch 00-00-00-42   | interrupted
+
+ Movements which were disturbed:
+   run 1 step 5 cover 00-00-00-05 (DOWN 60.0s): 00-00-00-42 intervened after 10.77s -> travel time until the
+   intervention: 10.77s, actuator reported 10.8s
+```
+
+**It means: someone or something else sent a switch telegram while this cover was still moving.** That is a
+correlation in time - the test cannot know whether that switch is really taught into the actuator and therefore
+whether it really stopped the cover. `stopped by: switch 00-00-00-42` is the most likely explanation, not a proof.
+
+How to read such a row:
+
+* `reported` is still the travel time which the actuator itself reported, i.e. how long the cover really moved
+  before it stopped. **This is exactly the value you want when you use a switch on purpose to stop the cover**
+  (e.g. at the moment the slats are closed) - the movement is flagged, but the measurement is valid.
+* The `end` column tells you whether the cover ran into its end position anyway. If it shows `TOP` or `BOT`, the
+  switch was pressed shortly before the end was reached and probably did not change the result.
+* An interrupted movement is **not** used for *complete travel* and therefore never falsifies the runtime
+  recommendation. If you did not want the interruption, simply repeat that movement.
+
+Two situations lead to `interrupted`:
+
+* **Intended**: you press a wall switch yourself to stop the cover and read the travel time up to that point.
+  This is what the flag is made for.
+* **Unintended**: somebody else operated a switch, or an automation did. Repeat the affected movement.
+
+> **Pitfall - covers which are not under test look like a switch.** The status telegrams of an Eltako cover are
+> RPS telegrams as well, and their end position values decode exactly like a pressed rocker switch
+> (`0x70` -> button `B0`, `0x50` -> button `BI`). If a cover of your installation is moved but is **not** listed
+> in `--cover_ids`, its end position telegrams therefore show up as `switch pressed` and can mark a movement as
+> `interrupted`. Put all covers which move during the test into `--cover_ids` - then their telegrams are
+> recognized as `cover` instead of `foreign`. The complete telegram log (`-v`) shows which address sent what, so
+> such a case is easy to identify.
+
 ## Example Output
 
 Default output (without `-v`) of a test with two covers where a wall switch interfered with the

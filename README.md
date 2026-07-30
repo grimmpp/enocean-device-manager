@@ -107,7 +107,9 @@ run | step | cover       | command    |  react | measured | reported | dir  | en
 ```
 
 You can move the covers with a wall switch while the test runs: such interferences are logged and the travel
-time until the intervention is reported. Details and all options:
+time until the intervention is reported. A movement is then marked as `interrupted`, which means that a switch
+telegram arrived while that cover was still moving - the measured travel time up to that moment stays valid, but
+the movement is not used for the runtime recommendation. Details, all options and how to read the report:
 [Cover Travel Time Test](https://github.com/grimmpp/enocean-device-manager/blob/main/docs/cover_travel_test).
 
 ### Example: show all telegrams (`enocean_logger`)
