@@ -1,5 +1,13 @@
 # Change Log
 
+## Telegram Monitor (`enocean_logger`) improvements
+* New argument `--log_file` (`-lf`) writes the whole log output including the received telegrams into a file of your choice. The file is appended, so a restart does not lose the previous log.
+* Fixed `--log_telegram_id_filter` (`-idf`): the already parsed id list was converted to a string again, so the filter never matched and **no** telegram at all was displayed as soon as a filter was given.
+* Fixed the `EOFError` traceback when the logger is started without an interactive console (background process, service, `nohup`). It now logs a hint that the process has to be terminated to stop it and keeps on logging.
+* The command now reports a clear error and ends with exit code 1 if no serial port was given or the gateway cannot be reached (before it continued and ran into a `NameError`).
+* The built-in log file `enocean-device-manager.log` is written with UTF-8 encoding so that special characters (e.g. the signal strength bars) cannot break the log output.
+* Documentation extended: how to run the monitor as a background process, screen/tmux session, systemd service or hidden Windows process, how to follow the log file live and a troubleshooting table. See [docs/commandline-enocean-logger](https://github.com/grimmpp/enocean-device-manager/blob/main/docs/commandline-enocean-logger).
+
 ## Added Cover Travel Time Test
 * New command line test `--command cover_test` which drives a list of covers (FSB14, FSB61, FJ62, ...) with a configurable sequence of movement commands and pauses.
 * All given cover ids get exactly the same commands. Sent commands and received telegrams are logged with timestamps.

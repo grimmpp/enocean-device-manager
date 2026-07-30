@@ -112,14 +112,23 @@ telegram arrived while that cover was still moving - the measured travel time up
 the movement is not used for the runtime recommendation. Details, all options and how to read the report:
 [Cover Travel Time Test](https://github.com/grimmpp/enocean-device-manager/blob/main/docs/cover_travel_test).
 
-### Example: show all telegrams (`enocean_logger`)
+### Example: live telegram monitor (`enocean_logger`)
+
+Prints every telegram which appears on the bus or in the wireless network until the process is stopped
+(`Enter` or `Ctrl+C`).
 
 ```shell
 python -m eo_man -C enocean_logger -sp COM7 -dt fgw14usb
 
 # show only the telegrams of the given ids
 python -m eo_man -C enocean_logger -sp COM7 -dt fgw14usb -idf FE-D4-E9-47,FE-D4-E9-48
+
+# additionally write everything into a file
+python -m eo_man -C enocean_logger -sp COM7 -dt fgw14usb -lf telegrams.log
 ```
+
+How to run it as a background process or service, how to follow the file live and troubleshooting:
+[EnOcean Logger for Commandline](https://github.com/grimmpp/enocean-device-manager/blob/main/docs/commandline-enocean-logger).
 
 ### Example: generate the Home Assistant configuration without the user interface
 
@@ -151,7 +160,7 @@ All arguments are listed by `python -m eo_man -h`.
 
 Command line tools:
 
-* [EnOcean Logger](https://github.com/grimmpp/enocean-device-manager/blob/main/docs/commandline-enocean-logger) (`--command enocean_logger`): Displays all telegrams which appear on the bus or in the wireless network.
+* [EnOcean Logger](https://github.com/grimmpp/enocean-device-manager/blob/main/docs/commandline-enocean-logger) (`--command enocean_logger`): Live telegram monitor. Displays all telegrams which appear on the bus or in the wireless network, optionally filtered by device id and written into a file (`--log_file`). Can be run as a background process or service.
 * [Bus Burst Tester](https://github.com/grimmpp/enocean-device-manager/blob/main/docs/burst_test) (`--command burst_test`): Checks if all telegrams sent to the bus are delivered.
 * [Cover Travel Time Test](https://github.com/grimmpp/enocean-device-manager/blob/main/docs/cover_travel_test) (`--command cover_test`): Drives covers (FSB14, FSB61, ...) with a configurable sequence of movement commands and pauses and reports the travel times per direction so that the runtime of the actuator can be configured properly.
 * Home Assistant configuration export (`--command generate_ha_config`): Generates the Home Assistant configuration out of a stored application configuration without starting the user interface.

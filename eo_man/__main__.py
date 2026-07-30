@@ -110,25 +110,37 @@ def cli_argument():
     parser.add_argument('-idf', '--log_telegram_id_filter', required=False,
                         help="Filter for command `enocean_logger`. Comma-separated list of telegram IDs to show (e.g. 'FE-D4-E9-47,FE-D4-E9-48').",
                         type=lambda s: [x.strip().upper() for x in s.split(',') if x.strip()])
+    parser.add_argument('-lf', '--log_file', required=False, metavar='FILE',
+                        help="Additionally write the whole log output - including the received telegrams - into "
+                             "this file. The file is appended, not overwritten.")
 
     return parser.parse_args()
 
 
-def init_logger(app_bus:AppBus, log_level:int=logging.INFO, verbose_level:int=0):
-    file_handler = RotatingFileHandler(os.path.join(PROJECT_DIR, "enocean-device-manager.log"), 
-                                       mode='a', maxBytes=10*1024*1024, backupCount=2, encoding=None, delay=0)
+def init_logger(app_bus:AppBus, log_level:int=logging.INFO, verbose_level:int=0, log_file:str=None):
+    file_handler = RotatingFileHandler(os.path.join(PROJECT_DIR, "enocean-device-manager.log"),
+                                       mode='a', maxBytes=10*1024*1024, backupCount=2, encoding='utf-8', delay=0)
     stream_handler = logging.StreamHandler()
+    handlers = [ file_handler, stream_handler ]
+
+    # optional log file which was requested on the command line
+    user_file_handler = None
+    if log_file:
+        user_file_handler = logging.FileHandler(log_file, mode='a', encoding='utf-8')
+        handlers.append(user_file_handler)
 
     logging.basicConfig(format='%(asctime)s %(levelname)s %(name)s %(message)s ',
                         level=log_level,
-                        handlers=[ file_handler, stream_handler ])
-    
+                        handlers=handlers)
+
     global LOGGER
     LOGGER = logging.getLogger(PACKAGE_NAME)
     LOGGER.setLevel(log_level)
     file_handler.setLevel(logging.DEBUG)
     stream_handler.setLevel(log_level)
-    
+    if user_file_handler is not None:
+        user_file_handler.setLevel(log_level)
+
     logging.getLogger('esp2_gateway_adapter').setLevel(logging.INFO)
     logging.getLogger('eltakobus.serial').setLevel(logging.INFO)
     if verbose_level > 0:
@@ -155,7 +167,7 @@ def main():
     # init application message BUS
     app_bus = AppBus()
 
-    init_logger(app_bus, logging.DEBUG if opts.verbose > 0 else logging.INFO, opts.verbose)
+    init_logger(app_bus, logging.DEBUG if opts.verbose > 0 else logging.INFO, opts.verbose, opts.log_file)
 
     # init DATA MANAGER
     data_manager = DataManager(app_bus)
@@ -193,21 +205,38 @@ def main():
 
     # start enocean logger for commandline
     elif opts.command.lower() == "enocean_logger":
-        if opts.serial_port is not None and opts.device_type is not None:
-            serial_controller = SerialController(app_bus, GatewayRegistry(app_bus))
-            serial_controller.establish_serial_connection(opts.serial_port, opts.device_type)
+        if opts.serial_port is None:
+            e = {'msg': "Serial port of the gateway must be specified (-sp).", 'log-level': 'ERROR', 'color': 'red'}
+            app_bus.fire_event(AppBusEventType.LOG_MESSAGE, e)
+            sys.exit(1)
+
+        serial_controller = SerialController(app_bus, GatewayRegistry(app_bus))
+        serial_controller.establish_serial_connection(opts.serial_port, opts.device_type)
+        if not serial_controller.is_serial_connection_active():
+            e = {'msg': f"No connection to gateway {opts.device_type} on {opts.serial_port}.",
+                 'log-level': 'ERROR', 'color': 'red'}
+            app_bus.fire_event(AppBusEventType.LOG_MESSAGE, e)
+            sys.exit(1)
 
         enocean_logger = EnOceanLogger(app_bus, data_manager)
         enocean_logger.set_show_telegram_values(True)
-        if opts.log_telegram_id_filter is not None:
-            enocean_logger.set_id_filter( str(opts.log_telegram_id_filter).replace(' ', '').upper().split(',') )
+        if opts.log_telegram_id_filter:
+            # the argument is already parsed into a list of upper case ids
+            enocean_logger.set_id_filter( opts.log_telegram_id_filter )
             e = {'msg': f"EnOcean Telegram Id filter was set to: {str.join(", ",enocean_logger.id_filter)}"}
             app_bus.fire_event(AppBusEventType.LOG_MESSAGE, e)
 
         app_bus.add_event_handler(AppBusEventType.SERIAL_CALLBACK, enocean_logger.serial_callback)
         
         def wait_for_enter():
-            input("Press Enter to stop...\n")
+            try:
+                input("Press Enter to stop...\n")
+            except (EOFError, OSError):
+                # no interactive console (e.g. started as background process or
+                # service). Keep on logging until the process is terminated.
+                LOGGER.info("No console available to stop the logger. "
+                            "Terminate the process to stop it (e.g. Ctrl+C or kill).")
+                return
             serial_controller.stop_serial_connection()
 
         threading.Thread(target=wait_for_enter, daemon=True).start()
