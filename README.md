@@ -64,6 +64,12 @@ Please open [issues](/issues) if you encounter bugs or if you have ideas for new
 You can use command line only to generate Home Assistant Configuration based on an existing application configuration. <br />
 Check out: `python -m eo_man -h`
 
+Command line tools:
+
+* [EnOcean Logger](https://github.com/grimmpp/enocean-device-manager/blob/main/docs/commandline-enocean-logger) (`--command enocean_logger`): Displays all telegrams which appear on the bus or in the wireless network.
+* [Bus Burst Tester](https://github.com/grimmpp/enocean-device-manager/blob/main/docs/burst_test) (`--command burst_test`): Checks if all telegrams sent to the bus are delivered.
+* [Cover Travel Time Test](https://github.com/grimmpp/enocean-device-manager/blob/main/docs/cover_travel_test) (`--command cover_test`): Drives covers (FSB14, FSB61, ...) with a configurable sequence of movement commands and pauses and reports the travel times per direction so that the runtime of the actuator can be configured properly.
+
 # [Changelog](https://github.com/grimmpp/enocean-device-manager/blob/main/changes.md)
 
 # Contribution and Support to this Project

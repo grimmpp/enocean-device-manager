@@ -1,5 +1,15 @@
 # Change Log
 
+## Added Cover Travel Time Test
+* New command line test `--command cover_test` which drives a list of covers (FSB14, FSB61, FJ62, ...) with a configurable sequence of movement commands and pauses.
+* All given cover ids get exactly the same commands. Sent commands and received telegrams are logged with timestamps.
+* The report shows per movement the reaction time, the measured and the actuator-reported travel time, the reached end position and how the movement was terminated.
+* Foreign telegrams (e.g. wall switches) are logged. Interferences during a movement are marked and the travel time until the intervention is reported, so a switch can also be used on purpose to stop a cover and measure the travel time.
+* Travel times are summarized per cover and direction including a hint which runtime has to be configured in the actuator.
+* The result is printed as colored and aligned tables directly on the command line and ends with a one-line verdict. It can be saved with `--test_report` (text) and `--test_report_csv` (telegrams).
+* Without `-v` only the result is shown. `-v` logs every relevant telegram while the test runs and appends the complete telegram log, `-vv` additionally shows the raw ESP2 data.
+* Fixed that `-v` never changed the log level of `esp2_gateway_adapter` and `eltakobus.serial` (the verbosity was not passed to the logger setup and the second level was unreachable).
+
 ## v0.1.57 Added Script for building exe file
 
 ## v0.1.56 Made Echo Tests for FAM14 detection optional

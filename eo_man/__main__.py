@@ -33,10 +33,11 @@ from .controller.enocean_logger import EnOceanLogger
 from .controller.serial_controller import SerialController
 from .controller.gateway_registry import GatewayRegistry
 from .controller.bus_burst_tester import BusBurstTester
+from .controller.cover_travel_tester import CoverTravelTester
 
 import logging
 
-cli_commands = ["generate_ha_config", "enocean_logger", "burst_test"]
+cli_commands = ["generate_ha_config", "enocean_logger", "burst_test", "cover_test"]
 
 ASCII_ART_HEADLINE = (
     " _____     _____                    ____          _            _____                         \n"
@@ -81,7 +82,28 @@ def cli_argument():
                         help='Number of test runs to execute.')
     parser.add_argument('-tmc', '--test_message_count', type=int, default=44, metavar='N', required=False, 
                         help='Number of messages in one test execution.')
-    parser.add_argument('-idf', '--log_telegram_id_filter', required=False, 
+    parser.add_argument('-cid', '--cover_ids', required=False, metavar='IDS',
+                        help="Covers to be tested by command `cover_test`. Comma-separated list of cover ids. "
+                             "Every entry is either the id of the actuator (e.g. '00-00-00-05') or "
+                             "'ACTUATOR_ID:SENDER_ID' (e.g. 'FF-AA-BB-01:00-00-B0-05') if the sender id which is "
+                             "taught into the actuator differs from the default ('00-00-B0-XX' for bus devices).",
+                        type=lambda s: [x.strip() for x in s.split(',') if x.strip()])
+    parser.add_argument('-cseq', '--cover_sequence', required=False, metavar='SEQUENCE',
+                        default="up:60,pause:5,down:60,pause:5",
+                        help="Movement sequence for command `cover_test`. Comma-separated list of "
+                             "'COMMAND:SECONDS' entries which are executed one after the other for all covers. "
+                             "Commands: up, down, stop, pause. Example: 'up:60,pause:5,down:20,stop,pause:3,down:60'.",
+                        type=lambda s: [x.strip() for x in s.split(',') if x.strip()])
+    parser.add_argument('-cm', '--cover_command_mode', required=False, type=str.lower, default='stop',
+                        choices=['stop', 'timed'],
+                        help="How the movement duration of command `cover_test` is applied. 'stop' (default) starts "
+                             "the movement and sends a STOP command after the given time. 'timed' sends the travel "
+                             "time within the command telegram (only possible up to 25.5 seconds).")
+    parser.add_argument('-tr', '--test_report', required=False, metavar='FILE',
+                        help="Optional file the printed report of command `cover_test` is written to as plain text.")
+    parser.add_argument('-tcsv', '--test_report_csv', required=False, metavar='FILE',
+                        help="Optional CSV file the recorded telegrams of command `cover_test` are written to.")
+    parser.add_argument('-idf', '--log_telegram_id_filter', required=False,
                         help="Filter for command `enocean_logger`. Comma-separated list of telegram IDs to show (e.g. 'FE-D4-E9-47,FE-D4-E9-48').",
                         type=lambda s: [x.strip().upper() for x in s.split(',') if x.strip()])
 
@@ -107,7 +129,7 @@ def init_logger(app_bus:AppBus, log_level:int=logging.INFO, verbose_level:int=0)
     logging.getLogger('eltakobus.serial').setLevel(logging.INFO)
     if verbose_level > 0:
         logging.getLogger('esp2_gateway_adapter').setLevel(logging.DEBUG)
-    elif verbose_level > 1:
+    if verbose_level > 1:
         logging.getLogger('eltakobus.serial').setLevel(logging.DEBUG)
 
     LOGGER.info("Start Application eo_man\n" + ASCII_ART_HEADLINE + ApplicationInfo.get_app_info_as_str())
@@ -129,7 +151,7 @@ def main():
     # init application message BUS
     app_bus = AppBus()
 
-    init_logger(app_bus, logging.DEBUG if opts.verbose > 0 else logging.INFO)
+    init_logger(app_bus, logging.DEBUG if opts.verbose > 0 else logging.INFO, opts.verbose)
 
     # init DATA MANAGER
     data_manager = DataManager(app_bus)
@@ -190,6 +212,39 @@ def main():
 
         bt = BusBurstTester(app_bus, opts.serial_port, opts.device_type, opts.serial_port2, opts.device_type2, message_delay=opts.message_delay, quiet=opts.verbose==0, message_count=opts.test_message_count)
         bt.start_test(opts.test_run_count)
+
+    elif opts.command.lower() == "cover_test":
+
+        if opts.serial_port is None:
+            e = {'msg': "Serial port of the gateway must be specified (-sp).", 'log-level': 'ERROR', 'color': 'red'}
+            app_bus.fire_event(AppBusEventType.LOG_MESSAGE, e)
+            sys.exit(1)
+        if not opts.cover_ids:
+            e = {'msg': "At least one cover id must be specified (-cid).", 'log-level': 'ERROR', 'color': 'red'}
+            app_bus.fire_event(AppBusEventType.LOG_MESSAGE, e)
+            sys.exit(1)
+
+        try:
+            ct = CoverTravelTester(app_bus, opts.serial_port, opts.device_type,
+                                   cover_ids=opts.cover_ids,
+                                   sequence=opts.cover_sequence,
+                                   message_delay=opts.message_delay,
+                                   command_mode=opts.cover_command_mode,
+                                   verbose=opts.verbose)
+        except ValueError as ex:
+            app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': str(ex), 'log-level': 'ERROR', 'color': 'red'})
+            sys.exit(1)
+
+        movements = ct.start_test(opts.test_run_count)
+
+        if opts.test_report:
+            ct.write_report_to_file(opts.test_report)
+        if opts.test_report_csv:
+            ct.write_telegrams_to_csv(opts.test_report_csv)
+
+        # no movement at all means the test could not be executed
+        if not movements:
+            sys.exit(1)
 
     sys.exit(0)
 
