@@ -31,18 +31,96 @@ For the moment I recommend a laptop with Windows and Python installed. You shoul
 1. Install application: `pip.exe install eo_man` (Package available under pypi: [eo_man](https://pypi.org/project/eo-man/))
 2. Run application: `python.exe -m eo_man`
 
-## Install source code from this repository and run the App (alternative)
-1. Clone/Download the repo.
-2. Change into the repo directory.
-3. Create virtual environment for python: `python.exe -m venv .venv`
-4. Install dependencies: `.\.venv\Scripts\python.exe setup.py install`
-5. Start the app: `.\.venv\Scripts\python.exe -m eo_man` or `.\.venv\Scripts\python.exe -m eo_man demo.eodm` (Directly loads demo data)
+## Run directly from this repository (alternative, recommended for testing)
 
-For update you can execute:
-1. `git pull` (Gets newest state of the code)
-2. Optionally change branch: `git checkout BRANCH_NAME`
-3. Reinstall`.\.venv\Scripts\python.exe setup.py install --force`
-4. Run app: `.\.venv\Scripts\python.exe -m eo_man`
+The package does not need to be installed - the code can be executed straight out of the repo.
+
+1. Clone the repo and change into its directory:
+
+   ```shell
+   git clone https://github.com/grimmpp/enocean-device-manager.git
+   cd enocean-device-manager
+   ```
+
+2. Create a virtual environment for python:
+   * Windows: `python.exe -m venv .venv`
+   * Linux/Mac: `python3 -m venv .venv`
+3. Install the dependencies:
+   * Windows: `.\.venv\Scripts\pip.exe install -r requirements.txt`
+   * Linux/Mac: `./.venv/bin/pip install -r requirements.txt`
+4. Start it **from the repo directory** so that the local `eo_man` package is used:
+   * Windows: `.\.venv\Scripts\python.exe -m eo_man`
+   * Linux/Mac: `./.venv/bin/python -m eo_man`
+
+For an update you only need `git pull` (and `git checkout BRANCH_NAME` to change the branch). Repeat step 3 if
+the dependencies in `requirements.txt` have changed.
+
+All examples below are written as `python -m eo_man`. Replace `python` by the interpreter of your virtual
+environment (`.\.venv\Scripts\python.exe` or `./.venv/bin/python`) and stay in the repo directory.
+
+### Start the user interface
+
+```shell
+# start with an empty inventory
+python -m eo_man
+
+# start and directly load an application configuration (e.g. the included demo data)
+python -m eo_man -c demo.eodm
+
+# start and directly import a configuration which was exported by PCT14
+python -m eo_man -pct14 my_pct14_export.xml
+```
+
+The application configuration must end with `.eodm`, the PCT14 export with `.xml`. Everything else is done in
+the user interface: connect the gateway, scan the bus, enrich the devices and export the Home Assistant
+configuration.
+
+### Example: measure the travel times of covers (`cover_test`)
+
+Drives all given covers with the same sequence of movement commands and pauses and reports how long each of
+them really moved. This is what you need to configure the runtime of an FSB actuator properly.
+
+```shell
+# covers 5 and 7 on a FGW14-USB: drive up for 60s, pause, drive down for 60s, pause
+python -m eo_man -C cover_test -sp COM7 -dt fgw14usb -cid 00-00-00-05,00-00-00-07 -cseq up:60,pause:5,down:60,pause:5
+
+# same test on Linux, repeated 3 times, with every telegram and saved to files
+python -m eo_man -C cover_test -sp /dev/ttyUSB0 -dt fgw14usb -cid 00-00-00-05,00-00-00-07 \
+                 -cseq up:60,pause:5,down:60,pause:5 -trc 3 -v -tr cover_test.txt -tcsv cover_test.csv
+```
+
+The result is printed as tables on the command line:
+
+```text
+run | step | cover       | command    |  react | measured | reported | dir  | end | stopped by           | result
+-----------------------------------------------------------------------------------------------------------------
+  1 |    1 | 00-00-00-05 | UP 60s     | 19.40s |   19.40s |    19.4s | UP   | TOP | top end position     | OK
+  1 |    3 | 00-00-00-05 | DOWN 60s   | 21.21s |   21.21s |    21.2s | DOWN | BOT | bottom end position  | OK
+
+ Cover 00-00-00-05: up 19.4s, down 21.2s -> configure a runtime of at least 21.2s
+   difference between up and down: 1.8s. ...
+
+ RESULT: all 6 movements behaved as requested.
+```
+
+You can move the covers with a wall switch while the test runs: such interferences are logged and the travel
+time until the intervention is reported. Details and all options:
+[Cover Travel Time Test](https://github.com/grimmpp/enocean-device-manager/blob/main/docs/cover_travel_test).
+
+### Example: show all telegrams (`enocean_logger`)
+
+```shell
+python -m eo_man -C enocean_logger -sp COM7 -dt fgw14usb
+
+# show only the telegrams of the given ids
+python -m eo_man -C enocean_logger -sp COM7 -dt fgw14usb -idf FE-D4-E9-47,FE-D4-E9-48
+```
+
+### Example: generate the Home Assistant configuration without the user interface
+
+```shell
+python -m eo_man -C generate_ha_config -c my_config.eodm -ha ha_config.yaml
+```
 
 ## Bugs and Features 
 Please open [issues](/issues) if you encounter bugs or if you have ideas for new features. Also quite a lot of devices are not yet supported.
@@ -55,20 +133,26 @@ Please open [issues](/issues) if you encounter bugs or if you have ideas for new
 2. Config git: `pre-commit install`
 
 ## Build wheel package
-`python setup.py bdist_wheel`
+1. Install the build tool: `pip install build`
+2. Build the package: `python -m build --wheel` (result is put into `dist/`)
 
 ## Install built wheel pacage
 `pip install dist/eo_man-VERSION-py3-none-any.whl` use `--force-reinstall` if you want to overwrite an existing version.
 
 # Use Command Line
-You can use command line only to generate Home Assistant Configuration based on an existing application configuration. <br />
-Check out: `python -m eo_man -h`
+Beside the user interface the application provides command line tools which are selected with `--command`.
+Ready to use examples are shown above in [Run directly from this repository](#run-directly-from-this-repository-alternative-recommended-for-testing).
+All arguments are listed by `python -m eo_man -h`.
 
 Command line tools:
 
 * [EnOcean Logger](https://github.com/grimmpp/enocean-device-manager/blob/main/docs/commandline-enocean-logger) (`--command enocean_logger`): Displays all telegrams which appear on the bus or in the wireless network.
 * [Bus Burst Tester](https://github.com/grimmpp/enocean-device-manager/blob/main/docs/burst_test) (`--command burst_test`): Checks if all telegrams sent to the bus are delivered.
 * [Cover Travel Time Test](https://github.com/grimmpp/enocean-device-manager/blob/main/docs/cover_travel_test) (`--command cover_test`): Drives covers (FSB14, FSB61, ...) with a configurable sequence of movement commands and pauses and reports the travel times per direction so that the runtime of the actuator can be configured properly.
+* Home Assistant configuration export (`--command generate_ha_config`): Generates the Home Assistant configuration out of a stored application configuration without starting the user interface.
+
+Every command prints its result on the command line. `-v` adds the telegrams and the debug log of the serial
+communication, `-vv` additionally the raw ESP2 data.
 
 # [Changelog](https://github.com/grimmpp/enocean-device-manager/blob/main/changes.md)
 

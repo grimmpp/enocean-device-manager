@@ -9,6 +9,7 @@
 * The result is printed as colored and aligned tables directly on the command line and ends with a one-line verdict. It can be saved with `--test_report` (text) and `--test_report_csv` (telegrams).
 * Without `-v` only the result is shown. `-v` logs every relevant telegram while the test runs and appends the complete telegram log, `-vv` additionally shows the raw ESP2 data.
 * Fixed that `-v` never changed the log level of `esp2_gateway_adapter` and `eltakobus.serial` (the verbosity was not passed to the logger setup and the second level was unreachable).
+* README: reworked how to run the application directly out of the repository and added examples for the user interface and all command line tools. The documented `setup.py install`, `setup.py bdist_wheel` and `python -m eo_man demo.eodm` did not work anymore (there is no `setup.py` and the configuration file has to be passed via `-c`).
 
 ## v0.1.57 Added Script for building exe file
 
