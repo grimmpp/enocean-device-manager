@@ -31,6 +31,10 @@ class DeviceDetails():
 
         self.app_bus.add_event_handler(AppBusEventType.SELECTED_DEVICE, self.selected_device_handler)
 
+        # the detail area is placed into a paned window, its width is adapted to
+        # the width the shown form needs
+        self.split_area:ttk.PanedWindow = main if isinstance(main, ttk.PanedWindow) else None
+
         main_frame = Frame(main, width=365)
         main_frame.pack(side=LEFT, fill=BOTH, expand=2)
 
@@ -42,13 +46,17 @@ class DeviceDetails():
         scrolledFrame.bind_arrow_keys(window)
         scrolledFrame.bind_scroll_wheel(window)
 
-        inner_frame = scrolledFrame.display_widget(LabelFrame)
+        # fit_width lets the form use the whole width of the area
+        inner_frame = scrolledFrame.display_widget(LabelFrame, fit_width=True)
         inner_frame.config(text="Device Details", padx=6, pady=3)
-        
+
 
         self.root = main_frame
+        self.scrolled_frame = scrolledFrame
         self.inner_frame = inner_frame
-        
+        # column of the input fields grows with the area
+        inner_frame.columnconfigure(1, weight=1)
+
 
     def show_form(self, device:Device):
         f = self.inner_frame
@@ -197,52 +205,36 @@ class DeviceDetails():
         c_row += 1
         c_row = self.add_additional_fields(device, device.additional_fields, f, '', c_row)
 
-        # memory entries
+        # actuators show which sensors are taught into their memory, all other
+        # devices (e.g. sensors) show in which devices they are entered
         c_row += 1
-        l = Label(f, text="Device Memory")
-        l.grid(row=c_row, column=0, sticky=W, padx=3)
+        if device.is_bus_device():
+            entry_count = len(device.memory_entries)
+            l = Label(f, text=f"Device Memory ({entry_count} {'entry' if entry_count == 1 else 'entries'})")
+            l.grid(row=c_row, column=0, sticky=W, padx=3)
+            Hovertip(l, "Sensors which are taught into the memory of the device.\n"
+                        "Mem.Row  = line of the device memory\n"
+                        "Address  = id of the sensor, Name = device with this id\n"
+                        "Key      = key/button of the sensor\n"
+                        "Function = key function and its number in PCT14\n"
+                        "Ch.      = channel of the device, FG = function group", 300)
 
-        c_row += 1
-        ff = Frame(f)
-        ff.grid(row=c_row, column=0, sticky=W+E, padx=3, columnspan=2)
+            c_row += 1
+            ff = Frame(f)
+            ff.grid(row=c_row, column=0, sticky=W+E, padx=3, columnspan=2)
 
-        tv = ttk.Treeview(ff, selectmode="none",height=10,columns=(0,1,2))
-        tv['show'] = 'headings'
-        tv.heading(0, text="Mem.Row")
-        tv.column(0, anchor="w", width=40)
-        tv.heading(1, text="Address")
-        tv.column(1, anchor="w", width=80)
-        tv.heading(2, text="Function")
-        tv.column(2, anchor="w", width=200)
-        for _m in device.memory_entries:
-            m:SensorInfo = _m
-            if not tv.exists(m.sensor_id_str):
-                tv.insert(parent='', index="end", iid=m.sensor_id_str, values=(m.memory_line, m.sensor_id_str, KeyFunction(m.key_func).name))
-        tv.pack(expand=True, fill="both")
+            self.tv_memory_entries = self._show_memory_entries(ff, device)
+        else:
+            related_devices = self.data_manager.get_related_devices(device.external_id)
+            l = Label(f, text=f"Related Devices ({len(related_devices)})")
+            l.grid(row=c_row, column=0, sticky=W, padx=3)
+            Hovertip(l, "Devices (e.g. actuators) in which this device is entered.", 300)
 
-        # list of references
-        c_row += 1
-        l = Label(f, text="Related Devices")
-        l.grid(row=c_row, column=0, sticky=W, padx=3)
+            c_row += 1
+            ff = Frame(f)
+            ff.grid(row=c_row, column=0, sticky=W+E, padx=3, columnspan=2)
 
-        c_row += 1
-        ff = Frame(f)
-        ff.grid(row=c_row, column=0, sticky=W+E, padx=3, columnspan=2)
-
-        tv = ttk.Treeview(ff, selectmode="none",height=10,columns=(0,1,2))
-        tv['show'] = 'headings'
-        tv.heading(0, text="Name")
-        tv.column(0, anchor="w", width=40)
-        tv.heading(1, text="Address")
-        tv.column(1, anchor="w", width=80)
-        tv.heading(2, text="Type")
-        tv.column(2, anchor="w", width=200)
-        for _d in self.data_manager.get_related_devices(device.external_id):
-            d:Device = _d
-            if not tv.exists(d.external_id):
-                tv.insert(parent='', index="end", iid=d.external_id, values=(d.name, d.address, d.device_type))
-        tv.pack(expand=True, fill="both")
-
+            self.tv_related_devices = self._show_related_devices(ff, related_devices)
 
         # buttons
         c_row += 1
@@ -256,7 +248,135 @@ class DeviceDetails():
 
         self.last_row = c_row+1
 
+        # a newly shown form always starts at the top and gets the width it needs
+        self.scrolled_frame.scroll_to_top()
+        self._fit_width_to_content()
 
+
+    # space needed for the scrollbar and the borders around the form
+    WIDTH_PADDING = 45
+    # the detail area never gets smaller than this and never takes more than this
+    # share of the area which it shares with the device table
+    MIN_WIDTH = 250
+    MAX_WIDTH_RATIO = 0.75
+
+    def _fit_width_to_content(self) -> None:
+        """Sets the width of the detail area to the width its content needs. The
+        shown tables have different widths, so a fixed width would either cut off
+        columns or waste space of the device table."""
+        if self.split_area is None:
+            return
+
+        try:
+            sash = list(self.split_area.panes()).index(str(self.root)) - 1
+        except ValueError:
+            return
+        # the area is the first pane, there is no sash on its left side
+        if sash < 0:
+            return
+
+        self.inner_frame.update_idletasks()
+        total_width = self.split_area.winfo_width()
+        if total_width < 100:
+            # window is not layouted yet
+            self.split_area.after(50, self._fit_width_to_content)
+            return
+
+        needed_width = self.inner_frame.winfo_reqwidth() + self.WIDTH_PADDING
+        needed_width = min(max(needed_width, self.MIN_WIDTH), int(total_width * self.MAX_WIDTH_RATIO))
+
+        try:
+            self.split_area.sashpos(sash, total_width - needed_width)
+        except Exception as e:
+            self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE,
+                                    {'msg': f"Cannot resize device details area: {e}", 'log-level': 'DEBUG'})
+
+
+    # columns of the device memory table: (heading, width, anchor, stretch)
+    MEMORY_ENTRY_COLUMNS = [
+        ('Mem.Row', 55, 'center', False),
+        ('Address', 85, 'w', False),
+        ('Name', 120, 'w', False),
+        ('Key', 32, 'center', False),
+        ('Function', 210, 'w', True),
+        ('Ch.', 32, 'center', False),
+        ('FG', 32, 'center', False),
+    ]
+
+    def _show_memory_entries(self, parent:Frame, device:Device) -> ttk.Treeview:
+        """Lists every sensor which is taught into the device memory with all
+        information which the SensorInfo object structure provides."""
+        tv = ttk.Treeview(parent, selectmode="none", height=10,
+                          columns=list(range(len(self.MEMORY_ENTRY_COLUMNS))))
+        tv['show'] = 'headings'
+        for column, (title, width, anchor, stretch) in enumerate(self.MEMORY_ENTRY_COLUMNS):
+            tv.heading(column, text=title)
+            tv.column(column, anchor=anchor, width=width, minwidth=width, stretch=stretch)
+
+        for _m in sorted(device.memory_entries, key=lambda e: (e.memory_line or 0, e.sensor_id_str)):
+            m:SensorInfo = _m
+            sensor = self._find_device_of_memory_entry(m, device.base_id)
+            # the same sensor can be taught into several memory lines, so the
+            # memory line is part of the id of the row
+            tv.insert(parent='', index="end", iid=f"{m.memory_line}-{m.sensor_id_str}",
+                      values=(m.memory_line,
+                              m.sensor_id_str,
+                              sensor.name if sensor else '',
+                              m.key if m.key is not None else '',
+                              self._get_key_function_name(m.key_func),
+                              m.channel if m.channel is not None else '',
+                              m.in_func_group if m.in_func_group is not None else ''))
+        tv.pack(expand=True, fill="both")
+        return tv
+
+    # columns of the related devices table: (heading, width, anchor, stretch)
+    RELATED_DEVICE_COLUMNS = [
+        ('Name', 120, 'w', True),
+        ('Address', 85, 'w', False),
+        ('Type', 200, 'w', True),
+    ]
+
+    def _show_related_devices(self, parent:Frame, related_devices:list[Device]) -> ttk.Treeview:
+        """Lists all devices (e.g. actuators) in which the shown device is entered."""
+        tv = ttk.Treeview(parent, selectmode="none", height=10,
+                          columns=list(range(len(self.RELATED_DEVICE_COLUMNS))))
+        tv['show'] = 'headings'
+        for column, (title, width, anchor, stretch) in enumerate(self.RELATED_DEVICE_COLUMNS):
+            tv.heading(column, text=title)
+            tv.column(column, anchor=anchor, width=width, minwidth=width, stretch=stretch)
+
+        for _d in related_devices:
+            d:Device = _d
+            if not tv.exists(d.external_id):
+                tv.insert(parent='', index="end", iid=d.external_id,
+                          values=(d.name, d.address, d.device_type))
+        tv.pack(expand=True, fill="both")
+        return tv
+
+    def _find_device_of_memory_entry(self, entry:SensorInfo, base_id:str) -> Device:
+        """A sensor is stored either with its global id or - if it is located on
+        the bus - with a local id which has to be added to the base id first."""
+        devices = self.data_manager.devices
+        if entry.sensor_id_str in devices:
+            return devices[entry.sensor_id_str]
+
+        if base_id and entry.sensor_id_str.startswith('00-00-'):
+            try:
+                return devices.get(data_helper.add_addresses(entry.sensor_id_str, base_id), None)
+            except Exception:
+                return None
+
+        return None
+
+    @classmethod
+    def _get_key_function_name(cls, key_func:int) -> str:
+        if key_func is None:
+            return ''
+        try:
+            return f"{KeyFunction(key_func).name} ({key_func})"
+        except ValueError:
+            # PCT14 and the devices know more key functions than KeyFunction
+            return f"UNKNOWN ({key_func})"
 
     def update_device(self, device:Device, force_update:bool=True, suggest_default_values:bool=False):
 
@@ -380,7 +500,10 @@ class DeviceDetails():
     def selected_device_handler(self, device:Device, force_update:bool=False) -> None:
         # do not overwrite values if clicking on the same
         if device is None:
+            # an empty form keeps the current width, tk does not reduce the
+            # requested size of a frame without any content
             self.clean_and_disable(self.inner_frame)
+            self.scrolled_frame.scroll_to_top()
         else:
             if not self.current_device or force_update or self.current_device.external_id != device.external_id:
                 self.show_form(copy.deepcopy(device))

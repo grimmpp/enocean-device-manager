@@ -1,5 +1,3 @@
-import threading
-import time
 from tkinter import *
 from tkinter import ttk
 
@@ -19,10 +17,15 @@ class DeviceTable():
 
     ICON_SIZE = (20,20)
     NON_BUS_DEVICE_LABEL:str="Distributed Devices"
+    BLINK_INTERVAL_IN_MS:int=500
+    BLINK_TOGGLES:int=4         # number of background changes => 2 blinks
 
     def __init__(self, main: Tk, app_bus:AppBus, data_manager:DataManager):
-        
+
         self.blinking_enabled = True
+        self._related_rows:set = set()          # rows of devices related to the selected one
+        self._blinking_rows:dict = {}           # row -> remaining background changes
+        self._blink_highlighted_rows:set = set()# rows currently highlighted by the blinking
         self.pane = ttk.Frame(main, padding=2)
         # self.pane.grid(row=0, column=0, sticky=W+E+N+S)
         self.root = self.pane
@@ -84,7 +87,9 @@ class DeviceTable():
         # self.menu.add_separator()
         # self.menu.add_command(label="Rename")
 
-        self.treeview.tag_configure('related_devices')
+        # Tk does not guarantee which tag wins if a row has both tags. Therefore
+        # only one of them is ever set on a row (see _apply_row_background).
+        self.treeview.tag_configure('related_devices', background='lightgreen')
         self.treeview.tag_configure('blinking', background='lightblue')
 
         # self.treeview.bind('<ButtonRelease-1>', self.on_selected)
@@ -126,6 +131,9 @@ class DeviceTable():
     def _reset(self, data):
         for item in self.treeview.get_children():
             self.treeview.delete(item)
+        self._related_rows.clear()
+        self._blinking_rows.clear()
+        self._blink_highlighted_rows.clear()
         self.check_if_wireless_network_exists()
 
 
@@ -138,14 +146,30 @@ class DeviceTable():
         self.mark_related_elements(device_external_id)
 
 
-    def mark_related_elements(self, device_external_id:str) -> None:
-        for iid in self.treeview.tag_has( 'related_devices' ):
-            self.treeview.item( iid, tags=() )
+    def _apply_row_background(self, iid:str) -> None:
+        """sets the background of a row: blinking wins, otherwise the marking of related devices is shown"""
+        if not self.treeview.exists(iid):
+            return
 
-        devices = self.data_manager.get_related_devices(device_external_id)
-        for d in devices:
-            if self.treeview.exists(d.external_id):
-                self.treeview.item(d.external_id, tags=('related_devices'))
+        if iid in self._blink_highlighted_rows:
+            tags = ('blinking',)
+        elif iid in self._related_rows:
+            tags = ('related_devices',)
+        else:
+            tags = ()
+
+        self.treeview.item(iid, tags=tags)
+
+
+    def mark_related_elements(self, device_external_id:str) -> None:
+        """highlights all devices which are entered in the memory of the selected device and vice versa"""
+        related_rows = {d.external_id for d in self.data_manager.get_related_devices(device_external_id)}
+
+        affected_rows = self._related_rows | related_rows
+        self._related_rows = related_rows
+
+        for iid in affected_rows:
+            self._apply_row_background(iid)
 
 
     def show_context_menu(self, event):
@@ -293,38 +317,37 @@ class DeviceTable():
 
 
     def trigger_blinking(self, external_id:str):
-        if not self.blinking_enabled:
+        if not self.blinking_enabled or not self.treeview.exists(external_id):
             return
-        
-        def blink(ext_id:str):
-            for i in range(0,2):
-                if self.treeview.exists(ext_id):
-                    tags = self.treeview.item(ext_id)['tags']
-                    if 'blinking' in tags:
-                        if isinstance(tags, str):
-                            self.treeview.item(ext_id, tags=() )
-                        else:
-                            tags.remove('blinking')
-                            self.treeview.item(ext_id, tags=tags )
-                    else:
-                        if isinstance(tags, str):
-                            self.treeview.item(ext_id, tags=('blinking') )
-                        else:
-                            tags.append('blinking')
-                            self.treeview.item(ext_id, tags=tags )
-                    time.sleep(.5)
 
-            if self.treeview.exists(ext_id):
-                tags = self.treeview.item(ext_id)['tags']
-                if 'blinking' in tags:
-                    if isinstance(tags, str):
-                        self.treeview.item(ext_id, tags=() )
-                    else:
-                        tags.remove('blinking')
-                        self.treeview.item(ext_id, tags=tags )
+        # a telegram arriving while the row is still blinking just restarts the sequence
+        if external_id in self._blinking_rows:
+            self._blinking_rows[external_id] = self.BLINK_TOGGLES
+            return
 
-        t = threading.Thread(target=lambda ext_id=external_id: blink(ext_id))
-        t.start()
+        self._blinking_rows[external_id] = self.BLINK_TOGGLES
+        self.treeview.after(0, lambda ext_id=external_id: self._blink_step(ext_id))
+
+
+    def _blink_step(self, ext_id:str):
+        remaining = self._blinking_rows.get(ext_id, 0)
+
+        if remaining <= 0 or not self.treeview.exists(ext_id):
+            self._blinking_rows.pop(ext_id, None)
+            self._blink_highlighted_rows.discard(ext_id)
+            # brings back the background the row had before blinking
+            # (green if it is marked as related device)
+            self._apply_row_background(ext_id)
+            return
+
+        self._blinking_rows[ext_id] = remaining - 1
+        if ext_id in self._blink_highlighted_rows:
+            self._blink_highlighted_rows.discard(ext_id)
+        else:
+            self._blink_highlighted_rows.add(ext_id)
+        self._apply_row_background(ext_id)
+
+        self.treeview.after(self.BLINK_INTERVAL_IN_MS, lambda: self._blink_step(ext_id))
 
 
     def update_sensor_representation_handler(self, d:Device):

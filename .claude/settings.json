@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(PYTHONPATH=. .venv/bin/python /private/tmp/claude-501/-Users-philippgrimm-Documents-enocean-device-manager/dee51708-3017-4409-9cff-784fb4b92648/scratchpad/check_shutdown.py)"
+    ]
+  }
+}

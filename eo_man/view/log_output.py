@@ -22,7 +22,7 @@ class LogOutputPanel():
         self.enocean_logger = EnOceanLogger(self.app_bus, self.data_manager)
         self.enocean_logger.set_process_log_message(self.receive_log_message)
 
-        pane = ttk.Frame(main, padding=2, height=150)
+        pane = ttk.Frame(main, padding=2, height=120)
         # pane.grid(row=2, column=0, sticky="nsew", columnspan=3)
         self.root = pane
 
@@ -56,7 +56,7 @@ class LogOutputPanel():
                                               command=lambda: self.enocean_logger.set_show_esp3_binary(self.show_esp3_binary.get()))
         cb_show_esp3_binary.pack(side=LEFT, padx=(2,0))
 
-        self.st = ScrolledText.ScrolledText(pane, border=3,  height=150, 
+        self.st = ScrolledText.ScrolledText(pane, border=3, height=5,
                                             state=DISABLED, bg='black', fg='lightgrey', 
                                             font=('Arial', 14), padx=5, pady=5)
         self.st.configure(font='TkFixedFont')

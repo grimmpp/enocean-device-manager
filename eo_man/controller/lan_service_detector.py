@@ -2,6 +2,7 @@ from typing import Dict, List
 
 from zeroconf import Zeroconf, ServiceBrowser, ServiceInfo
 
+import logging
 import socket
 
 from .app_bus import AppBus, AppBusEventType
@@ -32,8 +33,19 @@ class LanServiceDetector:
                 
         return None
 
+    def stop(self) -> None:
+        """Ends the mDNS service discovery and closes its sockets. Can be called
+        more than once."""
+        zeroconf, self.zeroconf = getattr(self, 'zeroconf', None), None
+        if zeroconf is not None:
+            try:
+                zeroconf.close()
+            except Exception as e:
+                logging.debug("Could not close the mDNS service discovery: %s", e)
+
+
     def __del__(self):
-        self.zeroconf.close()    
+        self.stop()
 
     def add_service(self, zeroconf: Zeroconf, type, name):
         try:
