@@ -42,20 +42,69 @@ class DeviceDetails():
         scrolledFrame = ScrolledFrame(main_frame, use_ttk=True)
         scrolledFrame.pack(side=LEFT, fill=BOTH, expand=2)
 
-        # Bind the arrow keys and scroll wheel
-        scrolledFrame.bind_arrow_keys(window)
-        scrolledFrame.bind_scroll_wheel(window)
+        # main_frame and everything in it belongs to this form
+        self.root = main_frame
+        self.scrolled_frame = scrolledFrame
+
+        # Bind the arrow keys and scroll wheel.
+        # tkscrolledframe binds them to the whole window (bind_arrow_keys /
+        # bind_scroll_wheel), so scrolling anywhere - e.g. in the device table -
+        # scrolled this form as well. They are therefore only handled when the
+        # event really happened inside the detail area.
+        self._bind_scrolling(window)
 
         # fit_width lets the form use the whole width of the area
         inner_frame = scrolledFrame.display_widget(LabelFrame, fit_width=True)
         inner_frame.config(text="Device Details", padx=6, pady=3)
 
 
-        self.root = main_frame
-        self.scrolled_frame = scrolledFrame
         self.inner_frame = inner_frame
         # column of the input fields grows with the area
         inner_frame.columnconfigure(1, weight=1)
+
+
+    # widgets which scroll themselves. A table inside the form must not scroll the
+    # form as well, otherwise both move at the same time.
+    SELF_SCROLLING_WIDGETS = (ttk.Treeview, Text, Listbox)
+
+    def _bind_scrolling(self, window) -> None:
+        for sequence in ("<MouseWheel>", "<Button-4>", "<Button-5>"):
+            window.bind(sequence, self._on_scroll_wheel, add='+')
+
+        for sequence, direction in (("<Up>", -1), ("<Down>", 1)):
+            window.bind(sequence, lambda event, d=direction: self._on_arrow_key(event, d, 'y'), add='+')
+        for sequence, direction in (("<Left>", -1), ("<Right>", 1)):
+            window.bind(sequence, lambda event, d=direction: self._on_arrow_key(event, d, 'x'), add='+')
+
+
+    def _belongs_to_form(self, widget) -> bool:
+        """True when the widget the event belongs to is the detail area or a part
+        of it. Events of the device table, the log output, ... are not ours."""
+        while widget is not None:
+            if widget is self.root:
+                return True
+            if isinstance(widget, self.SELF_SCROLLING_WIDGETS):
+                return False
+            widget = getattr(widget, 'master', None)
+        return False
+
+
+    def _on_scroll_wheel(self, event):
+        if self._belongs_to_form(event.widget):
+            self.scrolled_frame._scroll_canvas(event)
+
+
+    def _on_arrow_key(self, event, direction:int, axis:str):
+        if not self._belongs_to_form(event.widget):
+            return
+        # an input field uses the arrow keys itself to move the cursor
+        if isinstance(event.widget, (Entry, ttk.Entry, ttk.Combobox, Text)):
+            return
+        canvas = self.scrolled_frame._canvas
+        if axis == 'y':
+            canvas.yview_scroll(direction, "units")
+        else:
+            canvas.xview_scroll(direction, "units")
 
 
     def show_form(self, device:Device):

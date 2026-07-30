@@ -377,7 +377,11 @@ class SerialController():
                     self.app_bus.fire_event(AppBusEventType.LOG_MESSAGE, {'msg': msg, 'log-level': 'ERROR', 'color': 'red'})
 
         except Exception as e:
-            self._serial_bus.stop()
+            # the connection can already fail while the communicator is created,
+            # then there is nothing to stop yet. Stopping it unconditionally would
+            # raise an AttributeError which hides the real cause.
+            if self._serial_bus is not None:
+                self._serial_bus.stop()
             self.connected_gateway_type = None
             self.app_bus.fire_event(AppBusEventType.CONNECTION_STATUS_CHANGE, {'serial_port':  serial_port, 'baudrate': baudrate, 'connected': False})
             if device_type == GDN[GDT.LAN]:

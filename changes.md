@@ -1,48 +1,75 @@
 # Change Log
 
-## Cover Travel Time Test: the taught-in switch is optional again
+## v0.1.58 Cover Tests Added And UI Bugs Fixed
+
+### User interface: device memory and related devices
+* The device details of an actuator list the sensors which are taught into its memory with much more information: name of the sensor device, key/button, key function including its number in PCT14, channel and function group. The entries are sorted by memory row and the heading shows how many there are.
+* Sensors and all other devices without an own memory show a section `Related Devices` instead: the actuators in which the device is entered.
+* The detail area adapts its width to the form which is shown, so the tables are not cut off anymore and the device table does not lose space unnecessarily (never smaller than 250px, never more than 75% of the area). Selecting another device scrolls the form back to the top.
+* Fixed the highlighting of related devices in the device table: the green marking and the blue blinking on a received telegram overwrote each other, because Tk does not guarantee which tag wins if a row carries both. Only one of them is set on a row now.
+* On startup the device table gets 75% and the command log 25% of the window height.
+* Fixed that the device details scrolled together with the device table. The scroll wheel and the arrow keys were bound to the whole window, so every scroll event of the application moved the form as well. Both areas scroll independently now, a table inside the details (device memory, related devices) scrolls itself and the arrow keys keep moving the cursor inside an input field.
+
+### Taught in sensors are read from the bus
+* Memory rows which are read out on the bus - by PCT14 or by a second instance of this application - are collected now, and the device is reported again including its taught in sensors as soon as its memory is complete. A memory response does not contain the address of the device it belongs to, so the address of the preceding memory request is used.
+* Fixed that the memory entries of an already known device were overwritten with an empty list when the device announced itself on the bus again. The sensors which were read out before were lost.
+* Fixed that all `Device` objects shared **one** list of memory entries (mutable default argument), so entries of one device could show up on another one.
+* Reading the taught in sensors of a device which was only detected by listening on the bus does not let the device detection fail anymore, it is logged as a warning instead.
+
+### Gateway detection: macOS support, faster and usable while it runs
+* The serial port detection works on macOS now (`/dev/cu.*`), before it ended with a `NotImplementedError`.
+* Every gateway is published as soon as it was found instead of only after every port of the system was probed. A port which is already selected stays selected while the list grows.
+* Ports without a USB vendor id (built-in serial ports, Bluetooth, ...) are not tested for a FAM-USB anymore and the number of retries was reduced. A gateway which is there answers on the first attempt, every other port costs a full timeout.
+* The progress bar counts the ports which really exist. Before it was calculated with a fixed number of 256 ports and hardly moved.
+
+### The application really ends when the window is closed
+* Closing the window ends the process now. The threads of the serial interface, of the device scan and of the file import were no daemon threads, so the interpreter waited for them and the application stayed alive without a window.
+* The mDNS service discovery (zeroconf) is stopped and its sockets are closed when the window is closed.
+* Running background work gets 3 seconds to end itself, after that the process is ended anyway.
+
+### Cover Travel Time Test: the taught-in switch is optional again
 * `--cover_ids` accepts `ACTUATOR_ID[:SWITCH_ID[+SWITCH_ID...]][:SENDER_ID]` now, so a cover can be given as `00-00-00-05` when no wall switch is taught into it or when it is not needed for the test.
 * `ACTUATOR_ID:SENDER_ID` (e.g. `00-00-00-06:00-00-B0-06`) is understood as a cover without a switch instead of being rejected: the address the test sends from cannot be a switch. Only a switch list which mixes real switches with the sender id is still an error.
 * Without a switch and with an explicit sender id: `00-00-00-05::00-00-B0-05`.
 
-## Marker switch: shows the pressed button, two fixes
+### Marker switch: shows the pressed button, two fixes
 * The marker table has a `button` column now, so you can see which button of the rocker switch was pressed (AI, A0, BI, B0) and use the four buttons of one switch for different things.
 * Fixed that the release telegram of a switch was listed as an additional marker. Every press produced two entries, which doubled the number of markers.
 * Two presses are only a double press when the **same** button was used. Before, pressing e.g. `AI` and then `B0` within the time window was taken as one manual end position detection.
 
-## Colored headline on the command line
+### Colored headline on the command line
 * The ASCII art headline is shaded from a bright top edge down to a dark bottom, which makes it look lit from above. Shown on the help page (`-h`) and in the startup banner.
 * Color is only used when the output really goes to a terminal. Piped output, the log file and `--log_file` keep the plain headline without escape sequences.
 
-## Fixed DeprecationWarning when started without `-m`
+### Fixed DeprecationWarning when started without `-m`
 * Starting the application as a directory or file (`python eo_man`, `python eo_man/__main__.py`) printed `DeprecationWarning: __package__ != __spec__.parent` for every relative import. `__main__.py` set `__package__` unconditionally, which contradicted the `__spec__` of a plain script.
 * The bootstrap only runs now when the module is really not part of its package, and it keeps `__package__` and `__spec__` consistent. `python -m eo_man` is unaffected.
 
-## Cover Travel Time Test: verified against real hardware (FSB14 on FGW14-USB)
+### Cover Travel Time Test: verified against real hardware (FSB14 on FGW14-USB)
 * Those actuators send **no** 4BS travel report at all, only RPS status telegrams. The `reported` column therefore stays empty and the measured time is the relevant one. Documented accordingly.
 * The RPS values `0x01` / `0x02` are the start of an upward / downward movement. They are decoded now ("cover started to move UP") and used as the direction the actuator really moved, so the `dir` column and the check for a wrong direction work with those actuators as well.
 * The `difference` column of the marker table stayed empty because it was calculated from the missing travel report. It falls back to the measured travel time now (column renamed from `reported` to `travel`).
 * Fixed that a colon instead of a comma between two sequence entries (`down:12:pause:2`) silently dropped the following entries instead of reporting the typo.
 * The actuator address in the switch position of `--cover_ids` is rejected now, a sender id there is taken as the sender of a cover without a switch - both would otherwise silently be treated as a taught-in switch.
 
-## Cover Travel Time Test: marker switch for a manual end position detection
+### Cover Travel Time Test: marker switch for a manual end position detection
 * New optional argument `--cover_marker_switch` (`-cms`): a switch which is **not** taught into any actuator and therefore does not move anything. Its telegrams never count as an interference.
 * Pressing it **once** records a point in time and the report shows how long the cover had been moving at that moment.
 * Pressing it **twice in a row** (within `--cover_marker_double_press_time`, default 1.5s) is a manual end position detection: an FSB actuator simply runs its configured runtime and does not notice when the cover physically stops, so this is the only way to measure the travel time the cover really needed. The first press of the pair counts.
 * The report got a section `MARKER SWITCH` which compares the manually measured time with the time the actuator reported, a `manual end` column in the travel time statistics, and the runtime recommendation prefers the manually measured value.
 
-## Cover Travel Time Test: the taught-in switch is required per cover
+### Cover Travel Time Test: the taught-in switch is required per cover
 * `--cover_ids` now expects `ACTUATOR_ID:SWITCH_ID[+SWITCH_ID...][:SENDER_ID]`, e.g. `00-00-00-05:FE-D4-E9-47`. The wall switch which is taught into the actuator has to be given, several switches of one cover are separated by `+`. The optional sender id moved to the third position.
 * A press of a declared switch now only marks the movements of the cover(s) that switch really operates. Before, every foreign telegram disturbed **all** covers which were moving, so one switch press invalidated the measurement of the whole test run.
 * Telegrams of declared switches are reported as `switch`, everything else as `unknown` (`stopped by: switch FE-D4-E9-47` vs. `unknown 00-00-00-42`). Unknown telegrams still count as a possible interference of every running movement and the report names the addresses and explains what to do about them.
 
-## Restructured the command line help page
+### Restructured the command line help page
 * `python -m eo_man -h` groups the arguments now by topic (general, gateway connection, device data and one group per command) instead of showing one long flat list.
 * Added a list of the available commands and ready to use examples for every command at the end of the help page.
 * Shortened the usage line, clearer help texts and the defaults are mentioned where relevant.
 * Fixed the default of `--device_type`: it was `fgw14-usb` which is not one of the valid choices, so it could not be resolved to a gateway type. It is `fgw14usb` now (same connection behaviour, but the gateway is named correctly in the log).
 
-## Telegram Monitor (`enocean_logger`) improvements
+### Telegram Monitor (`enocean_logger`) improvements
 * New argument `--log_file` (`-lf`) writes the whole log output including the received telegrams into a file of your choice. The file is appended, so a restart does not lose the previous log.
 * Fixed `--log_telegram_id_filter` (`-idf`): the already parsed id list was converted to a string again, so the filter never matched and **no** telegram at all was displayed as soon as a filter was given.
 * Fixed the `EOFError` traceback when the logger is started without an interactive console (background process, service, `nohup`). It now logs a hint that the process has to be terminated to stop it and keeps on logging.
@@ -50,7 +77,22 @@
 * The built-in log file `enocean-device-manager.log` is written with UTF-8 encoding so that special characters (e.g. the signal strength bars) cannot break the log output.
 * Documentation extended: how to run the monitor as a background process, screen/tmux session, systemd service or hidden Windows process, how to follow the log file live and a troubleshooting table. See [docs/commandline-enocean-logger](https://github.com/grimmpp/enocean-device-manager/blob/main/docs/commandline-enocean-logger).
 
-## Added Cover Travel Time Test
+### Signal strength (RSSI) of received telegrams
+* The device table has a `Signal (dBm)` column which is updated with every received telegram, e.g. `-58 dBm ▮▮▮▯ (good)`. The Telegram Monitor shows the same information in its log output.
+* The signal strength is only available for radio telegrams of ESP3 gateways (USB300/USB500, LAN). Wired ESP2 bus telegrams (FAM14, FGW14, FAM-USB) do not carry an RSSI, the column stays empty for them.
+* The ESP2 conversion of `esp2_gateway_adapter` drops the optional data which holds the RSSI, therefore the raw packet stream of the gateway is tapped. The ESP2 translation the rest of the application relies on is unchanged.
+* Fixed that the reader thread of an ESP3 gateway died on a telegram which cannot be converted to ESP2 (e.g. VLD/UTE). After that **no** telegram at all was received anymore.
+
+### Dependencies and tests
+* `eltako14bus` updated to 0.0.82, needed for the additional FSB14 type. `pyproject.toml` was still pinned to 0.0.79, so the installed package pulled an older library than the one the application was developed and tested with. **This is the reason why the connection to a FAM14/FGW14/FAM-USB could not be established anymore after an installation with pip**: `disabled_echotest` only exists since 0.0.81, with 0.0.79 the creation of the serial connection failed with a `TypeError`.
+* The real cause of a failed connection is logged now. The error handling stopped a serial connection which was never created, so every error during the creation of the connection was replaced by an `AttributeError: 'NoneType' object has no attribute 'stop'`.
+* New test which compares `requirements.txt` and `pyproject.toml`: same packages, same versions, and the version of the package matches the newest entry of this change log. It found the `eltako14bus` pin above and a differing pillow version (`>11` vs. `>=11`, aligned to `>=11`).
+* `checklistcombobox` does not depend on numpy anymore.
+* New unit tests for the Cover Travel Time Test (id parsing, marker switch, reports), for the memory readout of bus devices, for the row background of the device table, for the gateway detection on serial ports, for the shutdown of the application and for the scrolling of the device details.
+* README: a short section near the top shows that the application also brings command line tools, with one ready to use example per command.
+* README: removed the "WORK IN PROGRESS" headline and replaced the introduction with a description of what the application actually does. Outdated statements are corrected: it runs on Windows, Linux and macOS, and the wireless transceivers USB300/USB500 and the LAN gateways are supported (they were announced as "planned for future releases").
+
+### Added Cover Travel Time Test
 * New command line test `--command cover_test` which drives a list of covers (FSB14, FSB61, FJ62, ...) with a configurable sequence of movement commands and pauses.
 * All given cover ids get exactly the same commands. Sent commands and received telegrams are logged with timestamps.
 * The report shows per movement the reaction time, the measured and the actuator-reported travel time, the reached end position and how the movement was terminated.
