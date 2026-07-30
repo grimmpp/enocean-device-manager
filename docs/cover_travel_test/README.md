@@ -17,7 +17,7 @@ usually take a different amount of time. With this test you get all those times 
 
 ## Command
 
-```
+```shell
 python.exe -m eo_man --command cover_test --serial_port COM7 --device_type fgw14usb \
                      --cover_ids 00-00-00-05,00-00-00-07 \
                      --cover_sequence up:60,pause:5,down:60,pause:5 \
@@ -33,7 +33,7 @@ python.exe -m eo_man --command cover_test --serial_port COM7 --device_type fgw14
 | `--cover_sequence` | `-cseq` | Comma-separated list of movement commands and pauses which are executed one after the other. |
 | `--cover_command_mode` | `-cm` | `stop` (default) or `timed`, see below. |
 | `--test_run_count` | `-trc` | How often the whole sequence is repeated. Default: `1`. |
-| `--message_delay` | `-md` | Delay between the command telegrams of two covers in seconds. Default: `0.05`. |
+| `--cover_message_delay` | `-cmd` | Delay between two command telegrams in seconds. Default: `0.1` (100ms). See below. |
 | `--verbose` | `-v` | `-v` additionally logs every relevant telegram while the test runs and appends the complete telegram log to the report. `-vv` also shows the raw ESP2 data of every telegram and enables the debug log of the serial communication. |
 | `--test_report` | `-tr` | Optional file the whole printed report is written to as plain text. |
 | `--test_report_csv` | `-tcsv` | Optional CSV file all recorded telegrams are written to (for a spreadsheet application). |
@@ -68,6 +68,27 @@ Every entry of `--cover_sequence` is `COMMAND:SECONDS`:
 | `pause:5` | `wait`, `warten` | Send nothing for 5 seconds. |
 
 Example: `up:60,pause:5,down:20,stop,pause:3,down:60,pause:5`
+
+### Delay between the commands
+
+Every step of the sequence sends one command telegram per cover. `--cover_message_delay` defines how long the
+test waits **between** two of those telegrams:
+
+```text
+ [   0.00s] Step 1/2: UP 60.0s
+      0.00s  SENT ... 00-00-B0-05  command UP to cover 00-00-00-05     <- first command, no delay before it
+      0.10s  SENT ... 00-00-B0-07  command UP to cover 00-00-00-07     <- 100ms later
+```
+
+* Default is `0.1` (100ms). This is the same order of magnitude the bus gateways need to process a telegram and
+  keeps the covers from starting at exactly the same moment.
+* `--cover_message_delay 0` sends all commands without any delay. Use it if all covers have to start as
+  simultaneously as possible. On a wired bus a value which is too small can cause a buffer overflow in the
+  gateway, so telegrams may get lost.
+* A larger value (e.g. `0.5`) is useful if you want to see the covers react one after the other.
+
+The delay is never applied before the first telegram of a step, so it does not shift the measured travel times.
+It also applies to the `STOP` telegrams which terminate a movement.
 
 ### Command mode
 
@@ -112,6 +133,7 @@ third movement:
  Sequence:      UP 30.0s → PAUSE 3.0s → DOWN 30.0s → PAUSE 3.0s → DOWN 30.0s → PAUSE 3.0s
  Runs:          1
  Command mode:  stop - movement is terminated by a STOP command
+ Message delay: 0.1s between two command telegrams
  Duration:      about 103s
 
  You can move the covers with a wall switch during the test. Such interferences are logged and the travel time until the intervention is reported.

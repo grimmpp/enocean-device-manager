@@ -87,6 +87,9 @@ python -m eo_man -C cover_test -sp COM7 -dt fgw14usb -cid 00-00-00-05,00-00-00-0
 # same test on Linux, repeated 3 times, with every telegram and saved to files
 python -m eo_man -C cover_test -sp /dev/ttyUSB0 -dt fgw14usb -cid 00-00-00-05,00-00-00-07 \
                  -cseq up:60,pause:5,down:60,pause:5 -trc 3 -v -tr cover_test.txt -tcsv cover_test.csv
+
+# let all covers start at the same moment (no delay between the command telegrams, default is 100ms)
+python -m eo_man -C cover_test -sp COM7 -dt fgw14usb -cid 00-00-00-05,00-00-00-07 -cseq up:60,pause:5 -cmd 0
 ```
 
 The result is printed as tables on the command line:

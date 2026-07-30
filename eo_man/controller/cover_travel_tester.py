@@ -455,7 +455,7 @@ class CoverTravelTester:
 
     def __init__(self, app_bus: AppBus, serial_port: str, device_type: str,
                  cover_ids: list, sequence: list,
-                 message_delay: float = .05, command_mode: str = 'stop',
+                 message_delay: float = .1, command_mode: str = 'stop',
                  verbose: int = 0, serial_controller: SerialController = None,
                  printer: ReportPrinter = None) -> None:
         self._stop_flag = threading.Event()
@@ -580,6 +580,8 @@ class CoverTravelTester:
         movements = []
         travel_time = self._command_travel_time(step)
         for cover in self.covers:
+            self._delay_between_commands(is_first=not movements)
+
             # register the movement before sending so that a fast reply of the
             # actuator is not assigned to the previous movement
             with self._lock:
@@ -592,7 +594,6 @@ class CoverTravelTester:
                 movements.append(movement)
 
             self._send_cover_command(cover, step.type.command, travel_time)
-            self._stop_flag.wait(self.message_delay)
 
         self._stop_flag.wait(step.duration)
 
@@ -629,26 +630,33 @@ class CoverTravelTester:
                                       description=f"command {command_name} to cover {cover.actuator_id}, travel time: {time_info}"))
 
     def _send_stop(self, only_still_moving: bool = False) -> None:
+        sent_commands = 0
         for cover in self.covers:
             with self._lock:
                 movement = self._open_movements.get(cover.actuator_id, None)
                 already_stopped = movement is None or movement.travel_report is not None \
                     or movement.end_position is not None
 
-                if only_still_moving and already_stopped:
-                    send = False
-                else:
-                    send = True
-                    if movement is not None and movement.stop_command_time is None:
-                        movement.stop_command_time = self._now()
-
-            if not send:
+            if only_still_moving and already_stopped:
                 if self.verbose > 0:
                     self.out.hint(f"          Cover {cover.actuator_id} already signalled the end of the "
                                   f"movement. No STOP command needed.")
                 continue
 
+            self._delay_between_commands(is_first=sent_commands == 0)
+
+            with self._lock:
+                if movement is not None and movement.stop_command_time is None:
+                    movement.stop_command_time = self._now()
+
             self._send_cover_command(cover, COVER_COMMAND_STOP, 0)
+            sent_commands += 1
+
+    def _delay_between_commands(self, is_first: bool) -> None:
+        """Waits self.message_delay before the next command telegram is sent.
+        Nothing is waited before the first command of a step so that the delay
+        really only happens between two telegrams."""
+        if not is_first and self.message_delay > 0:
             self._stop_flag.wait(self.message_delay)
 
     def _close_movement(self, cover: Cover, end_time: float) -> None:
@@ -805,6 +813,8 @@ class CoverTravelTester:
         self.out.label("Command mode", f"{self.command_mode} - "
                        + ('travel time is part of the command telegram' if self.command_mode == 'timed'
                           else 'movement is terminated by a STOP command'))
+        self.out.label("Message delay", f"{self.message_delay}s between two command telegrams"
+                       + (' (no delay)' if self.message_delay == 0 else ''))
         self.out.label("Duration", f"about {self._estimated_duration(run_count):.0f}s")
         self.out.blank()
         self.out.hint("You can move the covers with a wall switch during the test. Such interferences are "
@@ -813,7 +823,9 @@ class CoverTravelTester:
             self.out.hint("Use -v to see every telegram, -vv to additionally see the raw ESP2 data.")
 
     def _estimated_duration(self, run_count: int) -> float:
-        per_run = sum(s.duration for s in self.sequence) + len(self.sequence) * len(self.covers) * self.message_delay
+        # every step sends one command per cover, the delay happens in between
+        delay_per_step = max(len(self.covers) - 1, 0) * self.message_delay
+        per_run = sum(s.duration for s in self.sequence) + len(self.sequence) * delay_per_step
         return per_run * run_count + self.gateway_init_delay + self.settle_time
 
     def _print_step_summary(self, movements: list) -> None:

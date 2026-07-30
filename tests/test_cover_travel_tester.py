@@ -153,7 +153,7 @@ class CoverSimulation():
 
 
 def _build_tester(sequence: list, command_mode: str = 'stop', travel_up: float = .4, travel_down: float = .6,
-                  verbose: int = 0):
+                  verbose: int = 0, message_delay: float = 0):
     app_bus = AppBus()
     serial_controller = SerialControllerMock(app_bus)
     # the report is written into a buffer instead of the console
@@ -161,7 +161,7 @@ def _build_tester(sequence: list, command_mode: str = 'stop', travel_up: float =
     tester = CoverTravelTester(app_bus, 'COM-MOCK', 'fgw14-usb',
                                cover_ids=['00-00-00-05', '00-00-00-07'],
                                sequence=sequence,
-                               message_delay=0,
+                               message_delay=message_delay,
                                command_mode=command_mode,
                                verbose=verbose,
                                serial_controller=serial_controller,
@@ -181,6 +181,28 @@ def test_all_covers_get_the_same_commands():
     # both covers reach their end position within the interval, so no STOP is needed
     assert commands == [('00-00-B0-05', COVER_COMMAND_UP), ('00-00-B0-07', COVER_COMMAND_UP),
                         ('00-00-B0-05', COVER_COMMAND_DOWN), ('00-00-B0-07', COVER_COMMAND_DOWN)]
+
+
+def test_message_delay_is_only_applied_between_the_commands():
+    delay = .2
+    tester, _ = _build_tester(['up:.8'], travel_up=.3, message_delay=delay)
+    movements = tester.start_test()
+
+    commands = [e for e in tester._events if e.outgoing]
+    assert len(commands) == 2                                   # one command per cover
+    # nothing is waited before the first command ...
+    assert commands[0].time == pytest.approx(0, abs=.05)
+    # ... and the delay happens between the two commands
+    assert commands[1].time - commands[0].time == pytest.approx(delay, abs=.05)
+    # the movements start when their own command is sent
+    assert movements[1].start_time - movements[0].start_time == pytest.approx(delay, abs=.05)
+
+
+def test_message_delay_defaults_to_100ms():
+    tester = CoverTravelTester(AppBus(), 'COM1', 'fgw14usb', cover_ids=['00-00-00-05'], sequence=['up:1'],
+                               serial_controller=SerialControllerMock(),
+                               printer=ReportPrinter(stream=io.StringIO(), use_color=False))
+    assert tester.message_delay == .1
 
 
 def test_travel_times_are_measured_per_direction():

@@ -94,6 +94,10 @@ def cli_argument():
                              "'COMMAND:SECONDS' entries which are executed one after the other for all covers. "
                              "Commands: up, down, stop, pause. Example: 'up:60,pause:5,down:20,stop,pause:3,down:60'.",
                         type=lambda s: [x.strip() for x in s.split(',') if x.strip()])
+    parser.add_argument('-cmd', '--cover_message_delay', type=float, default=0.1, metavar='SEC', required=False,
+                        help="Delay between two command telegrams of command `cover_test` in seconds. "
+                             "It is only applied between the telegrams, not before the first one of a step. "
+                             "Default: 0.1 => 100ms. Use 0 to send the commands without any delay.")
     parser.add_argument('-cm', '--cover_command_mode', required=False, type=str.lower, default='stop',
                         choices=['stop', 'timed'],
                         help="How the movement duration of command `cover_test` is applied. 'stop' (default) starts "
@@ -228,7 +232,7 @@ def main():
             ct = CoverTravelTester(app_bus, opts.serial_port, opts.device_type,
                                    cover_ids=opts.cover_ids,
                                    sequence=opts.cover_sequence,
-                                   message_delay=opts.message_delay,
+                                   message_delay=opts.cover_message_delay,
                                    command_mode=opts.cover_command_mode,
                                    verbose=opts.verbose)
         except ValueError as ex:
